@@ -1,41 +1,23 @@
-/**
- * Minimal real-world demo: One Durable Object instance per entity (User, ChatBoard), with Indexes for listing.
- */
 import { IndexedEntity } from "./core-utils";
-import type { User, Chat, ChatMessage } from "@shared/types";
-import { MOCK_CHAT_MESSAGES, MOCK_CHATS, MOCK_USERS } from "@shared/mock-data";
-
-// USER ENTITY: one DO instance per user
-export class UserEntity extends IndexedEntity<User> {
-  static readonly entityName = "user";
-  static readonly indexName = "users";
-  static readonly initialState: User = { id: "", name: "" };
-  static seedData = MOCK_USERS;
+import type { Product, Transaction } from "@shared/types";
+const MOCK_PRODUCTS: Product[] = [
+  { id: 'prod_1', name: 'Indomie Goreng', price: 3000, imageUrl: 'https://i.imgur.com/k2S224j.png', category: 'Makanan' },
+  { id: 'prod_2', name: 'Teh Pucuk', price: 3500, imageUrl: 'https://i.imgur.com/s2h62r0.png', category: 'Minuman' },
+  { id: 'prod_3', name: 'Chitato', price: 10000, imageUrl: 'https://i.imgur.com/A632j2V.png', category: 'Snack' },
+  { id: 'prod_4', name: 'Aqua 600ml', price: 3000, imageUrl: 'https://i.imgur.com/90y7c2r.png', category: 'Minuman' },
+  { id: 'prod_5', name: 'Beng-Beng', price: 2000, imageUrl: 'https://i.imgur.com/N3a0G7d.png', category: 'Snack' },
+  { id: 'prod_6', name: 'Nasi Kucing', price: 5000, imageUrl: 'https://i.imgur.com/Q2Y28J5.png', category: 'Makanan' },
+  { id: 'prod_7', name: 'Kopi ABC', price: 1500, imageUrl: 'https://i.imgur.com/oDEh7cQ.png', category: 'Minuman' },
+  { id: 'prod_8', name: 'Oreo', price: 8000, imageUrl: 'https://i.imgur.com/qG01a2Z.png', category: 'Snack' },
+];
+export class ProductEntity extends IndexedEntity<Product> {
+  static readonly entityName = "product";
+  static readonly indexName = "products";
+  static readonly initialState: Product = { id: "", name: "", price: 0, imageUrl: "", category: "" };
+  static seedData = MOCK_PRODUCTS;
 }
-
-// CHAT BOARD ENTITY: one DO instance per chat board, stores its own messages
-export type ChatBoardState = Chat & { messages: ChatMessage[] };
-
-const SEED_CHAT_BOARDS: ChatBoardState[] = MOCK_CHATS.map(c => ({
-  ...c,
-  messages: MOCK_CHAT_MESSAGES.filter(m => m.chatId === c.id),
-}));
-
-export class ChatBoardEntity extends IndexedEntity<ChatBoardState> {
-  static readonly entityName = "chat";
-  static readonly indexName = "chats";
-  static readonly initialState: ChatBoardState = { id: "", title: "", messages: [] };
-  static seedData = SEED_CHAT_BOARDS;
-
-  async listMessages(): Promise<ChatMessage[]> {
-    const { messages } = await this.getState();
-    return messages;
-  }
-
-  async sendMessage(userId: string, text: string): Promise<ChatMessage> {
-    const msg: ChatMessage = { id: crypto.randomUUID(), chatId: this.id, userId, text, ts: Date.now() };
-    await this.mutate(s => ({ ...s, messages: [...s.messages, msg] }));
-    return msg;
-  }
+export class TransactionEntity extends IndexedEntity<Transaction> {
+  static readonly entityName = "transaction";
+  static readonly indexName = "transactions";
+  static readonly initialState: Transaction = { id: "", items: [], total: 0, createdAt: 0 };
 }
-

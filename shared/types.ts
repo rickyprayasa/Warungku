@@ -3,22 +3,21 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
 }
-
-// Minimal real-world chat example types (shared by frontend and worker)
-export interface User {
+export interface Product {
   id: string;
   name: string;
+  price: number;
+  imageUrl: string;
+  category: string;
 }
-
-export interface Chat {
-  id: string;
-  title: string;
+export interface TransactionItem {
+  productId: string;
+  quantity: number;
+  price: number; // Price at the time of transaction
 }
-
-export interface ChatMessage {
+export interface Transaction {
   id: string;
-  chatId: string;
-  userId: string;
-  text: string;
-  ts: number; // epoch millis
+  items: TransactionItem[];
+  total: number;
+  createdAt: number; // epoch millis
 }

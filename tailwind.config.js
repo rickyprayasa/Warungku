@@ -84,6 +84,7 @@ export default {
   			'128': '32rem'
   		},
   		borderRadius: {
+        'none': '0',
   			'4xl': '2rem',
   			'5xl': '2.5rem',
   			lg: 'var(--radius)',
@@ -91,6 +92,9 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+        'brand-orange': 'rgb(243, 128, 32)',
+        'brand-black': 'rgb(17, 17, 17)',
+        'brand-white': 'rgb(255, 255, 255)',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			muted: {
@@ -143,6 +147,8 @@ export default {
   			}
   		},
   		boxShadow: {
+        'hard': '4px 4px 0px rgb(17, 17, 17)',
+        'hard-sm': '2px 2px 0px rgb(17, 17, 17)',
   			soft: '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
   			glow: '0 0 20px -5px rgba(99, 102, 241, 0.4)',
   			'glow-lg': '0 0 40px -10px rgba(99, 102, 241, 0.3)',

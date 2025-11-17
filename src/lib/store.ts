@@ -1,172 +1,70 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues } from '@shared/types';
+import type { Product } from '@shared/types';
 import { api } from './api-client';
-import { persist, createJSONStorage } from 'zustand/middleware'
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
 interface WarungState {
   products: Product[];
-  sales: Sale[];
-  purchases: Purchase[];
-  suppliers: Supplier[];
-  jajananRequests: JajananRequest[];
-  initialBalance: number;
+  cart: Map<string, CartItem>;
   isLoading: boolean;
   error: string | null;
-  isAuthenticated: boolean;
 }
 interface WarungActions {
   fetchProducts: () => Promise<void>;
-  fetchSales: () => Promise<void>;
-  fetchPurchases: () => Promise<void>;
-  fetchSuppliers: () => Promise<void>;
-  fetchJajananRequests: () => Promise<void>;
-  setInitialBalance: (balance: number) => void;
-  login: () => void;
-  logout: () => void;
-  addProduct: (productData: ProductFormValues) => Promise<Product>;
-  updateProduct: (productId: string, productData: ProductFormValues) => Promise<Product>;
-  deleteProduct: (productId: string) => Promise<void>;
-  addSale: (saleData: SaleFormValues) => Promise<Sale>;
-  addPurchase: (purchaseData: PurchaseFormValues) => Promise<Purchase>;
-  addSupplier: (supplierData: SupplierFormValues) => Promise<Supplier>;
-  updateSupplier: (supplierId: string, supplierData: SupplierFormValues) => Promise<Supplier>;
-  deleteSupplier: (supplierId: string) => Promise<void>;
-  addJajananRequest: (requestData: JajananRequestFormValues) => Promise<JajananRequest>;
-  updateJajananRequestStatus: (requestId: string, status: JajananRequest['status']) => Promise<JajananRequest>;
+  addToCart: (product: Product) => void;
+  removeFromCart: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
 }
 export const useWarungStore = create<WarungState & WarungActions>()(
-  persist(
-    immer((set) => ({
-      products: [],
-      sales: [],
-      purchases: [],
-      suppliers: [],
-      jajananRequests: [],
-      initialBalance: 0,
-      isLoading: true,
-      error: null,
-      isAuthenticated: false,
-      fetchProducts: async () => {
-        try {
-          set({ isLoading: true, error: null });
-          const products = await api<Product[]>('/api/products');
-          set({ products, isLoading: false });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch products';
-          set({ isLoading: false, error: errorMessage });
+  immer((set) => ({
+    products: [],
+    cart: new Map(),
+    isLoading: true,
+    error: null,
+    fetchProducts: async () => {
+      try {
+        set({ isLoading: true, error: null });
+        const products = await api<Product[]>('/api/products');
+        set({ products, isLoading: false });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch products';
+        set({ isLoading: false, error: errorMessage });
+        console.error(errorMessage);
+      }
+    },
+    addToCart: (product) => {
+      set((state) => {
+        const existingItem = state.cart.get(product.id);
+        if (existingItem) {
+          existingItem.quantity += 1;
+        } else {
+          state.cart.set(product.id, { product, quantity: 1 });
         }
-      },
-      fetchSales: async () => {
-        try {
-          set({ isLoading: true, error: null });
-          const sales = await api<Sale[]>('/api/sales');
-          set({ sales, isLoading: false });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sales';
-          set({ isLoading: false, error: errorMessage });
+      });
+    },
+    removeFromCart: (productId) => {
+      set((state) => {
+        state.cart.delete(productId);
+      });
+    },
+    updateQuantity: (productId, quantity) => {
+      set((state) => {
+        const item = state.cart.get(productId);
+        if (item) {
+          if (quantity > 0) {
+            item.quantity = quantity;
+          } else {
+            state.cart.delete(productId);
+          }
         }
-      },
-      fetchPurchases: async () => {
-        try {
-          set({ isLoading: true, error: null });
-          const purchases = await api<Purchase[]>('/api/purchases');
-          set({ purchases, isLoading: false });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch purchases';
-          set({ isLoading: false, error: errorMessage });
-        }
-      },
-      fetchSuppliers: async () => {
-        try {
-          set({ isLoading: true, error: null });
-          const suppliers = await api<Supplier[]>('/api/suppliers');
-          set({ suppliers, isLoading: false });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch suppliers';
-          set({ isLoading: false, error: errorMessage });
-        }
-      },
-      fetchJajananRequests: async () => {
-        try {
-          set({ isLoading: true, error: null });
-          const jajananRequests = await api<JajananRequest[]>('/api/jajanan-requests');
-          set({ jajananRequests, isLoading: false });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch requests';
-          set({ isLoading: false, error: errorMessage });
-        }
-      },
-      setInitialBalance: (balance) => set({ initialBalance: balance }),
-      login: () => set({ isAuthenticated: true }),
-      logout: () => set({ isAuthenticated: false }),
-      addProduct: async (productData) => {
-        const newProduct = await api<Product>('/api/products', { method: 'POST', body: JSON.stringify(productData) });
-        set((state) => { state.products.push(newProduct); });
-        return newProduct;
-      },
-      updateProduct: async (productId, productData) => {
-        const updatedProduct = await api<Product>(`/api/products/${productId}`, { method: 'PUT', body: JSON.stringify(productData) });
-        set((state) => {
-          const index = state.products.findIndex((p) => p.id === productId);
-          if (index !== -1) state.products[index] = updatedProduct;
-        });
-        return updatedProduct;
-      },
-      deleteProduct: async (productId) => {
-        await api(`/api/products/${productId}`, { method: 'DELETE' });
-        set((state) => { state.products = state.products.filter((p) => p.id !== productId); });
-      },
-      addSale: async (saleData) => {
-        const newSale = await api<Sale>('/api/sales', { method: 'POST', body: JSON.stringify(saleData) });
-        set((state) => { state.sales.unshift(newSale); });
-        return newSale;
-      },
-      addPurchase: async (purchaseData) => {
-        const newPurchase = await api<Purchase>('/api/purchases', { method: 'POST', body: JSON.stringify(purchaseData) });
-        set((state) => { state.purchases.unshift(newPurchase); });
-        return newPurchase;
-      },
-      addSupplier: async (supplierData) => {
-        const newSupplier = await api<Supplier>('/api/suppliers', { method: 'POST', body: JSON.stringify(supplierData) });
-        set((state) => { state.suppliers.push(newSupplier); });
-        return newSupplier;
-      },
-      updateSupplier: async (supplierId, supplierData) => {
-        const updatedSupplier = await api<Supplier>(`/api/suppliers/${supplierId}`, { method: 'PUT', body: JSON.stringify(supplierData) });
-        set((state) => {
-          const index = state.suppliers.findIndex((s) => s.id === supplierId);
-          if (index !== -1) state.suppliers[index] = updatedSupplier;
-        });
-        return updatedSupplier;
-      },
-      deleteSupplier: async (supplierId) => {
-        await api(`/api/suppliers/${supplierId}`, { method: 'DELETE' });
-        set((state) => { state.suppliers = state.suppliers.filter((s) => s.id !== supplierId); });
-      },
-      addJajananRequest: async (requestData) => {
-        const newRequest = await api<JajananRequest>('/api/jajanan-requests', { method: 'POST', body: JSON.stringify(requestData) });
-        set((state) => { state.jajananRequests.unshift(newRequest); });
-        return newRequest;
-      },
-      updateJajananRequestStatus: async (requestId, status) => {
-        const updatedRequest = await api<JajananRequest>(`/api/jajanan-requests/${requestId}`, {
-          method: 'PUT',
-          body: JSON.stringify({ status }),
-        });
-        set((state) => {
-          const index = state.jajananRequests.findIndex((r) => r.id === requestId);
-          if (index !== -1) state.jajananRequests[index] = updatedRequest;
-        });
-        return updatedRequest;
-      },
-    })),
-    {
-      name: 'warung-storage',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        initialBalance: state.initialBalance,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    }
-  )
+      });
+    },
+    clearCart: () => {
+      set({ cart: new Map() });
+    },
+  }))
 );
