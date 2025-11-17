@@ -1,5 +1,5 @@
 import { IndexedEntity } from "./core-utils";
-import type { Product, Transaction } from "@shared/types";
+import type { Product } from "@shared/types";
 const MOCK_PRODUCTS: Product[] = [
   { id: 'prod_1', name: 'Indomie Goreng', price: 3000, imageUrl: 'https://i.imgur.com/k2S224j.png', category: 'Makanan' },
   { id: 'prod_2', name: 'Teh Pucuk', price: 3500, imageUrl: 'https://i.imgur.com/s2h62r0.png', category: 'Minuman' },
@@ -15,9 +15,4 @@ export class ProductEntity extends IndexedEntity<Product> {
   static readonly indexName = "products";
   static readonly initialState: Product = { id: "", name: "", price: 0, imageUrl: "", category: "" };
   static seedData = MOCK_PRODUCTS;
-}
-export class TransactionEntity extends IndexedEntity<Transaction> {
-  static readonly entityName = "transaction";
-  static readonly indexName = "transactions";
-  static readonly initialState: Transaction = { id: "", items: [], total: 0, createdAt: 0 };
 }

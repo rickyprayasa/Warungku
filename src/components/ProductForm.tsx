@@ -33,20 +33,20 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const isEditing = !!product;
   const onSubmit = async (values: ProductFormValues) => {
     try {
-      if (!product && !isEditing) {
-        const promise = addProduct(values);
-        toast.promise(promise, {
-          loading: 'Creating product...',
-          success: 'Product created successfully!',
-          error: 'Failed to create product.',
-        });
-        await promise;
-      } else if (product) {
+      if (isEditing && product) {
         const promise = updateProduct(product.id, values);
         toast.promise(promise, {
           loading: 'Updating product...',
           success: 'Product updated successfully!',
           error: 'Failed to update product.',
+        });
+        await promise;
+      } else {
+        const promise = addProduct(values);
+        toast.promise(promise, {
+          loading: 'Creating product...',
+          success: 'Product created successfully!',
+          error: 'Failed to create product.',
         });
         await promise;
       }
@@ -82,7 +82,6 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                   type="number"
                   placeholder="e.g., 3000"
                   {...field}
-                  onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
                   className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
                 />
               </FormControl>

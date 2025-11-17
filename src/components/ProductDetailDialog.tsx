@@ -20,7 +20,7 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
         <h2 className="text-3xl font-display font-bold text-brand-black my-1">{product.name}</h2>
         <p className="font-mono font-bold text-brand-orange text-2xl my-4">{formatCurrency(product.price)}</p>
         <p className="text-muted-foreground font-sans">
-          Deskripsi detail untuk {product.name} akan ditampilkan di sini.
+          Deskripsi detail untuk {product.name} akan ditampilkan di sini. Saat ini, kami hanya menampilkan informasi dasar.
         </p>
       </div>
     </div>

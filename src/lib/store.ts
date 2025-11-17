@@ -1,44 +1,27 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Product, ProductFormValues, Transaction } from '@shared/types';
+import type { Product, ProductFormValues } from '@shared/types';
 import { api } from './api-client';
-export interface CartItem {
-  product: Product;
-  quantity: number;
-}
 interface WarungState {
   products: Product[];
-  cart: Map<string, CartItem>;
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  transactions: Transaction[];
-  isTransactionsLoading: boolean;
-  transactionsError: string | null;
 }
 interface WarungActions {
   fetchProducts: () => Promise<void>;
-  addToCart: (product: Product) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
   login: () => void;
   logout: () => void;
   addProduct: (productData: ProductFormValues) => Promise<Product>;
   updateProduct: (productId: string, productData: ProductFormValues) => Promise<Product>;
   deleteProduct: (productId: string) => Promise<void>;
-  fetchTransactions: () => Promise<void>;
 }
 export const useWarungStore = create<WarungState & WarungActions>()(
-  immer((set, get) => ({
+  immer((set) => ({
     products: [],
-    cart: new Map(),
     isLoading: true,
     error: null,
     isAuthenticated: false,
-    transactions: [],
-    isTransactionsLoading: true,
-    transactionsError: null,
     fetchProducts: async () => {
       try {
         set({ isLoading: true, error: null });
@@ -49,36 +32,6 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         set({ isLoading: false, error: errorMessage });
         console.error(errorMessage);
       }
-    },
-    addToCart: (product) => {
-      set((state) => {
-        const existingItem = state.cart.get(product.id);
-        if (existingItem) {
-          existingItem.quantity += 1;
-        } else {
-          state.cart.set(product.id, { product, quantity: 1 });
-        }
-      });
-    },
-    removeFromCart: (productId) => {
-      set((state) => {
-        state.cart.delete(productId);
-      });
-    },
-    updateQuantity: (productId, quantity) => {
-      set((state) => {
-        const item = state.cart.get(productId);
-        if (item) {
-          if (quantity > 0) {
-            item.quantity = quantity;
-          } else {
-            state.cart.delete(productId);
-          }
-        }
-      });
-    },
-    clearCart: () => {
-      set({ cart: new Map() });
     },
     login: () => {
       set({ isAuthenticated: true });
@@ -114,17 +67,6 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       set((state) => {
         state.products = state.products.filter((p) => p.id !== productId);
       });
-    },
-    fetchTransactions: async () => {
-      try {
-        set({ isTransactionsLoading: true, transactionsError: null });
-        const transactions = await api<Transaction[]>('/api/transactions');
-        set({ transactions, isTransactionsLoading: false });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch transactions';
-        set({ isTransactionsLoading: false, transactionsError: errorMessage });
-        console.error(errorMessage);
-      }
     },
   }))
 );

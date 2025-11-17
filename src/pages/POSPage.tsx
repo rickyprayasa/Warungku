@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { ProductCard } from '@/components/ProductCard';
-import { OrderSummary } from '@/components/OrderSummary';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
@@ -14,13 +13,13 @@ export function POSPage() {
     fetchProducts();
   }, [fetchProducts]);
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)] bg-muted/40">
+    <div className="bg-muted/40">
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8 md:py-10 lg:py-12">
-            <div className="mb-8">
-              <h2 className="text-3xl font-display font-bold text-brand-black">Pilih Jajanan</h2>
-              <p className="text-muted-foreground font-mono">Klik produk untuk menambahkannya ke keranjang.</p>
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl font-display font-bold text-brand-black">Menu Jajanan</h2>
+              <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia.</p>
             </div>
             {isLoading && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -50,7 +49,6 @@ export function POSPage() {
           </div>
         </div>
       </main>
-      <OrderSummary />
     </div>
   );
 }

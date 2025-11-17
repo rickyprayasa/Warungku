@@ -28,7 +28,7 @@ export function AppHeader() {
             </h1>
             <nav className="hidden md:flex items-center space-x-4">
               <NavLink to="/" className={navLinkClass}>
-                POS
+                Menu
               </NavLink>
               <NavLink to="/dashboard" className={navLinkClass}>
                 Dashboard
@@ -65,7 +65,7 @@ export function AppHeader() {
         </div>
         <nav className="md:hidden flex items-center space-x-2 pb-4">
             <NavLink to="/" className={navLinkClass}>
-              POS
+              Menu
             </NavLink>
             <NavLink to="/dashboard" className={navLinkClass}>
               Dashboard
