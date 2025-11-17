@@ -4,22 +4,31 @@ import { purchaseSchema, type PurchaseFormValues } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 interface PurchaseFormProps {
   onSuccess: () => void;
 }
 export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
+  const products = useWarungStore((state) => state.products);
+  const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const addPurchase = useWarungStore((state) => state.addPurchase);
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
     defaultValues: {
-      productName: '',
+      productId: '',
       quantity: 1,
       cost: 0,
       supplier: '',
     },
   });
+  useEffect(() => {
+    if (products.length === 0) {
+      fetchProducts();
+    }
+  }, [products, fetchProducts]);
   const onSubmit = async (values: PurchaseFormValues) => {
     const promise = addPurchase(values);
     toast.promise(promise, {
@@ -35,13 +44,20 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <FormField
           control={form.control}
-          name="productName"
+          name="productId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">Product Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Indomie Stock" {...field} className="rounded-none border-2 border-brand-black" />
-              </FormControl>
+              <FormLabel className="font-mono font-bold">Product</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="rounded-none border-2 border-brand-black">
+                    <SelectValue placeholder="Select a product to purchase" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
+                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

@@ -25,6 +25,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
     defaultValues: {
       name: product?.name || '',
       price: product?.price || 0,
+      cost: product?.cost || 0,
       category: product?.category || '',
       imageUrl: product?.imageUrl || '',
     },
@@ -71,25 +72,46 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="price"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-mono font-bold">Harga</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="e.g., 3000"
-                  {...field}
-                  onChange={event => field.onChange(+event.target.value)}
-                  className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-mono font-bold">Harga Jual</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 3000"
+                    {...field}
+                    onChange={event => field.onChange(+event.target.value)}
+                    className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="cost"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-mono font-bold">Harga Beli</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 2500"
+                    {...field}
+                    onChange={event => field.onChange(+event.target.value)}
+                    className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
           name="category"

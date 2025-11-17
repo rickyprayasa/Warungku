@@ -28,7 +28,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
       if (isEditing && supplier) {
         const promise = updateSupplier(supplier.id, values);
         toast.promise(promise, {
-          loading: 'Menyimpan...',
+          loading: 'Updating supplier...',
           success: 'Supplier updated successfully!',
           error: 'Failed to update supplier.',
         });
@@ -36,7 +36,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
       } else {
         const promise = addSupplier(values);
         toast.promise(promise, {
-          loading: 'Menyimpan...',
+          loading: 'Creating supplier...',
           success: 'Supplier created successfully!',
           error: 'Failed to create supplier.',
         });
@@ -55,7 +55,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">Nama Pemasok</FormLabel>
+              <FormLabel className="font-mono font-bold">Supplier Name</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Indofood" {...field} className="rounded-none border-2 border-brand-black" />
               </FormControl>
@@ -68,7 +68,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
           name="contactPerson"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">Narahubung</FormLabel>
+              <FormLabel className="font-mono font-bold">Contact Person</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Budi Santoso" {...field} className="rounded-none border-2 border-brand-black" />
               </FormControl>
@@ -81,7 +81,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">Telepon</FormLabel>
+              <FormLabel className="font-mono font-bold">Phone Number</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., 081234567890" {...field} className="rounded-none border-2 border-brand-black" />
               </FormControl>
@@ -94,7 +94,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
           disabled={isSubmitting}
           className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
         >
-          {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+          {isSubmitting ? 'Saving...' : 'Save Supplier'}
         </Button>
       </form>
     </Form>
