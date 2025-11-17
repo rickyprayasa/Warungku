@@ -1,6 +1,16 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useWarungStore } from '@/lib/store';
+import { Button } from './ui/button';
+import { LogOut } from 'lucide-react';
 export function AppHeader() {
+  const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
+  const logout = useWarungStore((state) => state.logout);
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
       'font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200',
@@ -25,21 +35,33 @@ export function AppHeader() {
               </NavLink>
             </nav>
           </div>
-          <a
-            href="https://rsquareidea.my.id/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 group"
-          >
-            <span className="font-mono text-xs font-bold text-brand-black hidden sm:block">
-              Powered by
-            </span>
-            <img
-              src="https://i.imgur.com/MmO4CAn.png"
-              alt="RSQUARE Logo"
-              className="h-8 w-auto transition-transform duration-300 group-hover:scale-110"
-            />
-          </a>
+          <div className="flex items-center gap-4">
+            {isAuthenticated && (
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                className="font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200 bg-brand-white text-brand-black hover:bg-destructive hover:text-destructive-foreground hover:shadow-hard-sm"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            )}
+            <a
+              href="https://rsquareidea.my.id/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 group"
+            >
+              <span className="font-mono text-xs font-bold text-brand-black hidden sm:block">
+                Powered by
+              </span>
+              <img
+                src="https://i.imgur.com/MmO4CAn.png"
+                alt="RSQUARE Logo"
+                className="h-8 w-auto transition-transform duration-300 group-hover:scale-110"
+              />
+            </a>
+          </div>
         </div>
         <nav className="md:hidden flex items-center space-x-2 pb-4">
             <NavLink to="/" className={navLinkClass}>

@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { productSchema, type ProductFormValues, type Product } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -34,15 +33,23 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const isEditing = !!product;
   const onSubmit = async (values: ProductFormValues) => {
     try {
-      const promise = isEditing
-        ? updateProduct(product.id, values)
-        : addProduct(values);
-      toast.promise(promise, {
-        loading: `${isEditing ? 'Updating' : 'Creating'} product...`,
-        success: `Product ${isEditing ? 'updated' : 'created'} successfully!`,
-        error: `Failed to ${isEditing ? 'update' : 'create'} product.`,
-      });
-      await promise;
+      if (!product && !isEditing) {
+        const promise = addProduct(values);
+        toast.promise(promise, {
+          loading: 'Creating product...',
+          success: 'Product created successfully!',
+          error: 'Failed to create product.',
+        });
+        await promise;
+      } else if (product) {
+        const promise = updateProduct(product.id, values);
+        toast.promise(promise, {
+          loading: 'Updating product...',
+          success: 'Product updated successfully!',
+          error: 'Failed to update product.',
+        });
+        await promise;
+      }
       onSuccess();
     } catch (error) {
       console.error('Form submission error:', error);
@@ -71,7 +78,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
             <FormItem>
               <FormLabel className="font-mono font-bold">Harga</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 3000" {...field} className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange" />
+                <Input type="number" placeholder="e.g., 3000" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange" />
               </FormControl>
               <FormMessage />
             </FormItem>

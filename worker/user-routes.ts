@@ -17,7 +17,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   app.post('/api/products', async (c) => {
     const { name, price, category, imageUrl } = (await c.req.json()) as Partial<Product>;
-    if (!name || !price || !category || !imageUrl) {
+    if (!name || price === undefined || !category || !imageUrl) {
       return bad(c, 'Missing required product fields.');
     }
     const productData: Product = {
@@ -49,6 +49,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, { id });
   });
   // TRANSACTIONS
+  app.get('/api/transactions', async (c) => {
+    const page = await TransactionEntity.list(c.env);
+    // Sort by most recent
+    const sortedItems = page.items.sort((a, b) => b.createdAt - a.createdAt);
+    return ok(c, sortedItems);
+  });
   app.post('/api/transactions', async (c) => {
     const { items, total } = (await c.req.json()) as { items?: TransactionItem[], total?: number };
     if (!items || !Array.isArray(items) || items.length === 0) {

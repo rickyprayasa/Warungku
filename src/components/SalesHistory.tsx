@@ -18,7 +18,7 @@ export function SalesHistory() {
   const error = useWarungStore((state) => state.transactionsError);
   useEffect(() => {
     fetchTransactions();
-  }, [fetchTransactions]); // This was correct, no change needed here. Re-evaluating.
+  }, [fetchTransactions]);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
