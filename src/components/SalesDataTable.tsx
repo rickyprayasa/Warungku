@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from './ui/button';
 import { ChevronDown } from 'lucide-react';
+import type { Sale } from '@shared/types';
 export function SalesDataTable() {
   const sales = useWarungStore((state) => state.sales);
   const formatCurrency = (value: number) => {
@@ -10,6 +11,10 @@ export function SalesDataTable() {
   };
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString('id-ID');
+  };
+  const calculateProfit = (sale: Sale) => {
+    const totalCost = sale.items.reduce((sum, item) => sum + (item.cost * item.quantity), 0);
+    return sale.total - totalCost;
   };
   if (sales.length === 0) {
     return (
@@ -26,7 +31,8 @@ export function SalesDataTable() {
             <TableHead className="w-[50px]"></TableHead>
             <TableHead className="font-bold text-brand-black">Date</TableHead>
             <TableHead className="font-bold text-brand-black">Items</TableHead>
-            <TableHead className="font-bold text-brand-black text-right">Total</TableHead>
+            <TableHead className="font-bold text-brand-black text-right">Total Sale</TableHead>
+            <TableHead className="font-bold text-brand-black text-right">Profit</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -45,18 +51,20 @@ export function SalesDataTable() {
                   <TableCell className="font-mono">{formatDate(sale.createdAt)}</TableCell>
                   <TableCell className="font-mono">{sale.items.length}</TableCell>
                   <TableCell className="font-mono text-right font-bold">{formatCurrency(sale.total)}</TableCell>
+                  <TableCell className="font-mono text-right font-bold text-green-600">{formatCurrency(calculateProfit(sale))}</TableCell>
                 </TableRow>
                 <CollapsibleContent asChild>
                   <tr className="bg-muted/40">
-                    <td colSpan={4} className="p-0">
+                    <td colSpan={5} className="p-0">
                       <div className="p-4">
                         <h4 className="font-bold mb-2">Sale Details:</h4>
                         <Table>
                           <TableHeader>
                             <TableRow>
                               <TableHead className="font-bold text-brand-black">Product</TableHead>
-                              <TableHead className="font-bold text-brand-black">Quantity</TableHead>
+                              <TableHead className="font-bold text-brand-black">Qty</TableHead>
                               <TableHead className="font-bold text-brand-black">Price</TableHead>
+                              <TableHead className="font-bold text-brand-black">Cost</TableHead>
                               <TableHead className="font-bold text-brand-black text-right">Subtotal</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -66,6 +74,7 @@ export function SalesDataTable() {
                                 <TableCell>{item.productName}</TableCell>
                                 <TableCell>{item.quantity}</TableCell>
                                 <TableCell>{formatCurrency(item.price)}</TableCell>
+                                <TableCell>{formatCurrency(item.cost)}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(item.price * item.quantity)}</TableCell>
                               </TableRow>
                             ))}

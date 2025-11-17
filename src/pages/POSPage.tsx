@@ -6,6 +6,32 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { ProductDetailDialog } from '@/components/ProductDetailDialog';
+import type { Product } from '@shared/types';
+const MobileProductRow = ({ product }: { product: Product }) => {
+  const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <TableRow className="border-b-2 border-brand-black last:border-b-0 cursor-pointer">
+          <TableCell className="w-[60px] p-2">
+            <img src={product.imageUrl} alt={product.name} className="w-12 h-12 object-cover border-2 border-brand-black" />
+          </TableCell>
+          <TableCell className="p-2">
+            <p className="font-bold text-sm">{product.name}</p>
+            <p className="font-mono text-xs text-muted-foreground">{product.category}</p>
+          </TableCell>
+          <TableCell className="font-mono text-right p-2 font-bold text-brand-orange">{formatCurrency(product.price)}</TableCell>
+        </TableRow>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
+        <ProductDetailDialog product={product} />
+      </DialogContent>
+    </Dialog>
+  );
+};
 export function POSPage() {
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const products = useWarungStore((state) => state.products);
@@ -20,9 +46,7 @@ export function POSPage() {
     return ['All', ...Array.from(new Set(allCategories))];
   }, [products]);
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'All') {
-      return products;
-    }
+    if (selectedCategory === 'All') return products;
     return products.filter((p) => p.category === selectedCategory);
   }, [products, selectedCategory]);
   return (
@@ -69,11 +93,20 @@ export function POSPage() {
               </Alert>
             )}
             {!isLoading && !error && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+              <>
+                {/* Desktop Grid View */}
+                <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+                </div>
+                {/* Mobile List View */}
+                <div className="sm:hidden border-4 border-brand-black bg-brand-white">
+                  <Table>
+                    <TableBody>
+                      {filteredProducts.map((product) => <MobileProductRow key={product.id} product={product} />)}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
              {!isLoading && !error && filteredProducts.length === 0 && (
                 <div className="col-span-full text-center border-2 border-dashed border-brand-black p-12">

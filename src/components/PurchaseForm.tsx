@@ -13,7 +13,9 @@ interface PurchaseFormProps {
 }
 export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
   const products = useWarungStore((state) => state.products);
+  const suppliers = useWarungStore((state) => state.suppliers);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
+  const fetchSuppliers = useWarungStore((state) => state.fetchSuppliers);
   const addPurchase = useWarungStore((state) => state.addPurchase);
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
@@ -25,10 +27,9 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
     },
   });
   useEffect(() => {
-    if (products.length === 0) {
-      fetchProducts();
-    }
-  }, [products, fetchProducts]);
+    if (products.length === 0) fetchProducts();
+    if (suppliers.length === 0) fetchSuppliers();
+  }, [products.length, suppliers.length, fetchProducts, fetchSuppliers]);
   const onSubmit = async (values: PurchaseFormValues) => {
     const promise = addPurchase(values);
     toast.promise(promise, {
@@ -51,7 +52,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger className="rounded-none border-2 border-brand-black">
-                    <SelectValue placeholder="Select a product to purchase" />
+                    <SelectValue placeholder="Select a product" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
@@ -93,10 +94,17 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
           name="supplier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">Supplier (Optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Indofood" {...field} className="rounded-none border-2 border-brand-black" />
-              </FormControl>
+              <FormLabel className="font-mono font-bold">Supplier</FormLabel>
+               <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="rounded-none border-2 border-brand-black">
+                    <SelectValue placeholder="Select a supplier" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
+                  {suppliers.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
