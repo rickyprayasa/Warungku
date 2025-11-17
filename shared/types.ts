@@ -25,7 +25,7 @@ export interface Transaction {
 // Zod schema for product validation
 export const productSchema = z.object({
   name: z.string().min(3, { message: "Nama produk minimal 3 karakter." }),
-  price: z.coerce.number().min(0, { message: "Harga harus angka positif." }),
+  price: z.coerce.number().min(0, { message: "Harga harus angka positif." }).optional().default(0),
   category: z.string().min(3, { message: "Kategori minimal 3 karakter." }),
   imageUrl: z.string().url({ message: "URL gambar tidak valid." }),
 });

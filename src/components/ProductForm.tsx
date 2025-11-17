@@ -78,7 +78,13 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
             <FormItem>
               <FormLabel className="font-mono font-bold">Harga</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 3000" {...field} onChange={e => field.onChange(e.target.valueAsNumber || 0)} className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange" />
+                <Input
+                  type="number"
+                  placeholder="e.g., 3000"
+                  {...field}
+                  onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
+                  className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
