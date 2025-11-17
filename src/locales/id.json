@@ -1,0 +1,157 @@
+{
+  "header": {
+    "menu": "Menu",
+    "dashboard": "Dasbor",
+    "logout": "Keluar"
+  },
+  "footer": {
+    "tagline": "Point-of-sale modern, diciptakan kembali. Dibuat dengan cinta untuk generasi wirausahawan berikutnya.",
+    "builtWith": "Dibuat dengan ❤️ di Cloudflare",
+    "poweredBy": "Didukung oleh",
+    "marketing": "Jelajahi galeri template aplikasi Google Sheets kami untuk meningkatkan produktivitas Anda!"
+  },
+  "menuPage": {
+    "title": "Menu Jajanan",
+    "subtitle": "Lihat detail jajanan yang tersedia.",
+    "searchPlaceholder": "Cari nama atau kategori jajanan...",
+    "allCategory": "Semua",
+    "noProducts": "Produk tidak ditemukan."
+  },
+  "loginPage": {
+    "title": "Akses Admin",
+    "subtitle": "Masukkan kredensial untuk mengelola WarungOS.",
+    "emailLabel": "Email",
+    "passwordLabel": "Kata Sandi",
+    "loginButton": "Masuk"
+  },
+  "dashboard": {
+    "title": "Dasbor Warungku",
+    "subtitle": "Kelola produk, penjualan, dan keuangan toko Anda.",
+    "tabs": {
+      "products": "Produk",
+      "sales": "Penjualan",
+      "purchases": "Pembelian",
+      "suppliers": "Pemasok",
+      "cashflow": "Arus Kas",
+      "finance": "Keuangan"
+    }
+  },
+  "productManagement": {
+    "title": "Inventaris Produk",
+    "subtitle": "Tambah, edit, atau hapus produk Anda.",
+    "newProduct": "Produk Baru"
+  },
+  "salesDashboard": {
+    "title": "Riwayat Penjualan",
+    "subtitle": "Tinjau transaksi sebelumnya dan catat penjualan baru.",
+    "export": "Ekspor",
+    "recordSale": "Catat Penjualan"
+  },
+  "purchasesDashboard": {
+    "title": "Riwayat Pembelian",
+    "subtitle": "Lacak pembelian inventaris dan pesanan pemasok Anda.",
+    "recordPurchase": "Catat Pembelian"
+  },
+  "suppliersDashboard": {
+    "title": "Manajemen Pemasok",
+    "subtitle": "Tambah, edit, atau hapus pemasok Anda.",
+    "newSupplier": "Pemasok Baru"
+  },
+  "cashflowDashboard": {
+    "title": "Arus Kas",
+    "subtitle": "Pantau aliran kas masuk dan keluar dari bisnis Anda.",
+    "totalCashIn": "Total Kas Masuk",
+    "totalCashOut": "Total Kas Keluar",
+    "netCashFlow": "Arus Kas Bersih",
+    "recentTransactions": "Transaksi Terkini",
+    "type": "Tipe",
+    "date": "Tanggal",
+    "description": "Deskripsi",
+    "amount": "Jumlah",
+    "sale": "Penjualan",
+    "purchase": "Pembelian",
+    "noTransactions": "Belum ada transaksi yang tercatat."
+  },
+  "financeDashboard": {
+    "title": "Ringkasan Keuangan",
+    "subtitle": "Gambaran umum kesehatan keuangan bisnis Anda.",
+    "exportReport": "Ekspor Laporan",
+    "grossRevenue": "Pendapatan Kotor",
+    "cogs": "Harga Pokok Penjualan",
+    "netProfit": "Laba Bersih",
+    "profitMargin": "Margin Laba",
+    "monthlyPerformance": "Kinerja Bulanan",
+    "cashOnHand": "Kas di Tangan",
+    "cashOnHandSubtitle": "Berdasarkan saldo awal, penjualan, dan pembelian.",
+    "setInitialBalance": "Atur Saldo Awal",
+    "setInitialBalancePlaceholder": "Masukkan kas awal",
+    "setButton": "Atur"
+  },
+  "forms": {
+    "save": "Simpan",
+    "saving": "Menyimpan...",
+    "product": {
+      "addTitle": "Tambah Produk Baru",
+      "editTitle": "Edit Produk",
+      "name": "Nama Produk",
+      "sellPrice": "Harga Jual",
+      "buyPrice": "Harga Beli",
+      "category": "Kategori",
+      "imageUrl": "URL Gambar"
+    },
+    "sale": {
+      "title": "Catat Penjualan Baru",
+      "product": "Produk",
+      "selectProduct": "Pilih produk",
+      "qty": "Jml",
+      "addItem": "Tambah Item",
+      "total": "Total"
+    },
+    "purchase": {
+      "title": "Catat Pembelian Baru",
+      "product": "Produk",
+      "selectProduct": "Pilih produk",
+      "quantity": "Kuantitas",
+      "unitBuyPrice": "Harga Beli Satuan",
+      "supplier": "Pemasok",
+      "selectSupplier": "Pilih pemasok",
+      "totalCost": "Total Biaya"
+    },
+    "supplier": {
+      "addTitle": "Tambah Pemasok Baru",
+      "editTitle": "Edit Pemasok",
+      "name": "Nama Pemasok",
+      "contactPerson": "Narahubung",
+      "phone": "Nomor Telepon"
+    }
+  },
+  "tables": {
+    "actions": "Aksi",
+    "image": "Gambar",
+    "name": "Nama",
+    "category": "Kategori",
+    "price": "Harga",
+    "date": "Tanggal",
+    "items": "{count} item terjual",
+    "totalSale": "Total Penjualan",
+    "profit": "Laba",
+    "product": "Produk",
+    "qty": "Jml",
+    "cost": "Biaya",
+    "subtotal": "Subtotal",
+    "quantity": "Kuantitas",
+    "supplier": "Pemasok",
+    "totalCost": "Total Biaya",
+    "contactPerson": "Narahubung",
+    "phone": "Telepon"
+  },
+  "dialogs": {
+    "deleteTitle": "Apakah Anda yakin?",
+    "deleteProduct": "Tindakan ini tidak dapat dibatalkan. Ini akan menghapus produk \"{productName}\" secara permanen.",
+    "deleteSupplier": "Tindakan ini akan menghapus pemasok \"{supplierName}\" secara permanen.",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Edit",
+    "productDetails": "Detail untuk {productName} akan ditampilkan di sini. Saat ini, kami hanya menampilkan informasi dasar."
+  }
+}

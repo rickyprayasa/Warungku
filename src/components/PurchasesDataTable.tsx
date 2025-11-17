@@ -1,0 +1,88 @@
+import { useState, useMemo } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import type { Purchase } from '@shared/types';
+import { Button } from './ui/button';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+interface PurchasesDataTableProps {
+  purchases: Purchase[];
+}
+export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const pageCount = Math.ceil(purchases.length / rowsPerPage);
+  const paginatedPurchases = useMemo(() => {
+    const start = page * rowsPerPage;
+    const end = start + rowsPerPage;
+    return purchases.slice(start, end);
+  }, [purchases, page, rowsPerPage]);
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+  };
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('id-ID');
+  };
+  if (purchases.length === 0) {
+    return (
+      <div className="text-center border-2 border-dashed border-brand-black p-12">
+        <p className="font-mono text-muted-foreground">Belum ada transaksi pada rentang tanggal ini.</p>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="border-4 border-brand-black bg-brand-white">
+        <Table>
+          <TableHeader className="border-b-4 border-brand-black bg-muted/40">
+            <TableRow>
+              <TableHead className="font-bold text-brand-black">Tanggal</TableHead>
+              <TableHead className="font-bold text-brand-black">Nama</TableHead>
+              <TableHead className="font-bold text-brand-black">Jumlah</TableHead>
+              <TableHead className="font-bold text-brand-black">Pemasok</TableHead>
+              <TableHead className="font-bold text-brand-black text-right">Total Biaya</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedPurchases.map((purchase) => (
+              <TableRow key={purchase.id} className="border-b-2 border-brand-black last:border-b-0">
+                <TableCell className="font-mono">{formatDate(purchase.createdAt)}</TableCell>
+                <TableCell className="font-bold">{purchase.productName}</TableCell>
+                <TableCell className="font-mono">{purchase.quantity}</TableCell>
+                <TableCell className="font-mono">{purchase.supplier}</TableCell>
+                <TableCell className="font-mono text-right font-bold text-red-600">{formatCurrency(purchase.totalCost)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2 py-4 font-mono">
+        <div className="flex items-center space-x-2">
+          <p className="text-sm font-medium">Baris per halaman</p>
+          <Select
+            value={`${rowsPerPage}`}
+            onValueChange={(value) => {
+              setRowsPerPage(Number(value))
+              setPage(0)
+            }}
+          >
+            <SelectTrigger className="h-8 w-[70px] rounded-none border-2 border-brand-black"><SelectValue placeholder={String(rowsPerPage)} /></SelectTrigger>
+            <SelectContent side="top" className="rounded-none border-2 border-brand-black">
+              {[5, 10, 20].map((pageSize) => (
+                <SelectItem key={pageSize} value={`${pageSize}`}>{pageSize}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          Halaman {page + 1} dari {pageCount}
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex rounded-none border-2 border-brand-black" onClick={() => setPage(0)} disabled={page === 0}><span className="sr-only">Go to first page</span><ChevronsLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" className="h-8 w-8 p-0 rounded-none border-2 border-brand-black" onClick={() => setPage(page - 1)} disabled={page === 0}><span className="sr-only">Go to previous page</span><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" className="h-8 w-8 p-0 rounded-none border-2 border-brand-black" onClick={() => setPage(page + 1)} disabled={page >= pageCount - 1}><span className="sr-only">Go to next page</span><ChevronRight className="h-4 w-4" /></Button>
+          <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex rounded-none border-2 border-brand-black" onClick={() => setPage(pageCount - 1)} disabled={page >= pageCount - 1}><span className="sr-only">Go to last page</span><ChevronsRight className="h-4 w-4" /></Button>
+        </div>
+      </div>
+    </>
+  );
+}
