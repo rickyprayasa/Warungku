@@ -82,6 +82,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                   type="number"
                   placeholder="e.g., 3000"
                   {...field}
+                  onChange={event => field.onChange(+event.target.value)}
                   className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
                 />
               </FormControl>

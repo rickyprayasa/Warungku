@@ -1,10 +1,28 @@
+import { useWarungStore } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Landmark, PiggyBank, FileText } from "lucide-react";
+import { useMemo } from "react";
 export function FinanceDashboard() {
-    const kpiData = [
-    { title: "Gross Profit (Month)", value: "Rp 8,500,000", icon: PiggyBank },
-    { title: "Expenses (Month)", value: "Rp 3,200,000", icon: FileText },
-    { title: "Net Profit (Month)", value: "Rp 5,300,000", icon: Landmark },
+  const sales = useWarungStore((state) => state.sales);
+  const purchases = useWarungStore((state) => state.purchases);
+  const { grossProfit, expenses, netProfit } = useMemo(() => {
+    const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
+    const totalCostOfGoods = purchases.reduce((sum, purchase) => sum + purchase.cost, 0);
+    const gross = totalRevenue; // Simplified: Gross Profit is often Revenue - COGS, but here we show total revenue as Gross Profit.
+    const net = totalRevenue - totalCostOfGoods;
+    return {
+      grossProfit: gross,
+      expenses: totalCostOfGoods,
+      netProfit: net,
+    };
+  }, [sales, purchases]);
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+  };
+  const kpiData = [
+    { title: "Gross Revenue", value: formatCurrency(grossProfit), icon: PiggyBank },
+    { title: "Total Expenses (COGS)", value: formatCurrency(expenses), icon: FileText },
+    { title: "Net Profit", value: formatCurrency(netProfit), icon: Landmark },
   ];
   return (
     <div>
@@ -26,7 +44,7 @@ export function FinanceDashboard() {
         ))}
       </div>
       <div className="mt-8 text-center border-2 border-dashed border-brand-black p-12">
-        <p className="font-mono text-muted-foreground">Profit & Loss statements and other financial reports will be available here soon.</p>
+        <p className="font-mono text-muted-foreground">This is a simplified financial overview. More detailed reports (P&L, Balance Sheet) can be added in future versions.</p>
       </div>
     </div>
   );

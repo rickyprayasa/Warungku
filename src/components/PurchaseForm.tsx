@@ -53,7 +53,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
             <FormItem>
               <FormLabel className="font-mono font-bold">Quantity</FormLabel>
               <FormControl>
-                <Input type="number" {...field} className="rounded-none border-2 border-brand-black" />
+                <Input type="number" {...field} onChange={event => field.onChange(+event.target.value)} className="rounded-none border-2 border-brand-black" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -66,7 +66,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
             <FormItem>
               <FormLabel className="font-mono font-bold">Total Cost</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="e.g., 100000" {...field} className="rounded-none border-2 border-brand-black" />
+                <Input type="number" placeholder="e.g., 100000" {...field} onChange={event => field.onChange(+event.target.value)} className="rounded-none border-2 border-brand-black" />
               </FormControl>
               <FormMessage />
             </FormItem>
