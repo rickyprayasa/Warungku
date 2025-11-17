@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { ProductEntity } from "./entities";
+import { ProductEntity, SaleEntity, PurchaseEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import type { Product } from "@shared/types";
+import type { Product, Sale, SaleFormValues, Purchase, PurchaseFormValues } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // Ensure seed data is created on first load
   app.get('/api/init', async (c) => {
@@ -47,5 +47,40 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return notFound(c, 'Product not found.');
     }
     return ok(c, { id });
+  });
+  // SALES
+  app.get('/api/sales', async (c) => {
+    const page = await SaleEntity.list(c.env);
+    return ok(c, page.items.sort((a, b) => b.createdAt - a.createdAt));
+  });
+  app.post('/api/sales', async (c) => {
+    const { items } = (await c.req.json()) as SaleFormValues;
+    const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const saleData: Sale = {
+      id: crypto.randomUUID(),
+      items,
+      total,
+      createdAt: Date.now(),
+    };
+    const newSale = await SaleEntity.create(c.env, saleData);
+    return ok(c, newSale);
+  });
+  // PURCHASES
+  app.get('/api/purchases', async (c) => {
+    const page = await PurchaseEntity.list(c.env);
+    return ok(c, page.items.sort((a, b) => b.createdAt - a.createdAt));
+  });
+  app.post('/api/purchases', async (c) => {
+    const { productName, quantity, cost, supplier } = (await c.req.json()) as PurchaseFormValues;
+    const purchaseData: Purchase = {
+      id: crypto.randomUUID(),
+      productName,
+      quantity,
+      cost,
+      supplier: supplier || 'N/A',
+      createdAt: Date.now(),
+    };
+    const newPurchase = await PurchaseEntity.create(c.env, purchaseData);
+    return ok(c, newPurchase);
   });
 }

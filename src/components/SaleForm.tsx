@@ -35,7 +35,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
   const onSubmit = async (values: SaleFormValues) => {
     const promise = addSale(values);
     toast.promise(promise, {
-      loading: 'Menyimpan...',
+      loading: 'Recording sale...',
       success: 'Sale recorded successfully!',
       error: 'Failed to record sale.',
     });
@@ -45,9 +45,8 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
   const handleProductChange = (productId: string, index: number) => {
     const product = products.find(p => p.id === productId);
     if (product) {
-      const currentItem = form.getValues(`items.${index}`);
       update(index, {
-        ...currentItem,
+        ...fields[index],
         productId: product.id,
         productName: product.name,
         price: product.price
@@ -65,11 +64,11 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
                 name={`items.${index}.productId`}
                 render={({ field }) => (
                   <FormItem className="flex-1">
-                    <FormLabel className="font-mono font-bold text-xs">Produk</FormLabel>
+                    <FormLabel className="font-mono font-bold text-xs">Product</FormLabel>
                     <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger className="rounded-none border-2 border-brand-black">
-                          <SelectValue placeholder="Pilih produk" />
+                          <SelectValue placeholder="Select a product" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
@@ -85,9 +84,9 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
                 name={`items.${index}.quantity`}
                 render={({ field }) => (
                   <FormItem className="w-24">
-                    <FormLabel className="font-mono font-bold text-xs">Jml</FormLabel>
+                    <FormLabel className="font-mono font-bold text-xs">Qty</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 1)} className="rounded-none border-2 border-brand-black" />
+                      <Input type="number" {...field} className="rounded-none border-2 border-brand-black" />
                     </FormControl>
                   </FormItem>
                 )}
@@ -104,7 +103,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
           onClick={() => append({ productId: '', productName: '', quantity: 1, price: 0 })}
           className="w-full rounded-none border-2 border-dashed border-brand-black"
         >
-          <PlusCircle className="w-4 h-4 mr-2" /> Tambah Item
+          <PlusCircle className="w-4 h-4 mr-2" /> Add Item
         </Button>
         <div className="text-right font-mono text-xl font-bold border-t-4 border-brand-black pt-4">
           Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total)}
@@ -114,7 +113,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
           disabled={form.formState.isSubmitting}
           className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
         >
-          {form.formState.isSubmitting ? 'Menyimpan...' : 'Simpan'}
+          {form.formState.isSubmitting ? 'Saving...' : 'Save Sale'}
         </Button>
       </form>
     </Form>
