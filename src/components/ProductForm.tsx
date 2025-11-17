@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { productSchema, type ProductFormValues, type Product } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -25,7 +26,6 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
     defaultValues: {
       name: product?.name || '',
       price: product?.price || 0,
-      cost: product?.cost || 0,
       category: product?.category || '',
       imageUrl: product?.imageUrl || '',
     },
@@ -34,23 +34,15 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const isEditing = !!product;
   const onSubmit = async (values: ProductFormValues) => {
     try {
-      if (isEditing && product) {
-        const promise = updateProduct(product.id, values);
-        toast.promise(promise, {
-          loading: 'Menyimpan...',
-          success: 'Product updated successfully!',
-          error: 'Failed to update product.',
-        });
-        await promise;
-      } else {
-        const promise = addProduct(values);
-        toast.promise(promise, {
-          loading: 'Menyimpan...',
-          success: 'Product created successfully!',
-          error: 'Failed to create product.',
-        });
-        await promise;
-      }
+      const promise = isEditing
+        ? updateProduct(product.id, values)
+        : addProduct(values);
+      toast.promise(promise, {
+        loading: `${isEditing ? 'Updating' : 'Creating'} product...`,
+        success: `Product ${isEditing ? 'updated' : 'created'} successfully!`,
+        error: `Failed to ${isEditing ? 'update' : 'create'} product.`,
+      });
+      await promise;
       onSuccess();
     } catch (error) {
       console.error('Form submission error:', error);
@@ -72,46 +64,19 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-mono font-bold">Harga Jual</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="e.g., 3000"
-                    {...field}
-                    onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                    className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="cost"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-mono font-bold">Harga Beli</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="e.g., 2500"
-                    {...field}
-                    onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                    className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="price"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-mono font-bold">Harga</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="e.g., 3000" {...field} className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="category"
@@ -143,7 +108,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           disabled={isSubmitting}
           className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
         >
-          {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+          {isSubmitting ? 'Menyimpan...' : 'Simpan Produk'}
         </Button>
       </form>
     </Form>

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
@@ -21,3 +22,11 @@ export interface Transaction {
   total: number;
   createdAt: number; // epoch millis
 }
+// Zod schema for product validation
+export const productSchema = z.object({
+  name: z.string().min(3, { message: "Nama produk minimal 3 karakter." }),
+  price: z.coerce.number().min(0, { message: "Harga harus angka positif." }),
+  category: z.string().min(3, { message: "Kategori minimal 3 karakter." }),
+  imageUrl: z.string().url({ message: "URL gambar tidak valid." }),
+});
+export type ProductFormValues = z.infer<typeof productSchema>;

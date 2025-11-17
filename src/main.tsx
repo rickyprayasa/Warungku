@@ -14,6 +14,7 @@ import { HomePage } from '@/pages/HomePage'
 import { POSPage } from '@/pages/POSPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -26,7 +27,11 @@ const router = createBrowserRouter([
       },
       {
         path: "dashboard",
-        element: <DashboardPage />,
+        element: (
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "login",
