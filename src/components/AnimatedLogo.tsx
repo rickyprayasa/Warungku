@@ -11,8 +11,12 @@ const donutGroupVariants: Variants = {
   },
   hover: {
     scale: 1.05,
-    rotate: -90,
-    transition: { duration: 0.3, ease: 'easeInOut' },
+    rotate: 270, // 360 - 90
+    transition: {
+      duration: 4,
+      ease: 'linear',
+      repeat: Infinity,
+    },
   },
 };
 // Bar chart properties - adjusted to fit inside the donut
@@ -40,6 +44,7 @@ export function AnimatedLogo() {
   const barX = [7, 10, 13, 16];
   // Offsets for each color segment, creating a layered effect
   const donutOffsets = [0, 0.25, 0.5, 0.75];
+  const separatorAngles = [0, 90, 180, 270];
   return (
     <motion.div
       initial="rest"
@@ -66,6 +71,19 @@ export function AnimatedLogo() {
               strokeLinecap="butt"
               strokeDasharray={DONUT_CIRCUMFERENCE}
               strokeDashoffset={DONUT_CIRCUMFERENCE * donutOffsets[i]}
+            />
+          ))}
+          {/* Segment Separators to improve visibility */}
+          {separatorAngles.map((angle) => (
+            <line
+              key={`sep-${angle}`}
+              x1="12"
+              y1="12"
+              x2="12"
+              y2={12 - DONUT_RADIUS - DONUT_STROKE_WIDTH / 2 + 0.5}
+              stroke="rgb(17, 17, 17)"
+              strokeWidth="1"
+              transform={`rotate(${angle} 12 12)`}
             />
           ))}
         </motion.g>
