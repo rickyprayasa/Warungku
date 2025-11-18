@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Download, PlusCircle } from 'lucide-react';
@@ -7,16 +7,32 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PurchasesDataTable } from './PurchasesDataTable';
 import { PurchaseForm } from './PurchaseForm';
 import { exportToCSV } from '@/lib/csv-export';
+import { DateRangePicker } from './ui/date-range-picker';
+import { DateRange } from 'react-day-picker';
+import { subDays } from 'date-fns';
 export function PurchasesDashboard() {
   const purchases = useWarungStore((state) => state.purchases);
   const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
   const isLoading = useWarungStore((state) => state.isLoading);
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
   useEffect(() => {
     fetchPurchases();
   }, [fetchPurchases]);
+  const filteredPurchases = useMemo(() => {
+    if (!dateRange?.from) return purchases;
+    const from = dateRange.from;
+    const to = dateRange.to || from;
+    return purchases.filter(purchase => {
+      const purchaseDate = new Date(purchase.createdAt);
+      return purchaseDate >= from && purchaseDate <= new Date(to.getTime() + 86400000 - 1);
+    });
+  }, [purchases, dateRange]);
   const handleExport = () => {
-    const dataToExport = purchases.map(p => ({
+    const dataToExport = filteredPurchases.map(p => ({
       ...p,
       date: new Date(p.createdAt).toISOString(),
     }));
@@ -29,7 +45,8 @@ export function PurchasesDashboard() {
           <h3 className="text-2xl font-display font-bold text-brand-black">Riwayat Pembelian</h3>
           <p className="font-mono text-sm text-muted-foreground">Lacak semua transaksi pembelian stok barang.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <DateRangePicker date={dateRange} onDateChange={setDateRange} />
           <Button onClick={handleExport} variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
             <Download className="w-4 h-4 mr-2" />
             Ekspor
@@ -60,7 +77,7 @@ export function PurchasesDashboard() {
           </div>
         </div>
       ) : (
-        <PurchasesDataTable />
+        <PurchasesDataTable purchases={filteredPurchases} />
       )}
     </div>
   );

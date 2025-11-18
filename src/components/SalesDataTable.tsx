@@ -1,12 +1,13 @@
-import { useWarungStore } from '@/lib/store';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from './ui/button';
 import { ChevronDown } from 'lucide-react';
 import type { Sale } from '@shared/types';
 import { motion } from 'framer-motion';
-export function SalesDataTable() {
-  const sales = useWarungStore((state) => state.sales);
+interface SalesDataTableProps {
+  sales: Sale[];
+}
+export function SalesDataTable({ sales }: SalesDataTableProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   };
@@ -20,7 +21,7 @@ export function SalesDataTable() {
   if (sales.length === 0) {
     return (
       <div className="text-center border-2 border-dashed border-brand-black p-12">
-        <p className="font-mono text-muted-foreground">Belum ada transaksi.</p>
+        <p className="font-mono text-muted-foreground">Belum ada transaksi pada rentang tanggal ini.</p>
       </div>
     );
   }

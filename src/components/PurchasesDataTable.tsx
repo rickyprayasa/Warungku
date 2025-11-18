@@ -1,7 +1,9 @@
-import { useWarungStore } from '@/lib/store';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-export function PurchasesDataTable() {
-  const purchases = useWarungStore((state) => state.purchases);
+import type { Purchase } from '@shared/types';
+interface PurchasesDataTableProps {
+  purchases: Purchase[];
+}
+export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   };
@@ -11,7 +13,7 @@ export function PurchasesDataTable() {
   if (purchases.length === 0) {
     return (
       <div className="text-center border-2 border-dashed border-brand-black p-12">
-        <p className="font-mono text-muted-foreground">Belum ada transaksi.</p>
+        <p className="font-mono text-muted-foreground">Belum ada transaksi pada rentang tanggal ini.</p>
       </div>
     );
   }
