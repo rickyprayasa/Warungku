@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
-import { useTranslation } from '@/lib/i18n';
 interface SupplierFormProps {
   supplier?: Supplier | null;
   onSuccess: () => void;
@@ -14,7 +13,6 @@ interface SupplierFormProps {
 export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
   const addSupplier = useWarungStore((state) => state.addSupplier);
   const updateSupplier = useWarungStore((state) => state.updateSupplier);
-  const { t } = useTranslation();
   const form = useForm<SupplierFormValues>({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
@@ -30,7 +28,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
       if (isEditing && supplier) {
         const promise = updateSupplier(supplier.id, values);
         toast.promise(promise, {
-          loading: t('forms.saving'),
+          loading: 'Menyimpan...',
           success: 'Supplier updated successfully!',
           error: 'Failed to update supplier.',
         });
@@ -38,7 +36,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
       } else {
         const promise = addSupplier(values);
         toast.promise(promise, {
-          loading: t('forms.saving'),
+          loading: 'Menyimpan...',
           success: 'Supplier created successfully!',
           error: 'Failed to create supplier.',
         });
@@ -57,7 +55,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">{t('forms.supplier.name')}</FormLabel>
+              <FormLabel className="font-mono font-bold">Nama Pemasok</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Indofood" {...field} className="rounded-none border-2 border-brand-black" />
               </FormControl>
@@ -70,7 +68,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
           name="contactPerson"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">{t('forms.supplier.contactPerson')}</FormLabel>
+              <FormLabel className="font-mono font-bold">Narahubung</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Budi Santoso" {...field} className="rounded-none border-2 border-brand-black" />
               </FormControl>
@@ -83,7 +81,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">{t('forms.supplier.phone')}</FormLabel>
+              <FormLabel className="font-mono font-bold">Telepon</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., 081234567890" {...field} className="rounded-none border-2 border-brand-black" />
               </FormControl>
@@ -96,7 +94,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
           disabled={isSubmitting}
           className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
         >
-          {isSubmitting ? t('forms.saving') : t('forms.save')}
+          {isSubmitting ? 'Menyimpan...' : 'Simpan'}
         </Button>
       </form>
     </Form>

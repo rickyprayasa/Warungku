@@ -3,7 +3,6 @@ import { immer } from 'zustand/middleware/immer';
 import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues } from '@shared/types';
 import { api } from './api-client';
 import { persist, createJSONStorage } from 'zustand/middleware'
-type Language = 'id' | 'en';
 interface WarungState {
   products: Product[];
   sales: Sale[];
@@ -13,7 +12,6 @@ interface WarungState {
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  language: Language;
 }
 interface WarungActions {
   fetchProducts: () => Promise<void>;
@@ -23,7 +21,6 @@ interface WarungActions {
   setInitialBalance: (balance: number) => void;
   login: () => void;
   logout: () => void;
-  setLanguage: (lang: Language) => void;
   addProduct: (productData: ProductFormValues) => Promise<Product>;
   updateProduct: (productId: string, productData: ProductFormValues) => Promise<Product>;
   deleteProduct: (productId: string) => Promise<void>;
@@ -44,7 +41,6 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       isLoading: true,
       error: null,
       isAuthenticated: false,
-      language: 'id',
       fetchProducts: async () => {
         try {
           set({ isLoading: true, error: null });
@@ -88,7 +84,6 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       setInitialBalance: (balance) => set({ initialBalance: balance }),
       login: () => set({ isAuthenticated: true }),
       logout: () => set({ isAuthenticated: false }),
-      setLanguage: (lang) => set({ language: lang }),
       addProduct: async (productData) => {
         const newProduct = await api<Product>('/api/products', { method: 'POST', body: JSON.stringify(productData) });
         set((state) => { state.products.push(newProduct); });
@@ -140,7 +135,6 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       partialize: (state) => ({
         initialBalance: state.initialBalance,
         isAuthenticated: state.isAuthenticated,
-        language: state.language,
       }),
     }
   )

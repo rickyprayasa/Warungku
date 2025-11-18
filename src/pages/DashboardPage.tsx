@@ -7,30 +7,28 @@ import { FinanceDashboard } from "@/components/FinanceDashboard";
 import { SuppliersDashboard } from "@/components/SuppliersDashboard";
 import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck } from "lucide-react";
 import { motion } from "framer-motion";
-import { useTranslation } from "@/lib/i18n";
 export function DashboardPage() {
-  const { t } = useTranslation();
   const tabContentVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
   };
   const tabs = [
-    { value: "products", label: t('dashboard.tabs.products'), icon: Package },
-    { value: "sales", label: t('dashboard.tabs.sales'), icon: DollarSign },
-    { value: "purchases", label: t('dashboard.tabs.purchases'), icon: ShoppingCart },
-    { value: "suppliers", label: t('dashboard.tabs.suppliers'), icon: Truck },
-    { value: "cashflow", label: t('dashboard.tabs.cashflow'), icon: ArrowRightLeft },
-    { value: "finance", label: t('dashboard.tabs.finance'), icon: Banknote },
+    { value: "products", label: "Produk", icon: Package },
+    { value: "sales", label: "Penjualan", icon: DollarSign },
+    { value: "purchases", label: "Pembelian", icon: ShoppingCart },
+    { value: "suppliers", label: "Pemasok", icon: Truck },
+    { value: "cashflow", label: "Arus Kas", icon: ArrowRightLeft },
+    { value: "finance", label: "Keuangan", icon: Banknote },
   ];
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="py-8 md:py-10 lg:py-12">
         <div className="mb-8">
           <h2 className="text-3xl font-display font-bold text-brand-black">
-            {t('dashboard.title')}
+            Dasbor Warungku
           </h2>
           <p className="font-mono text-muted-foreground">
-            {t('dashboard.subtitle')}
+            Kelola produk, penjualan, dan keuangan toko Anda.
           </p>
         </div>
         <Tabs defaultValue="products" className="w-full">

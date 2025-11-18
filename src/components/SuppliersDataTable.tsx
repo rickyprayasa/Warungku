@@ -9,14 +9,12 @@ import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { SupplierForm } from './SupplierForm';
-import { useTranslation } from '@/lib/i18n';
 export function SuppliersDataTable() {
   const suppliers = useWarungStore((state) => state.suppliers);
   const deleteSupplier = useWarungStore((state) => state.deleteSupplier);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
-  const { t } = useTranslation();
   const handleEdit = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
     setEditDialogOpen(true);
@@ -44,10 +42,10 @@ export function SuppliersDataTable() {
         <Table>
           <TableHeader className="border-b-4 border-brand-black bg-muted/40">
             <TableRow>
-              <TableHead className="font-bold text-brand-black">{t('tables.name')}</TableHead>
-              <TableHead className="font-bold text-brand-black">{t('tables.contactPerson')}</TableHead>
-              <TableHead className="font-bold text-brand-black">{t('tables.phone')}</TableHead>
-              <TableHead className="w-[50px] font-bold text-brand-black text-right">{t('tables.actions')}</TableHead>
+              <TableHead className="font-bold text-brand-black">Nama</TableHead>
+              <TableHead className="font-bold text-brand-black">Narahubung</TableHead>
+              <TableHead className="font-bold text-brand-black">Telepon</TableHead>
+              <TableHead className="w-[50px] font-bold text-brand-black text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -67,11 +65,11 @@ export function SuppliersDataTable() {
                     <DropdownMenuContent align="end" className="rounded-none border-2 border-brand-black bg-brand-white">
                       <DropdownMenuItem onClick={() => handleEdit(supplier)} className="cursor-pointer">
                         <Pencil className="mr-2 h-4 w-4" />
-                        <span>{t('dialogs.edit')}</span>
+                        <span>Edit</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleDelete(supplier)} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
                         <Trash2 className="mr-2 h-4 w-4" />
-                        <span>{t('dialogs.delete')}</span>
+                        <span>Hapus</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -84,7 +82,7 @@ export function SuppliersDataTable() {
       <Dialog open={isEditDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-bold">{t('forms.supplier.editTitle')}</DialogTitle>
+            <DialogTitle className="font-display text-2xl font-bold">Edit Pemasok</DialogTitle>
           </DialogHeader>
           <SupplierForm supplier={selectedSupplier} onSuccess={() => setEditDialogOpen(false)} />
         </DialogContent>
@@ -92,15 +90,15 @@ export function SuppliersDataTable() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="rounded-none border-4 border-brand-black bg-brand-white">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-display text-2xl font-bold">{t('dialogs.deleteTitle')}</AlertDialogTitle>
+            <AlertDialogTitle className="font-display text-2xl font-bold">Apakah Anda yakin?</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('dialogs.deleteSupplier', { supplierName: selectedSupplier?.name ?? '' })}
+              Tindakan ini akan menghapus pemasok "{selectedSupplier?.name ?? ''}" secara permanen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-none border-2 border-brand-black">{t('dialogs.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-none border-2 border-brand-black">
-              {t('dialogs.delete')}
+              Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

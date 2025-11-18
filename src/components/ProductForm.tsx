@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/form';
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
-import { useTranslation } from '@/lib/i18n';
 interface ProductFormProps {
   product?: Product | null;
   onSuccess: () => void;
@@ -21,7 +20,6 @@ interface ProductFormProps {
 export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const addProduct = useWarungStore((state) => state.addProduct);
   const updateProduct = useWarungStore((state) => state.updateProduct);
-  const { t } = useTranslation();
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -39,7 +37,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
       if (isEditing && product) {
         const promise = updateProduct(product.id, values);
         toast.promise(promise, {
-          loading: t('forms.saving'),
+          loading: 'Menyimpan...',
           success: 'Product updated successfully!',
           error: 'Failed to update product.',
         });
@@ -47,7 +45,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
       } else {
         const promise = addProduct(values);
         toast.promise(promise, {
-          loading: t('forms.saving'),
+          loading: 'Menyimpan...',
           success: 'Product created successfully!',
           error: 'Failed to create product.',
         });
@@ -66,7 +64,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">{t('forms.product.name')}</FormLabel>
+              <FormLabel className="font-mono font-bold">Nama Produk</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Indomie Goreng" {...field} className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange" />
               </FormControl>
@@ -80,7 +78,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
             name="price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-mono font-bold">{t('forms.product.sellPrice')}</FormLabel>
+                <FormLabel className="font-mono font-bold">Harga Jual</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -99,7 +97,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
             name="cost"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-mono font-bold">{t('forms.product.buyPrice')}</FormLabel>
+                <FormLabel className="font-mono font-bold">Harga Beli</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -119,7 +117,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           name="category"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">{t('forms.product.category')}</FormLabel>
+              <FormLabel className="font-mono font-bold">Kategori</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Makanan" {...field} className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange" />
               </FormControl>
@@ -132,7 +130,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">{t('forms.product.imageUrl')}</FormLabel>
+              <FormLabel className="font-mono font-bold">URL Gambar</FormLabel>
               <FormControl>
                 <Input placeholder="https://..." {...field} className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange" />
               </FormControl>
@@ -145,7 +143,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           disabled={isSubmitting}
           className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
         >
-          {isSubmitting ? t('forms.saving') : t('forms.save')}
+          {isSubmitting ? 'Menyimpan...' : 'Simpan'}
         </Button>
       </form>
     </Form>

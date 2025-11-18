@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { ProductDetailDialog } from '@/components/ProductDetailDialog';
 import type { Product } from '@shared/types';
 import { Input } from '@/components/ui/input';
-import { useTranslation } from '@/lib/i18n';
 const MobileProductRow = ({ product }: { product: Product }) => {
   const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   return (
@@ -41,7 +40,6 @@ export function POSPage() {
   const error = useWarungStore((state) => state.error);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
-  const { t } = useTranslation();
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
@@ -70,16 +68,16 @@ export function POSPage() {
             <div className="mb-8 text-center">
               <div className="flex flex-col items-center justify-center mb-4">
                 <img src="https://i.imgur.com/Xzv9T8m.png" alt="Jajanan Logo" className="h-20 w-auto mb-4" />
-                <h2 className="text-4xl font-display font-bold text-brand-black">{t('menuPage.title')}</h2>
+                <h2 className="text-4xl font-display font-bold text-brand-black">Menu Jajanan</h2>
               </div>
-              <p className="text-muted-foreground font-mono">{t('menuPage.subtitle')}</p>
+              <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia.</p>
             </div>
             <div className="max-w-2xl mx-auto mb-8">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder={t('menuPage.searchPlaceholder')}
+                  placeholder="Cari nama atau kategori jajanan..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full rounded-none border-2 border-brand-black h-12 pl-10 font-mono"
@@ -98,7 +96,7 @@ export function POSPage() {
                       : 'bg-brand-white text-brand-black hover:bg-brand-orange hover:text-brand-black hover:shadow-hard-sm'
                   )}
                 >
-                  {category === 'All' ? t('menuPage.allCategory') : category}
+                  {category === 'All' ? 'Semua' : category}
                 </Button>
               ))}
             </div>
@@ -138,7 +136,7 @@ export function POSPage() {
             )}
              {!isLoading && !error && filteredProducts.length === 0 && (
                 <div className="col-span-full text-center border-2 border-dashed border-brand-black p-12">
-                    <p className="font-mono text-muted-foreground">{t('menuPage.noProducts')}</p>
+                    <p className="font-mono text-muted-foreground">Produk tidak ditemukan.</p>
                 </div>
              )}
           </div>

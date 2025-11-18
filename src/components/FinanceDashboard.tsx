@@ -8,7 +8,6 @@ import { useShallow } from "zustand/react/shallow";
 import { FinancialChart } from "./FinancialChart";
 import { exportToCSV } from "@/lib/csv-export";
 import { format } from 'date-fns';
-import { useTranslation } from "@/lib/i18n";
 export function FinanceDashboard() {
   const { sales, initialBalance, setInitialBalance, purchases } = useWarungStore(
     useShallow((state) => ({
@@ -18,7 +17,6 @@ export function FinanceDashboard() {
       purchases: state.purchases,
     }))
   );
-  const { t } = useTranslation();
   const [balanceInput, setBalanceInput] = useState(initialBalance.toString());
   const { grossRevenue, cogs, netProfit, profitMargin, cashOnHand, monthlyData } = useMemo(() => {
     const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
@@ -73,21 +71,21 @@ export function FinanceDashboard() {
     exportToCSV(dataToExport, 'financial_summary_report');
   };
   const kpiData = [
-    { title: t('financeDashboard.grossRevenue'), value: formatCurrency(grossRevenue), icon: PiggyBank },
-    { title: t('financeDashboard.cogs'), value: formatCurrency(cogs), icon: FileText },
-    { title: t('financeDashboard.netProfit'), value: formatCurrency(netProfit), icon: Landmark },
-    { title: t('financeDashboard.profitMargin'), value: `${profitMargin.toFixed(2)}%`, icon: Percent },
+    { title: "Pendapatan Kotor", value: formatCurrency(grossRevenue), icon: PiggyBank },
+    { title: "HPP", value: formatCurrency(cogs), icon: FileText },
+    { title: "Laba Bersih", value: formatCurrency(netProfit), icon: Landmark },
+    { title: "Margin Laba", value: `${profitMargin.toFixed(2)}%`, icon: Percent },
   ];
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
         <div>
-          <h3 className="text-2xl font-display font-bold text-brand-black">{t('financeDashboard.title')}</h3>
-          <p className="font-mono text-sm text-muted-foreground">{t('financeDashboard.subtitle')}</p>
+          <h3 className="text-2xl font-display font-bold text-brand-black">Laporan Keuangan</h3>
+          <p className="font-mono text-sm text-muted-foreground">Ringkasan kesehatan finansial warung Anda.</p>
         </div>
         <Button onClick={handleExport} variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
           <Download className="w-4 h-4 mr-2" />
-          {t('financeDashboard.exportReport')}
+          Ekspor Laporan
         </Button>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
@@ -105,7 +103,7 @@ export function FinanceDashboard() {
       </div>
       <Card className="rounded-none border-2 border-brand-black shadow-hard mb-8">
         <CardHeader>
-          <CardTitle className="font-display text-xl font-bold">{t('financeDashboard.monthlyPerformance')}</CardTitle>
+          <CardTitle className="font-display text-xl font-bold">Kinerja Bulanan</CardTitle>
         </CardHeader>
         <CardContent>
           <FinancialChart data={monthlyData} />
@@ -114,32 +112,32 @@ export function FinanceDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="rounded-none border-2 border-brand-black shadow-hard">
           <CardHeader>
-            <CardTitle className="font-display text-xl font-bold">{t('financeDashboard.cashOnHand')}</CardTitle>
+            <CardTitle className="font-display text-xl font-bold">Kas di Tangan</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
               <Wallet className="h-10 w-10 text-brand-orange" />
               <div>
                 <p className="text-4xl font-bold font-display text-brand-black">{formatCurrency(cashOnHand)}</p>
-                <p className="text-sm text-muted-foreground font-mono">{t('financeDashboard.cashOnHandSubtitle')}</p>
+                <p className="text-sm text-muted-foreground font-mono">Saldo awal + pendapatan - pembelian</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="rounded-none border-2 border-brand-black shadow-hard">
           <CardHeader>
-            <CardTitle className="font-display text-xl font-bold">{t('financeDashboard.setInitialBalance')}</CardTitle>
+            <CardTitle className="font-display text-xl font-bold">Atur Saldo Awal</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                placeholder={t('financeDashboard.setInitialBalancePlaceholder')}
+                placeholder="Masukkan saldo awal"
                 value={balanceInput}
                 onChange={(e) => setBalanceInput(e.target.value)}
                 className="rounded-none border-2 border-brand-black"
               />
-              <Button onClick={handleSetBalance} className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold shadow-hard hover:bg-brand-black hover:text-brand-white active:shadow-none active:translate-x-0.5 active:translate-y-0.5">{t('financeDashboard.setButton')}</Button>
+              <Button onClick={handleSetBalance} className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold shadow-hard hover:bg-brand-black hover:text-brand-white active:shadow-none active:translate-x-0.5 active:translate-y-0.5">Atur</Button>
             </div>
           </CardContent>
         </Card>

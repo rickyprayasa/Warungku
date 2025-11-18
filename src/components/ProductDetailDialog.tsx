@@ -1,10 +1,8 @@
 import type { Product } from '@shared/types';
-import { useTranslation } from '@/lib/i18n';
 interface ProductDetailDialogProps {
   product: Product;
 }
 export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
-  const { t } = useTranslation();
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -22,7 +20,7 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
         <h2 className="text-3xl font-display font-bold text-brand-black my-1">{product.name}</h2>
         <p className="font-mono font-bold text-brand-orange text-2xl my-4">{formatCurrency(product.price)}</p>
         <p className="text-muted-foreground font-sans">
-          {t('dialogs.productDetails', { productName: product.name })}
+          Deskripsi detail untuk {product.name} akan ditampilkan di sini.
         </p>
       </div>
     </div>
