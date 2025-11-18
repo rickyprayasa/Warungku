@@ -78,7 +78,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
               <FormItem>
                 <FormLabel className="font-mono font-bold">Jumlah</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} className="rounded-none border-2 border-brand-black" />
+                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 1)} className="rounded-none border-2 border-brand-black" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -91,7 +91,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
               <FormItem>
                 <FormLabel className="font-mono font-bold">Harga Beli Satuan</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 2500" {...field} className="rounded-none border-2 border-brand-black" />
+                  <Input type="number" placeholder="e.g., 2500" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} className="rounded-none border-2 border-brand-black" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

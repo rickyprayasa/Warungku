@@ -45,8 +45,9 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
   const handleProductChange = (productId: string, index: number) => {
     const product = products.find(p => p.id === productId);
     if (product) {
+      const currentItem = form.getValues(`items.${index}`);
       update(index, {
-        ...fields[index],
+        ...currentItem,
         productId: product.id,
         productName: product.name,
         price: product.price
@@ -86,7 +87,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
                   <FormItem className="w-24">
                     <FormLabel className="font-mono font-bold text-xs">Jml</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} className="rounded-none border-2 border-brand-black" />
+                      <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 1)} className="rounded-none border-2 border-brand-black" />
                     </FormControl>
                   </FormItem>
                 )}

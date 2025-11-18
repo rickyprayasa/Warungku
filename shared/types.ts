@@ -15,8 +15,8 @@ export interface Product {
 // Zod schema for product validation
 export const productSchema = z.object({
   name: z.string().min(3, { message: "Nama produk minimal 3 karakter." }),
-  price: z.coerce.number().min(0, { message: "Harga harus angka positif." }),
-  cost: z.coerce.number().min(0, { message: "Biaya harus angka positif." }),
+  price: z.number().min(0, { message: "Harga harus angka positif." }),
+  cost: z.number().min(0, { message: "Biaya harus angka positif." }),
   category: z.string().min(3, { message: "Kategori minimal 3 karakter." }),
   imageUrl: z.string().url({ message: "URL gambar tidak valid." }),
 });
@@ -38,16 +38,16 @@ export interface Sale {
 export const saleItemSchema = z.object({
   productId: z.string(),
   productName: z.string(),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-  price: z.coerce.number(),
-  cost: z.coerce.number(), // Added for backend processing
+  quantity: z.number().min(1, "Quantity must be at least 1"),
+  price: z.number(),
+  cost: z.number(), // Added for backend processing
 });
 export const saleSchema = z.object({
   items: z.array(z.object({
     productId: z.string().min(1, "Product must be selected."),
     productName: z.string(),
-    quantity: z.coerce.number().min(1),
-    price: z.coerce.number(),
+    quantity: z.number().min(1),
+    price: z.number(),
   })).min(1, "Sale must have at least one item."),
 });
 export type SaleFormValues = z.infer<typeof saleSchema>;
@@ -64,8 +64,8 @@ export interface Purchase {
 }
 export const purchaseSchema = z.object({
   productId: z.string().min(1, "Product is required."),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-  unitCost: z.coerce.number().min(0, "Unit cost must be a positive number."),
+  quantity: z.number().min(1, "Quantity must be at least 1."),
+  unitCost: z.number().min(0, "Unit cost must be a positive number."),
   supplier: z.string().optional(),
 });
 export type PurchaseFormValues = z.infer<typeof purchaseSchema>;

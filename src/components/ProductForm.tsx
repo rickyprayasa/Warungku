@@ -84,6 +84,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                     type="number"
                     placeholder="e.g., 3000"
                     {...field}
+                    onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
                     className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
                   />
                 </FormControl>
@@ -102,6 +103,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                     type="number"
                     placeholder="e.g., 2500"
                     {...field}
+                    onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
                     className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
                   />
                 </FormControl>

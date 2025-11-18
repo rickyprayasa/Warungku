@@ -1,20 +1,23 @@
 import { motion, Variants } from 'framer-motion';
-const iconVariants: Variants = {
+const CIRCLE_LENGTH = 2 * Math.PI * 10; // 2 * PI * R
+const donutVariants: Variants = {
   rest: {
-    '--path-1-d': 'path("M 12 2 A 10 10 0 0 1 22 12")',
-    '--path-2-d': 'path("M 2 12 A 10 10 0 0 1 12 22")',
-    '--bar-1-y': 14,
-    '--bar-2-y': 10,
-    '--bar-3-y': 6,
-    transition: { duration: 0.3, ease: 'easeInOut' },
+    strokeDashoffset: CIRCLE_LENGTH * 0.25, // Start at 75% full
+    transition: { duration: 0.4, ease: 'easeOut' },
   },
   hover: {
-    '--path-1-d': 'path("M 12 2 A 10 10 0 1 1 2 12")',
-    '--path-2-d': 'path("M 22 12 A 10 10 0 0 1 12 22")',
-    '--bar-1-y': 10,
-    '--bar-2-y': 6,
-    '--bar-3-y': 14,
-    transition: { duration: 0.4, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' },
+    strokeDashoffset: 0, // Animate to 100% full
+    transition: { duration: 0.5, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' },
+  },
+};
+const barVariants: Variants = {
+  rest: {
+    y: [14, 10, 6],
+    transition: { duration: 0.4, ease: 'easeOut' },
+  },
+  hover: {
+    y: [10, 6, 14],
+    transition: { duration: 0.5, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' },
   },
 };
 export function AnimatedLogo() {
@@ -31,49 +34,23 @@ export function AnimatedLogo() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Donut Chart Part */}
-        <motion.path
-          d="M 12 2 A 10 10 0 0 1 22 12"
-          stroke="rgb(17, 17, 17)"
-          strokeWidth="3"
-          style={{ d: 'var(--path-1-d)' as any }}
-          variants={iconVariants}
-        />
-        <motion.path
-          d="M 2 12 A 10 10 0 0 1 12 22"
+        {/* Donut Chart */}
+        <circle cx="12" cy="12" r="10" stroke="rgb(17, 17, 17)" strokeOpacity="0.2" strokeWidth="3" />
+        <motion.circle
+          cx="12"
+          cy="12"
+          r="10"
           stroke="rgb(243, 128, 32)"
           strokeWidth="3"
-          style={{ d: 'var(--path-2-d)' as any }}
-          variants={iconVariants}
+          strokeLinecap="round"
+          transform="rotate(-90 12 12)"
+          strokeDasharray={CIRCLE_LENGTH}
+          variants={donutVariants}
         />
-        {/* Bar Chart Part (inside the donut) */}
-        <motion.rect
-          x="6"
-          width="3"
-          height="8"
-          fill="rgb(17, 17, 17)"
-          rx="1"
-          style={{ y: 'var(--bar-1-y)' as any }}
-          variants={iconVariants}
-        />
-        <motion.rect
-          x="10.5"
-          width="3"
-          height="12"
-          fill="rgb(243, 128, 32)"
-          rx="1"
-          style={{ y: 'var(--bar-2-y)' as any }}
-          variants={iconVariants}
-        />
-        <motion.rect
-          x="15"
-          width="3"
-          height="16"
-          fill="rgb(17, 17, 17)"
-          rx="1"
-          style={{ y: 'var(--bar-3-y)' as any }}
-          variants={iconVariants}
-        />
+        {/* Bar Chart */}
+        <motion.rect x="6" width="3" height="8" fill="rgb(17, 17, 17)" rx="1" variants={barVariants} custom={0} style={{ y: barVariants.rest.y[0] }} />
+        <motion.rect x="10.5" width="3" height="12" fill="rgb(243, 128, 32)" rx="1" variants={barVariants} custom={1} style={{ y: barVariants.rest.y[1] }} />
+        <motion.rect x="15" width="3" height="16" fill="rgb(17, 17, 17)" rx="1" variants={barVariants} custom={2} style={{ y: barVariants.rest.y[2] }} />
       </motion.svg>
       <span className="font-display text-2xl font-bold text-brand-black">OMZETIN</span>
     </motion.div>
