@@ -1,5 +1,5 @@
 # OMZETIN
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/rickyprayasa/Warungku)
 A modern Neo-Brutalist POS application for small shops, designed for Gen Z, featuring product management and sales tracking.
 ## About The Project
 OMZETIN is a visually striking, modern Point-of-Sale (POS) and inventory management system designed for small shops ('warung'). The application features a bold Neo-Brutalism user interface, targeting a tech-savvy Gen Z audience.
