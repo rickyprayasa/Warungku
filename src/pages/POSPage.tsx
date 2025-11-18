@@ -3,7 +3,7 @@ import { useWarungStore } from '@/lib/store';
 import { ProductCard } from '@/components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Search, PlusCircle, CornerDownRight } from 'lucide-react';
+import { AlertTriangle, Search, PlusCircle, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
@@ -91,12 +91,12 @@ export function POSPage() {
             </div>
             <div className="flex flex-col items-center justify-center mb-8">
               <motion.div
-                animate={{ x: [0, 10, 0] }}
+                animate={{ y: [0, 5, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                 className="flex items-center gap-2 mb-2"
               >
                 <p className="font-mono text-sm font-bold text-brand-orange">Punya ide jajanan?</p>
-                <CornerDownRight className="w-5 h-5 text-brand-orange" />
+                <ArrowDown className="w-5 h-5 text-brand-orange" />
               </motion.div>
               <Dialog open={isRequestDialogOpen} onOpenChange={setRequestDialogOpen}>
                 <DialogTrigger asChild>
