@@ -34,7 +34,7 @@ export function DashboardPage() {
           </p>
         </div>
         <Tabs defaultValue="products" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 md:grid-cols-7 rounded-none border-2 border-brand-black p-1 h-auto bg-muted/40">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 md:grid-cols-7 rounded-none border-2 border-brand-black p-1 h-auto bg-muted/40">
             {tabs.map(tab => (
               <TabsTrigger key={tab.value} value={tab.value} className="rounded-none font-bold uppercase text-xs sm:text-sm data-[state=active]:bg-brand-white data-[state=active]:shadow-hard-sm">
                 <tab.icon className="w-4 h-4 mr-2 hidden sm:inline-block"/>{tab.label}

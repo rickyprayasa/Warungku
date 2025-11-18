@@ -45,6 +45,8 @@ export function AnimatedLogo() {
   // Offsets for each color segment, creating a layered effect
   const donutOffsets = [0, 0.25, 0.5, 0.75];
   const separatorAngles = [0, 90, 180, 270];
+  const innerRadius = DONUT_RADIUS - DONUT_STROKE_WIDTH / 2;
+  const outerRadius = DONUT_RADIUS + DONUT_STROKE_WIDTH / 2;
   return (
     <motion.div
       initial="rest"
@@ -78,9 +80,9 @@ export function AnimatedLogo() {
             <line
               key={`sep-${angle}`}
               x1="12"
-              y1="12"
+              y1={12 - innerRadius}
               x2="12"
-              y2={12 - DONUT_RADIUS - DONUT_STROKE_WIDTH / 2 + 0.5}
+              y2={12 - outerRadius}
               stroke="rgb(17, 17, 17)"
               strokeWidth="1"
               transform={`rotate(${angle} 12 12)`}
