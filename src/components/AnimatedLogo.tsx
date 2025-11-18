@@ -54,7 +54,7 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
       initial="rest"
       whileHover="hover"
       animate="rest"
-      className="flex items-center gap-2 cursor-pointer"
+      className="flex items-center gap-2 cursor-pointer transform-gpu"
     >
       <motion.svg
         viewBox="0 0 24 24"
