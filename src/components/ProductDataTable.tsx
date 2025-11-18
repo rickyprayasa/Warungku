@@ -33,15 +33,16 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useTranslation } from '@/lib/i18n';
 export function ProductDataTable() {
   const products = useWarungStore((state) => state.products);
   const deleteProduct = useWarungStore((state) => state.deleteProduct);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { t } = useTranslation();
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -76,11 +77,11 @@ export function ProductDataTable() {
         <Table>
           <TableHeader className="border-b-4 border-brand-black bg-muted/40">
             <TableRow>
-              <TableHead className="w-[80px] font-bold text-brand-black">Image</TableHead>
-              <TableHead className="font-bold text-brand-black">Name</TableHead>
-              <TableHead className="font-bold text-brand-black">Category</TableHead>
-              <TableHead className="font-bold text-brand-black">Price</TableHead>
-              <TableHead className="w-[50px] font-bold text-brand-black text-right">Actions</TableHead>
+              <TableHead className="w-[80px] font-bold text-brand-black">{t('tables.image')}</TableHead>
+              <TableHead className="font-bold text-brand-black">{t('tables.name')}</TableHead>
+              <TableHead className="font-bold text-brand-black">{t('tables.category')}</TableHead>
+              <TableHead className="font-bold text-brand-black">{t('tables.price')}</TableHead>
+              <TableHead className="w-[50px] font-bold text-brand-black text-right">{t('tables.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -103,11 +104,11 @@ export function ProductDataTable() {
                     <DropdownMenuContent align="end" className="rounded-none border-2 border-brand-black bg-brand-white">
                       <DropdownMenuItem onClick={() => handleEdit(product)} className="cursor-pointer">
                         <Pencil className="mr-2 h-4 w-4" />
-                        <span>Edit</span>
+                        <span>{t('dialogs.edit')}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleDelete(product)} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
                         <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Delete</span>
+                        <span>{t('dialogs.delete')}</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -121,7 +122,7 @@ export function ProductDataTable() {
       <Dialog open={isEditDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-bold">Edit Product</DialogTitle>
+            <DialogTitle className="font-display text-2xl font-bold">{t('forms.product.editTitle')}</DialogTitle>
           </DialogHeader>
           <ProductForm product={selectedProduct} onSuccess={() => setEditDialogOpen(false)} />
         </DialogContent>
@@ -130,15 +131,15 @@ export function ProductDataTable() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="rounded-none border-4 border-brand-black bg-brand-white">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-display text-2xl font-bold">Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle className="font-display text-2xl font-bold">{t('dialogs.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the product "{selectedProduct?.name}".
+              {t('dialogs.deleteProduct', { productName: selectedProduct?.name || '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-none border-2 border-brand-black">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-none border-2 border-brand-black">{t('dialogs.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-none border-2 border-brand-black">
-              Delete
+              {t('dialogs.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -9,6 +9,7 @@ import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from '@/lib/i18n';
 interface SaleFormProps {
   onSuccess: () => void;
 }
@@ -16,6 +17,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
   const products = useWarungStore((state) => state.products);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const addSale = useWarungStore((state) => state.addSale);
+  const { t } = useTranslation();
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
@@ -35,7 +37,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
   const onSubmit = async (values: SaleFormValues) => {
     const promise = addSale(values);
     toast.promise(promise, {
-      loading: 'Recording sale...',
+      loading: t('forms.saving'),
       success: 'Sale recorded successfully!',
       error: 'Failed to record sale.',
     });
@@ -64,11 +66,11 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
                 name={`items.${index}.productId`}
                 render={({ field }) => (
                   <FormItem className="flex-1">
-                    <FormLabel className="font-mono font-bold text-xs">Product</FormLabel>
+                    <FormLabel className="font-mono font-bold text-xs">{t('forms.sale.product')}</FormLabel>
                     <Select onValueChange={(value) => handleProductChange(value, index)} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger className="rounded-none border-2 border-brand-black">
-                          <SelectValue placeholder="Select a product" />
+                          <SelectValue placeholder={t('forms.sale.selectProduct')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
@@ -84,9 +86,9 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
                 name={`items.${index}.quantity`}
                 render={({ field }) => (
                   <FormItem className="w-24">
-                    <FormLabel className="font-mono font-bold text-xs">Qty</FormLabel>
+                    <FormLabel className="font-mono font-bold text-xs">{t('forms.sale.qty')}</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} className="rounded-none border-2 border-brand-black" />
+                      <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : +e.target.value)} className="rounded-none border-2 border-brand-black" />
                     </FormControl>
                   </FormItem>
                 )}
@@ -103,17 +105,17 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
           onClick={() => append({ productId: '', productName: '', quantity: 1, price: 0 })}
           className="w-full rounded-none border-2 border-dashed border-brand-black"
         >
-          <PlusCircle className="w-4 h-4 mr-2" /> Add Item
+          <PlusCircle className="w-4 h-4 mr-2" /> {t('forms.sale.addItem')}
         </Button>
         <div className="text-right font-mono text-xl font-bold border-t-4 border-brand-black pt-4">
-          Total: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total)}
+          {t('forms.sale.total')}: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total)}
         </div>
         <Button
           type="submit"
           disabled={form.formState.isSubmitting}
           className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
         >
-          {form.formState.isSubmitting ? 'Saving...' : 'Save Sale'}
+          {form.formState.isSubmitting ? t('forms.saving') : t('forms.save')}
         </Button>
       </form>
     </Form>

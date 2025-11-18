@@ -15,6 +15,7 @@ import { POSPage } from '@/pages/POSPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { I18nProvider } from './lib/i18n';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -44,7 +45,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <RouterProvider router={router} />
+      <I18nProvider>
+        <RouterProvider router={router} />
+      </I18nProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

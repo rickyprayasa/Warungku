@@ -8,6 +8,7 @@ import { useShallow } from "zustand/react/shallow";
 import { FinancialChart } from "./FinancialChart";
 import { exportToCSV } from "@/lib/csv-export";
 import { format } from 'date-fns';
+import { useTranslation } from "@/lib/i18n";
 export function FinanceDashboard() {
   const { sales, initialBalance, setInitialBalance, purchases } = useWarungStore(
     useShallow((state) => ({
@@ -17,6 +18,7 @@ export function FinanceDashboard() {
       purchases: state.purchases,
     }))
   );
+  const { t } = useTranslation();
   const [balanceInput, setBalanceInput] = useState(initialBalance.toString());
   const { grossRevenue, cogs, netProfit, profitMargin, cashOnHand, monthlyData } = useMemo(() => {
     const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
@@ -71,21 +73,21 @@ export function FinanceDashboard() {
     exportToCSV(dataToExport, 'financial_summary_report');
   };
   const kpiData = [
-    { title: "Gross Revenue", value: formatCurrency(grossRevenue), icon: PiggyBank },
-    { title: "Cost of Goods Sold", value: formatCurrency(cogs), icon: FileText },
-    { title: "Net Profit", value: formatCurrency(netProfit), icon: Landmark },
-    { title: "Profit Margin", value: `${profitMargin.toFixed(2)}%`, icon: Percent },
+    { title: t('financeDashboard.grossRevenue'), value: formatCurrency(grossRevenue), icon: PiggyBank },
+    { title: t('financeDashboard.cogs'), value: formatCurrency(cogs), icon: FileText },
+    { title: t('financeDashboard.netProfit'), value: formatCurrency(netProfit), icon: Landmark },
+    { title: t('financeDashboard.profitMargin'), value: `${profitMargin.toFixed(2)}%`, icon: Percent },
   ];
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
         <div>
-          <h3 className="text-2xl font-display font-bold text-brand-black">Financial Summary</h3>
-          <p className="font-mono text-sm text-muted-foreground">An overview of your business's financial health.</p>
+          <h3 className="text-2xl font-display font-bold text-brand-black">{t('financeDashboard.title')}</h3>
+          <p className="font-mono text-sm text-muted-foreground">{t('financeDashboard.subtitle')}</p>
         </div>
         <Button onClick={handleExport} variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
           <Download className="w-4 h-4 mr-2" />
-          Export Report
+          {t('financeDashboard.exportReport')}
         </Button>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
@@ -103,7 +105,7 @@ export function FinanceDashboard() {
       </div>
       <Card className="rounded-none border-2 border-brand-black shadow-hard mb-8">
         <CardHeader>
-          <CardTitle className="font-display text-xl font-bold">Monthly Performance</CardTitle>
+          <CardTitle className="font-display text-xl font-bold">{t('financeDashboard.monthlyPerformance')}</CardTitle>
         </CardHeader>
         <CardContent>
           <FinancialChart data={monthlyData} />
@@ -112,32 +114,32 @@ export function FinanceDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="rounded-none border-2 border-brand-black shadow-hard">
           <CardHeader>
-            <CardTitle className="font-display text-xl font-bold">Cash on Hand</CardTitle>
+            <CardTitle className="font-display text-xl font-bold">{t('financeDashboard.cashOnHand')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
               <Wallet className="h-10 w-10 text-brand-orange" />
               <div>
                 <p className="text-4xl font-bold font-display text-brand-black">{formatCurrency(cashOnHand)}</p>
-                <p className="text-sm text-muted-foreground font-mono">Based on initial balance, sales, and purchases.</p>
+                <p className="text-sm text-muted-foreground font-mono">{t('financeDashboard.cashOnHandSubtitle')}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="rounded-none border-2 border-brand-black shadow-hard">
           <CardHeader>
-            <CardTitle className="font-display text-xl font-bold">Set Initial Balance</CardTitle>
+            <CardTitle className="font-display text-xl font-bold">{t('financeDashboard.setInitialBalance')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                placeholder="Enter starting cash"
+                placeholder={t('financeDashboard.setInitialBalancePlaceholder')}
                 value={balanceInput}
                 onChange={(e) => setBalanceInput(e.target.value)}
                 className="rounded-none border-2 border-brand-black"
               />
-              <Button onClick={handleSetBalance} className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold shadow-hard hover:bg-brand-black hover:text-brand-white active:shadow-none active:translate-x-0.5 active:translate-y-0.5">Set</Button>
+              <Button onClick={handleSetBalance} className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold shadow-hard hover:bg-brand-black hover:text-brand-white active:shadow-none active:translate-x-0.5 active:translate-y-0.5">{t('financeDashboard.setButton')}</Button>
             </div>
           </CardContent>
         </Card>

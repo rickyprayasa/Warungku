@@ -1,19 +1,24 @@
-import { createContext, useContext, useMemo, useCallback } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import { useWarungStore } from './store';
 import id from '@/locales/id.json';
 import en from '@/locales/en.json';
+import { useShallow } from 'zustand/react/shallow';
 const translations = { id, en };
 type Language = 'id' | 'en';
 interface I18nContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
+  t: (key: string, params?: Record<string, string>) => string;
 }
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
-  const language = useWarungStore((state) => state.language);
-  const setLanguage = useWarungStore((state) => state.setLanguage);
-  const t = useCallback((key: string, params?: Record<string, string | number>): string => {
+  const { language, setLanguage } = useWarungStore(
+    useShallow((state) => ({
+      language: state.language,
+      setLanguage: state.setLanguage,
+    }))
+  );
+  const t = useMemo(() => (key: string, params?: Record<string, string>): string => {
     const keys = key.split('.');
     let current: any = translations[language];
     for (const k of keys) {
@@ -26,12 +31,12 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
     let translatedString = typeof current === 'string' ? current : key;
     if (params) {
       Object.keys(params).forEach(paramKey => {
-        translatedString = translatedString.replace(`{${paramKey}}`, String(params[paramKey]));
+        translatedString = translatedString.replace(`{${paramKey}}`, params[paramKey]);
       });
     }
     return translatedString;
   }, [language]);
-  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
+  const value = { language, setLanguage, t };
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };
 export const useTranslation = () => {

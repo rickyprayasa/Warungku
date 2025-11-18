@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TrendingUp, TrendingDown, Scale, ArrowRight, ArrowLeft } from "lucide-react";
 import { useMemo } from "react";
+import { useTranslation } from "@/lib/i18n";
 export function CashFlowDashboard() {
   const sales = useWarungStore((state) => state.sales);
   const purchases = useWarungStore((state) => state.purchases);
+  const { t } = useTranslation();
   const { cashIn, cashOut, netFlow } = useMemo(() => {
     const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
     const totalPurchases = purchases.reduce((sum, purchase) => sum + purchase.totalCost, 0);
@@ -24,15 +26,15 @@ export function CashFlowDashboard() {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   };
   const kpiData = [
-    { title: "Total Cash In", value: formatCurrency(cashIn), icon: TrendingUp },
-    { title: "Total Cash Out", value: formatCurrency(cashOut), icon: TrendingDown },
-    { title: "Net Cash Flow", value: formatCurrency(netFlow), icon: Scale },
+    { title: t('cashflowDashboard.totalCashIn'), value: formatCurrency(cashIn), icon: TrendingUp },
+    { title: t('cashflowDashboard.totalCashOut'), value: formatCurrency(cashOut), icon: TrendingDown },
+    { title: t('cashflowDashboard.netCashFlow'), value: formatCurrency(netFlow), icon: Scale },
   ];
   return (
     <div>
       <div className="mb-8">
-        <h3 className="text-2xl font-display font-bold text-brand-black">Cash Flow</h3>
-        <p className="font-mono text-sm text-muted-foreground">Monitor the flow of cash in and out of your business.</p>
+        <h3 className="text-2xl font-display font-bold text-brand-black">{t('cashflowDashboard.title')}</h3>
+        <p className="font-mono text-sm text-muted-foreground">{t('cashflowDashboard.subtitle')}</p>
       </div>
       <div className="grid gap-6 md:grid-cols-3 mb-8">
         {kpiData.map((kpi, index) => (
@@ -47,15 +49,15 @@ export function CashFlowDashboard() {
           </Card>
         ))}
       </div>
-      <h4 className="text-xl font-display font-bold text-brand-black mb-4">Recent Transactions</h4>
+      <h4 className="text-xl font-display font-bold text-brand-black mb-4">{t('cashflowDashboard.recentTransactions')}</h4>
       <div className="border-4 border-brand-black bg-brand-white">
         <Table>
           <TableHeader className="border-b-4 border-brand-black bg-muted/40">
             <TableRow>
-              <TableHead className="w-[100px] font-bold text-brand-black">Type</TableHead>
-              <TableHead className="font-bold text-brand-black">Date</TableHead>
-              <TableHead className="font-bold text-brand-black">Description</TableHead>
-              <TableHead className="font-bold text-brand-black text-right">Amount</TableHead>
+              <TableHead className="w-[100px] font-bold text-brand-black">{t('cashflowDashboard.type')}</TableHead>
+              <TableHead className="font-bold text-brand-black">{t('cashflowDashboard.date')}</TableHead>
+              <TableHead className="font-bold text-brand-black">{t('cashflowDashboard.description')}</TableHead>
+              <TableHead className="font-bold text-brand-black text-right">{t('cashflowDashboard.amount')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -64,7 +66,7 @@ export function CashFlowDashboard() {
                 <TableCell>
                   <span className={`inline-flex items-center font-mono text-xs font-bold px-2 py-1 ${tx.type === 'Sale' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {tx.type === 'Sale' ? <ArrowLeft className="w-3 h-3 mr-1" /> : <ArrowRight className="w-3 h-3 mr-1" />}
-                    {tx.type}
+                    {tx.type === 'Sale' ? t('cashflowDashboard.sale') : t('cashflowDashboard.purchase')}
                   </span>
                 </TableCell>
                 <TableCell className="font-mono text-sm">{new Date(tx.date).toLocaleString('id-ID')}</TableCell>
@@ -78,7 +80,7 @@ export function CashFlowDashboard() {
         </Table>
         {combinedTransactions.length === 0 && (
            <div className="text-center p-12">
-             <p className="font-mono text-muted-foreground">No transactions recorded yet.</p>
+             <p className="font-mono text-muted-foreground">{t('cashflowDashboard.noTransactions')}</p>
            </div>
         )}
       </div>

@@ -9,6 +9,7 @@ import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { useTranslation } from '@/lib/i18n';
 interface PurchaseFormProps {
   onSuccess: () => void;
 }
@@ -22,6 +23,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
       addPurchase: state.addPurchase,
     }))
   );
+  const { t } = useTranslation();
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
     defaultValues: {
@@ -38,7 +40,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
   const onSubmit = async (values: PurchaseFormValues) => {
     const promise = addPurchase(values);
     toast.promise(promise, {
-      loading: 'Recording purchase...',
+      loading: t('forms.saving'),
       success: 'Purchase recorded successfully!',
       error: 'Failed to record purchase.',
     });
@@ -55,11 +57,11 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
           name="productId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">Product</FormLabel>
+              <FormLabel className="font-mono font-bold">{t('forms.purchase.product')}</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger className="rounded-none border-2 border-brand-black">
-                    <SelectValue placeholder="Select a product" />
+                    <SelectValue placeholder={t('forms.purchase.selectProduct')} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
@@ -76,9 +78,9 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
             name="quantity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-mono font-bold">Quantity</FormLabel>
+                <FormLabel className="font-mono font-bold">{t('forms.purchase.quantity')}</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} className="rounded-none border-2 border-brand-black" />
+                  <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : +e.target.value)} className="rounded-none border-2 border-brand-black" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -89,9 +91,9 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
             name="unitCost"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-mono font-bold">Unit Buy Price</FormLabel>
+                <FormLabel className="font-mono font-bold">{t('forms.purchase.unitBuyPrice')}</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 2500" {...field} className="rounded-none border-2 border-brand-black" />
+                  <Input type="number" placeholder="e.g., 2500" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : +e.target.value)} className="rounded-none border-2 border-brand-black" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -103,11 +105,11 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
           name="supplier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-mono font-bold">Supplier</FormLabel>
+              <FormLabel className="font-mono font-bold">{t('forms.purchase.supplier')}</FormLabel>
                <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger className="rounded-none border-2 border-brand-black">
-                    <SelectValue placeholder="Select a supplier" />
+                    <SelectValue placeholder={t('forms.purchase.selectSupplier')} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
@@ -119,14 +121,14 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
           )}
         />
         <div className="text-right font-mono text-xl font-bold border-t-4 border-brand-black pt-4">
-          Total Cost: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalCost)}
+          {t('forms.purchase.totalCost')}: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalCost)}
         </div>
         <Button
           type="submit"
           disabled={form.formState.isSubmitting}
           className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
         >
-          {form.formState.isSubmitting ? 'Saving...' : 'Save Purchase'}
+          {form.formState.isSubmitting ? t('forms.saving') : t('forms.save')}
         </Button>
       </form>
     </Form>
