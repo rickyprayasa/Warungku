@@ -11,7 +11,7 @@ export function FinancialChart({ data }: FinancialChartProps) {
   if (data.length === 0) {
     return (
       <div className="h-[350px] flex items-center justify-center text-center border-2 border-dashed border-brand-black">
-        <p className="font-mono text-muted-foreground">Data penjualan tidak cukup untuk menampilkan grafik.</p>
+        <p className="font-mono text-muted-foreground">Not enough sales data to display a chart.</p>
       </div>
     );
   }
@@ -44,8 +44,8 @@ export function FinancialChart({ data }: FinancialChartProps) {
             }}
             formatter={(value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)}
           />
-          <Bar dataKey="revenue" fill="rgb(243, 128, 32)" radius={[4, 4, 0, 0]} name="Pendapatan Kotor" />
-          <Bar dataKey="profit" fill="rgb(17, 17, 17)" radius={[4, 4, 0, 0]} name="Laba Bersih" />
+          <Bar dataKey="revenue" fill="rgb(243, 128, 32)" radius={[4, 4, 0, 0]} name="Revenue" />
+          <Bar dataKey="profit" fill="rgb(17, 17, 17)" radius={[4, 4, 0, 0]} name="Profit" />
         </BarChart>
       </ResponsiveContainer>
     </div>

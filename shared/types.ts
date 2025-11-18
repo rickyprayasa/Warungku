@@ -57,14 +57,15 @@ export interface Purchase {
   productId: string;
   productName: string;
   quantity: number;
-  cost: number; // Total cost for this purchase
+  unitCost: number;
+  totalCost: number;
   supplier: string;
   createdAt: number;
 }
 export const purchaseSchema = z.object({
   productId: z.string().min(1, "Product is required."),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-  cost: z.coerce.number().min(0, "Cost must be a positive number."),
+  unitCost: z.coerce.number().min(0, "Unit cost must be a positive number."),
   supplier: z.string().optional(),
 });
 export type PurchaseFormValues = z.infer<typeof purchaseSchema>;

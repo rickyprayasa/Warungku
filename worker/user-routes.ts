@@ -62,11 +62,21 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, page.items.sort((a, b) => b.createdAt - a.createdAt));
   });
   app.post('/api/purchases', async (c) => {
-    const { productId, quantity, cost, supplier } = (await c.req.json()) as PurchaseFormValues;
+    const { productId, quantity, unitCost, supplier } = (await c.req.json()) as PurchaseFormValues;
     const product = new ProductEntity(c.env, productId);
     if (!(await product.exists())) return notFound(c, 'Product not found.');
     const productState = await product.getState();
-    const purchaseData: Purchase = { id: crypto.randomUUID(), productId, productName: productState.name, quantity, cost, supplier: supplier || 'N/A', createdAt: Date.now() };
+    const totalCost = unitCost * quantity;
+    const purchaseData: Purchase = {
+      id: crypto.randomUUID(),
+      productId,
+      productName: productState.name,
+      quantity,
+      unitCost,
+      totalCost,
+      supplier: supplier || 'N/A',
+      createdAt: Date.now()
+    };
     const newPurchase = await PurchaseEntity.create(c.env, purchaseData);
     return ok(c, newPurchase);
   });

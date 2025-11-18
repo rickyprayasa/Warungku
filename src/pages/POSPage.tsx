@@ -3,13 +3,14 @@ import { useWarungStore } from '@/lib/store';
 import { ProductCard } from '@/components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { ProductDetailDialog } from '@/components/ProductDetailDialog';
 import type { Product } from '@shared/types';
+import { Input } from '@/components/ui/input';
 const MobileProductRow = ({ product }: { product: Product }) => {
   const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   return (
@@ -38,6 +39,7 @@ export function POSPage() {
   const isLoading = useWarungStore((state) => state.isLoading);
   const error = useWarungStore((state) => state.error);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchTerm, setSearchTerm] = useState('');
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
@@ -46,9 +48,18 @@ export function POSPage() {
     return ['All', ...Array.from(new Set(allCategories))];
   }, [products]);
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'All') return products;
-    return products.filter((p) => p.category === selectedCategory);
-  }, [products, selectedCategory]);
+    let filtered = products;
+    if (searchTerm) {
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter((p) => p.category === selectedCategory);
+    }
+    return filtered;
+  }, [products, selectedCategory, searchTerm]);
   return (
     <div className="bg-muted/40">
       <main className="flex-1 overflow-y-auto">
@@ -57,6 +68,18 @@ export function POSPage() {
             <div className="mb-8 text-center">
               <h2 className="text-3xl font-display font-bold text-brand-black">Menu Jajanan</h2>
               <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia.</p>
+            </div>
+            <div className="max-w-2xl mx-auto mb-8">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Cari nama atau kategori jajanan..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-none border-2 border-brand-black h-12 pl-10 font-mono"
+                />
+              </div>
             </div>
             <div className="flex items-center justify-center flex-wrap gap-2 mb-8">
               {categories.map((category) => (
@@ -110,7 +133,7 @@ export function POSPage() {
             )}
              {!isLoading && !error && filteredProducts.length === 0 && (
                 <div className="col-span-full text-center border-2 border-dashed border-brand-black p-12">
-                    <p className="font-mono text-muted-foreground">No products found in this category.</p>
+                    <p className="font-mono text-muted-foreground">No products found.</p>
                 </div>
              )}
           </div>

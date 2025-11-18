@@ -29,7 +29,7 @@ export class SaleEntity extends IndexedEntity<Sale> {
 export class PurchaseEntity extends IndexedEntity<Purchase> {
   static readonly entityName = "purchase";
   static readonly indexName = "purchases";
-  static readonly initialState: Purchase = { id: "", productId: "", productName: "", quantity: 0, cost: 0, supplier: "", createdAt: 0 };
+  static readonly initialState: Purchase = { id: "", productId: "", productName: "", quantity: 0, unitCost: 0, totalCost: 0, supplier: "", createdAt: 0 };
   static seedData: Purchase[] = [];
 }
 export class SupplierEntity extends IndexedEntity<Supplier> {

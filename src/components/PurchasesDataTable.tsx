@@ -34,7 +34,7 @@ export function PurchasesDataTable() {
               <TableCell className="font-bold">{purchase.productName}</TableCell>
               <TableCell className="font-mono">{purchase.quantity}</TableCell>
               <TableCell className="font-mono">{purchase.supplier}</TableCell>
-              <TableCell className="font-mono text-right font-bold text-red-600">{formatCurrency(purchase.cost)}</TableCell>
+              <TableCell className="font-mono text-right font-bold text-red-600">{formatCurrency(purchase.totalCost)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
