@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-const iconVariants = {
+import { motion, Variants } from 'framer-motion';
+const iconVariants: Variants = {
   rest: {
     '--path-1-d': 'path("M 12 2 A 10 10 0 0 1 22 12")',
     '--path-2-d': 'path("M 2 12 A 10 10 0 0 1 12 22")',
