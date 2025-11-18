@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { ProductEntity, SaleEntity, PurchaseEntity, SupplierEntity } from "./entities";
+import { ProductEntity, SaleEntity, PurchaseEntity, SupplierEntity, JajananRequestEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import type { Product, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier } from "@shared/types";
+import type { Product, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, JajananRequest, JajananRequestFormValues } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // Ensure seed data is created on first load
   app.get('/api/init', async (c) => {
@@ -106,5 +106,23 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const existed = await SupplierEntity.delete(c.env, id);
     if (!existed) return notFound(c, 'Supplier not found.');
     return ok(c, { id });
+  });
+  // JAJANAN REQUESTS
+  app.get('/api/jajanan-requests', async (c) => {
+    const page = await JajananRequestEntity.list(c.env);
+    return ok(c, page.items.sort((a, b) => b.createdAt - a.createdAt));
+  });
+  app.post('/api/jajanan-requests', async (c) => {
+    const { name, notes } = (await c.req.json()) as JajananRequestFormValues;
+    if (!name) return bad(c, 'Missing required field: name');
+    const requestData: JajananRequest = {
+      id: crypto.randomUUID(),
+      name,
+      notes,
+      status: 'pending',
+      createdAt: Date.now(),
+    };
+    const newRequest = await JajananRequestEntity.create(c.env, requestData);
+    return ok(c, newRequest);
   });
 }

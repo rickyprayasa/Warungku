@@ -3,14 +3,15 @@ import { useWarungStore } from '@/lib/store';
 import { ProductCard } from '@/components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Search } from 'lucide-react';
+import { AlertTriangle, Search, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ProductDetailDialog } from '@/components/ProductDetailDialog';
 import type { Product } from '@shared/types';
 import { Input } from '@/components/ui/input';
+import { RequestJajananForm } from '@/components/RequestJajananForm';
 const MobileProductRow = ({ product }: { product: Product }) => {
   const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   return (
@@ -40,6 +41,7 @@ export function POSPage() {
   const error = useWarungStore((state) => state.error);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRequestDialogOpen, setRequestDialogOpen] = useState(false);
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
@@ -70,9 +72,9 @@ export function POSPage() {
                 <img src="https://i.imgur.com/Xzv9T8m.png" alt="Jajanan Logo" className="h-20 w-auto mb-4" />
                 <h2 className="text-4xl font-display font-bold text-brand-black">Menu Jajanan</h2>
               </div>
-              <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia.</p>
+              <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia atau ajukan yang baru.</p>
             </div>
-            <div className="max-w-2xl mx-auto mb-8">
+            <div className="max-w-2xl mx-auto mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
@@ -83,6 +85,22 @@ export function POSPage() {
                   className="w-full rounded-none border-2 border-brand-black h-12 pl-10 font-mono"
                 />
               </div>
+            </div>
+            <div className="flex justify-center mb-8">
+              <Dialog open={isRequestDialogOpen} onOpenChange={setRequestDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="text-brand-black border-2 border-dashed border-brand-black rounded-none font-bold uppercase text-sm hover:bg-brand-orange hover:border-solid active:translate-x-0.5 active:translate-y-0.5 transition-all h-11">
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Request Jajanan
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white">
+                  <DialogHeader>
+                    <DialogTitle className="font-display text-2xl font-bold">Request Jajanan Baru</DialogTitle>
+                  </DialogHeader>
+                  <RequestJajananForm onSuccess={() => setRequestDialogOpen(false)} />
+                </DialogContent>
+              </Dialog>
             </div>
             <div className="flex items-center justify-center flex-wrap gap-2 mb-8">
               {categories.map((category) => (

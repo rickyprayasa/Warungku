@@ -5,18 +5,20 @@ import { PurchasesDashboard } from "@/components/PurchasesDashboard";
 import { CashFlowDashboard } from "@/components/CashFlowDashboard";
 import { FinanceDashboard } from "@/components/FinanceDashboard";
 import { SuppliersDashboard } from "@/components/SuppliersDashboard";
-import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck } from "lucide-react";
+import { JajananRequestsDashboard } from "@/components/JajananRequestsDashboard";
+import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox } from "lucide-react";
 import { motion } from "framer-motion";
 export function DashboardPage() {
   const tabContentVariants = {
     hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.42, 0, 0.58, 1] } },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
   };
   const tabs = [
     { value: "products", label: "Produk", icon: Package },
     { value: "sales", label: "Penjualan", icon: DollarSign },
     { value: "purchases", label: "Pembelian", icon: ShoppingCart },
     { value: "suppliers", label: "Pemasok", icon: Truck },
+    { value: "requests", label: "Request Masuk", icon: Inbox },
     { value: "cashflow", label: "Arus Kas", icon: ArrowRightLeft },
     { value: "finance", label: "Keuangan", icon: Banknote },
   ];
@@ -25,14 +27,14 @@ export function DashboardPage() {
       <div className="py-8 md:py-10 lg:py-12">
         <div className="mb-8">
           <h2 className="text-3xl font-display font-bold text-brand-black">
-            Dasbor Warungku
+            Dasbor OMZETIN
           </h2>
           <p className="font-mono text-muted-foreground">
             Kelola produk, penjualan, dan keuangan toko Anda.
           </p>
         </div>
         <Tabs defaultValue="products" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 md:grid-cols-6 rounded-none border-2 border-brand-black p-1 h-auto bg-muted/40">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 md:grid-cols-7 rounded-none border-2 border-brand-black p-1 h-auto bg-muted/40">
             {tabs.map(tab => (
               <TabsTrigger key={tab.value} value={tab.value} className="rounded-none font-bold uppercase text-xs sm:text-sm data-[state=active]:bg-brand-white data-[state=active]:shadow-hard-sm">
                 <tab.icon className="w-4 h-4 mr-2 hidden sm:inline-block"/>{tab.label}
@@ -44,6 +46,7 @@ export function DashboardPage() {
             <TabsContent value="sales" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SalesDashboard /></motion.div></TabsContent>
             <TabsContent value="purchases" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><PurchasesDashboard /></motion.div></TabsContent>
             <TabsContent value="suppliers" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SuppliersDashboard /></motion.div></TabsContent>
+            <TabsContent value="requests" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><JajananRequestsDashboard /></motion.div></TabsContent>
             <TabsContent value="cashflow" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><CashFlowDashboard /></motion.div></TabsContent>
             <TabsContent value="finance" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><FinanceDashboard /></motion.div></TabsContent>
           </div>

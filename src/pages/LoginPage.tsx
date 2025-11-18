@@ -20,7 +20,7 @@ export function LoginPage() {
             <KeyRound className="w-8 h-8 text-brand-black" />
           </div>
           <h1 className="text-3xl font-display font-bold text-brand-black">Akses Admin</h1>
-          <p className="font-mono text-muted-foreground">Masukkan kredensial untuk mengelola WarungOS.</p>
+          <p className="font-mono text-muted-foreground">Masukkan kredensial untuk mengelola OMZETIN.</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
@@ -28,8 +28,8 @@ export function LoginPage() {
             <Input
               id="email"
               type="email"
-              placeholder="admin@warungos.com"
-              defaultValue="admin@warungos.com"
+              placeholder="admin@omzetin.com"
+              defaultValue="admin@omzetin.com"
               className="h-12 rounded-none border-2 border-brand-black focus-visible:ring-brand-orange font-mono"
             />
           </div>

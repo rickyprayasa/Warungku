@@ -1,5 +1,5 @@
 import { IndexedEntity } from "./core-utils";
-import type { Product, Sale, Purchase, Supplier } from "@shared/types";
+import type { Product, Sale, Purchase, Supplier, JajananRequest } from "@shared/types";
 const MOCK_PRODUCTS: Product[] = [
   { id: 'prod_1', name: 'Indomie Goreng', price: 3000, cost: 2500, imageUrl: 'https://i.imgur.com/k2S224j.png', category: 'Makanan' },
   { id: 'prod_2', name: 'Teh Pucuk', price: 3500, cost: 2800, imageUrl: 'https://i.imgur.com/s2h62r0.png', category: 'Minuman' },
@@ -37,4 +37,10 @@ export class SupplierEntity extends IndexedEntity<Supplier> {
   static readonly indexName = "suppliers";
   static readonly initialState: Supplier = { id: "", name: "", contactPerson: "", phone: "" };
   static seedData = MOCK_SUPPLIERS;
+}
+export class JajananRequestEntity extends IndexedEntity<JajananRequest> {
+  static readonly entityName = "jajananRequest";
+  static readonly indexName = "jajananRequests";
+  static readonly initialState: JajananRequest = { id: "", name: "", notes: "", status: 'pending', createdAt: 0 };
+  static seedData: JajananRequest[] = [];
 }

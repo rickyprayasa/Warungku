@@ -82,3 +82,16 @@ export const supplierSchema = z.object({
   phone: z.string().min(5, "Phone number is required."),
 });
 export type SupplierFormValues = z.infer<typeof supplierSchema>;
+// Types for Jajanan Requests
+export interface JajananRequest {
+  id: string;
+  name: string;
+  notes?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: number;
+}
+export const jajananRequestSchema = z.object({
+  name: z.string().min(3, "Nama jajanan minimal 3 karakter."),
+  notes: z.string().optional(),
+});
+export type JajananRequestFormValues = z.infer<typeof jajananRequestSchema>;

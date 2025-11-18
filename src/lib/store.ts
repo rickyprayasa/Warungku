@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues } from '@shared/types';
+import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues } from '@shared/types';
 import { api } from './api-client';
 import { persist, createJSONStorage } from 'zustand/middleware'
 interface WarungState {
@@ -8,6 +8,7 @@ interface WarungState {
   sales: Sale[];
   purchases: Purchase[];
   suppliers: Supplier[];
+  jajananRequests: JajananRequest[];
   initialBalance: number;
   isLoading: boolean;
   error: string | null;
@@ -18,6 +19,7 @@ interface WarungActions {
   fetchSales: () => Promise<void>;
   fetchPurchases: () => Promise<void>;
   fetchSuppliers: () => Promise<void>;
+  fetchJajananRequests: () => Promise<void>;
   setInitialBalance: (balance: number) => void;
   login: () => void;
   logout: () => void;
@@ -29,6 +31,7 @@ interface WarungActions {
   addSupplier: (supplierData: SupplierFormValues) => Promise<Supplier>;
   updateSupplier: (supplierId: string, supplierData: SupplierFormValues) => Promise<Supplier>;
   deleteSupplier: (supplierId: string) => Promise<void>;
+  addJajananRequest: (requestData: JajananRequestFormValues) => Promise<JajananRequest>;
 }
 export const useWarungStore = create<WarungState & WarungActions>()(
   persist(
@@ -37,6 +40,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       sales: [],
       purchases: [],
       suppliers: [],
+      jajananRequests: [],
       initialBalance: 0,
       isLoading: true,
       error: null,
@@ -78,6 +82,16 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           set({ suppliers, isLoading: false });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to fetch suppliers';
+          set({ isLoading: false, error: errorMessage });
+        }
+      },
+      fetchJajananRequests: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          const jajananRequests = await api<JajananRequest[]>('/api/jajanan-requests');
+          set({ jajananRequests, isLoading: false });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch requests';
           set({ isLoading: false, error: errorMessage });
         }
       },
@@ -127,6 +141,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       deleteSupplier: async (supplierId) => {
         await api(`/api/suppliers/${supplierId}`, { method: 'DELETE' });
         set((state) => { state.suppliers = state.suppliers.filter((s) => s.id !== supplierId); });
+      },
+      addJajananRequest: async (requestData) => {
+        const newRequest = await api<JajananRequest>('/api/jajanan-requests', { method: 'POST', body: JSON.stringify(requestData) });
+        set((state) => { state.jajananRequests.unshift(newRequest); });
+        return newRequest;
       },
     })),
     {
