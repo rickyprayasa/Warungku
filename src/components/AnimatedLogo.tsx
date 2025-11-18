@@ -41,10 +41,12 @@ const barVariants: Variants = {
 };
 export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: string }) {
   const brandColors = ['rgb(243, 128, 32)', 'rgb(17, 17, 17)', 'rgb(160, 160, 160)', 'rgb(255, 255, 255)'];
+  const donutColors = ['rgb(17, 17, 17)', 'rgb(255, 255, 255)', 'rgb(160, 160, 160)']; // Black, White, Gray
+  const numDonutSegments = donutColors.length;
+  const segmentLength = DONUT_CIRCUMFERENCE / numDonutSegments;
+  const gapLength = DONUT_CIRCUMFERENCE - segmentLength;
   const barX = [7, 10, 13, 16];
-  // Offsets for each color segment, creating a layered effect
-  const donutOffsets = [0, 0.25, 0.5, 0.75];
-  const separatorAngles = [0, 90, 180, 270];
+  const separatorAngles = [0, 120, 240];
   const innerRadius = DONUT_RADIUS - DONUT_STROKE_WIDTH / 2;
   const outerRadius = DONUT_RADIUS + DONUT_STROKE_WIDTH / 2;
   return (
@@ -60,9 +62,9 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Donut Chart Frame - Layered circles with stroke-dashoffset */}
+        {/* Donut Chart Frame */}
         <motion.g style={{ transformOrigin: 'center' }} variants={donutGroupVariants}>
-          {brandColors.map((color, i) => (
+          {donutColors.map((color, i) => (
             <motion.circle
               key={i}
               cx="12"
@@ -71,11 +73,11 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
               stroke={color}
               strokeWidth={DONUT_STROKE_WIDTH}
               strokeLinecap="butt"
-              strokeDasharray={DONUT_CIRCUMFERENCE}
-              strokeDashoffset={DONUT_CIRCUMFERENCE * donutOffsets[i]}
+              strokeDasharray={`${segmentLength} ${gapLength}`}
+              transform={`rotate(${i * (360 / numDonutSegments)}, 12, 12)`}
             />
           ))}
-          {/* Segment Separators to improve visibility */}
+          {/* Segment Separators */}
           {separatorAngles.map((angle) => (
             <line
               key={`sep-${angle}`}

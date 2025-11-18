@@ -21,7 +21,7 @@ export function AppHeader() {
       'font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-transparent rounded-none transition-all duration-200 w-full text-left',
       isActive
         ? 'bg-brand-black text-brand-white'
-        : 'text-brand-black hover:bg-brand-black/10'
+        : 'text-brand-black hover:bg-brand-white/75'
     );
   const navLinks = (
     <>
