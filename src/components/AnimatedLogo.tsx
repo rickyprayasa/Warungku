@@ -39,7 +39,7 @@ const barVariants: Variants = {
     },
   }),
 };
-export function AnimatedLogo() {
+export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: string }) {
   const brandColors = ['rgb(243, 128, 32)', 'rgb(17, 17, 17)', 'rgb(160, 160, 160)', 'rgb(255, 255, 255)'];
   const barX = [7, 10, 13, 16];
   // Offsets for each color segment, creating a layered effect
@@ -106,7 +106,7 @@ export function AnimatedLogo() {
           ))}
         </g>
       </motion.svg>
-      <span className="font-display text-2xl font-bold text-brand-black">OMZETIN</span>
+      <span className={`font-display text-2xl font-bold ${textColor}`}>OMZETIN</span>
     </motion.div>
   );
 }
