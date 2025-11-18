@@ -8,7 +8,7 @@ export function CashFlowDashboard() {
   const purchases = useWarungStore((state) => state.purchases);
   const { cashIn, cashOut, netFlow } = useMemo(() => {
     const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
-    const totalPurchases = purchases.reduce((sum, purchase) => sum + purchase.cost, 0);
+    const totalPurchases = purchases.reduce((sum, purchase) => sum + purchase.totalCost, 0);
     return {
       cashIn: totalSales,
       cashOut: totalPurchases,
@@ -17,7 +17,7 @@ export function CashFlowDashboard() {
   }, [sales, purchases]);
   const combinedTransactions = useMemo(() => {
     const saleTransactions = sales.map(s => ({ type: 'Sale', date: s.createdAt, amount: s.total, description: `${s.items.length} items sold` }));
-    const purchaseTransactions = purchases.map(p => ({ type: 'Purchase', date: p.createdAt, amount: p.cost, description: `Purchase: ${p.productName}` }));
+    const purchaseTransactions = purchases.map(p => ({ type: 'Purchase', date: p.createdAt, amount: p.totalCost, description: `Purchase: ${p.productName}` }));
     return [...saleTransactions, ...purchaseTransactions].sort((a, b) => b.date - a.date);
   }, [sales, purchases]);
   const formatCurrency = (value: number) => {
