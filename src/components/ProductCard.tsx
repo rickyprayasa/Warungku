@@ -5,6 +5,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ProductDetailDialog } from './ProductDetailDialog';
+import { motion } from 'framer-motion';
 interface ProductCardProps {
   product: Product;
 }
@@ -19,7 +20,9 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="bg-brand-white border-2 border-brand-black rounded-none flex flex-col overflow-hidden transition-all duration-200 hover:shadow-hard cursor-pointer group">
+        <motion.div 
+          whileHover={{ y: -5 }}
+          className="bg-brand-white border-2 border-brand-black rounded-none flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-hard cursor-pointer group">
           <div className="aspect-square w-full overflow-hidden border-b-2 border-brand-black">
             <img
               src={product.imageUrl}
@@ -34,7 +37,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
             <p className="font-mono font-bold text-brand-orange text-xl mt-2">{formatCurrency(product.price)}</p>
           </div>
-        </div>
+        </motion.div>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
         <ProductDetailDialog product={product} />
