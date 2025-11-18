@@ -1,6 +1,6 @@
 import { motion, Variants } from 'framer-motion';
 // Donut chart properties
-const DONUT_RADIUS = 11;
+const DONUT_RADIUS = 10.5;
 const DONUT_STROKE_WIDTH = 2.5;
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
 const donutGroupVariants: Variants = {
@@ -86,7 +86,7 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
               x2="12"
               y2={12 - outerRadius}
               stroke="rgb(17, 17, 17)"
-              strokeWidth="1"
+              strokeWidth="0.5"
               transform={`rotate(${angle} 12 12)`}
             />
           ))}
