@@ -3,14 +3,16 @@ import { motion, Variants } from 'framer-motion';
 const DONUT_RADIUS = 11;
 const DONUT_STROKE_WIDTH = 2.5;
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
-const donutSegmentVariants: Variants = {
+const donutGroupVariants: Variants = {
   rest: {
     scale: 1,
+    rotate: -90,
     transition: { duration: 0.4, ease: 'easeOut' },
   },
   hover: {
     scale: 1.05,
-    transition: { duration: 0.5, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' },
+    rotate: -90,
+    transition: { duration: 0.3, ease: 'easeInOut' },
   },
 };
 // Bar chart properties - adjusted to fit inside the donut
@@ -36,7 +38,8 @@ const barVariants: Variants = {
 export function AnimatedLogo() {
   const brandColors = ['rgb(243, 128, 32)', 'rgb(17, 17, 17)', 'rgb(160, 160, 160)', 'rgb(255, 255, 255)'];
   const barX = [7, 10, 13, 16];
-  const segmentRotations = [-90, 0, 90, 180];
+  // Offsets for each color segment, creating a layered effect
+  const donutOffsets = [0, 0.25, 0.5, 0.75];
   return (
     <motion.div
       initial="rest"
@@ -50,8 +53,8 @@ export function AnimatedLogo() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Donut Chart Frame */}
-        <g style={{ transformOrigin: 'center' }}>
+        {/* Donut Chart Frame - Layered circles with stroke-dashoffset */}
+        <motion.g style={{ transformOrigin: 'center' }} variants={donutGroupVariants}>
           {brandColors.map((color, i) => (
             <motion.circle
               key={i}
@@ -61,12 +64,11 @@ export function AnimatedLogo() {
               stroke={color}
               strokeWidth={DONUT_STROKE_WIDTH}
               strokeLinecap="butt"
-              transform={`rotate(${segmentRotations[i]} 12 12)`}
-              strokeDasharray={`${DONUT_CIRCUMFERENCE / 4} ${DONUT_CIRCUMFERENCE}`}
-              variants={donutSegmentVariants}
+              strokeDasharray={DONUT_CIRCUMFERENCE}
+              strokeDashoffset={DONUT_CIRCUMFERENCE * donutOffsets[i]}
             />
           ))}
-        </g>
+        </motion.g>
         {/* Bar Chart (inside the donut) */}
         <g>
           {brandColors.map((color, i) => (
