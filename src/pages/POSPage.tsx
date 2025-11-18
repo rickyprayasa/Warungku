@@ -3,7 +3,7 @@ import { useWarungStore } from '@/lib/store';
 import { ProductCard } from '@/components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Search, PlusCircle } from 'lucide-react';
+import { AlertTriangle, Search, PlusCircle, CornerDownRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
@@ -12,6 +12,8 @@ import { ProductDetailDialog } from '@/components/ProductDetailDialog';
 import type { Product } from '@shared/types';
 import { Input } from '@/components/ui/input';
 import { RequestJajananForm } from '@/components/RequestJajananForm';
+import { SnackIconBackground } from '@/components/SnackIconBackground';
+import { motion } from 'framer-motion';
 const MobileProductRow = ({ product }: { product: Product }) => {
   const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   return (
@@ -63,8 +65,9 @@ export function POSPage() {
     return filtered;
   }, [products, selectedCategory, searchTerm]);
   return (
-    <div className="bg-muted/40">
-      <main className="flex-1 overflow-y-auto">
+    <div className="bg-muted/40 relative overflow-hidden">
+      <SnackIconBackground />
+      <main className="flex-1 overflow-y-auto relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8 md:py-10 lg:py-12">
             <div className="mb-8 text-center">
@@ -86,7 +89,15 @@ export function POSPage() {
                 />
               </div>
             </div>
-            <div className="flex justify-center mb-8">
+            <div className="flex flex-col items-center justify-center mb-8">
+              <motion.div
+                animate={{ x: [0, 10, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                className="flex items-center gap-2 mb-2"
+              >
+                <p className="font-mono text-sm font-bold text-brand-orange">Punya ide jajanan?</p>
+                <CornerDownRight className="w-5 h-5 text-brand-orange" />
+              </motion.div>
               <Dialog open={isRequestDialogOpen} onOpenChange={setRequestDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="text-brand-black border-2 border-dashed border-brand-black rounded-none font-bold uppercase text-sm hover:bg-brand-orange hover:border-solid active:translate-x-0.5 active:translate-y-0.5 transition-all h-11">
