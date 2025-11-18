@@ -1,7 +1,8 @@
 import { motion, Variants } from 'framer-motion';
-const CIRCLE_RADIUS = 10;
-const CIRCLE_STROKE_WIDTH = 3;
-const CIRCLE_LENGTH = 2 * Math.PI * CIRCLE_RADIUS;
+// Donut chart properties
+const DONUT_RADIUS = 11;
+const DONUT_STROKE_WIDTH = 2.5;
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
 const donutSegmentVariants: Variants = {
   rest: {
     scale: 1,
@@ -12,13 +13,17 @@ const donutSegmentVariants: Variants = {
     transition: { duration: 0.5, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' },
   },
 };
+// Bar chart properties - adjusted to fit inside the donut
+const BAR_BASE_Y = 18;
 const barVariants: Variants = {
   rest: (i: number) => ({
-    y: [20, 18, 16, 14][i],
+    y: BAR_BASE_Y - [4, 6, 8, 5][i], // Rest heights
+    height: [4, 6, 8, 5][i],
     transition: { duration: 0.4, ease: 'easeOut' },
   }),
   hover: (i: number) => ({
-    y: [16, 12, 8, 4][i],
+    y: BAR_BASE_Y - [8, 12, 10, 7][i], // Hover heights
+    height: [8, 12, 10, 7][i],
     transition: {
       duration: 0.5,
       ease: 'easeInOut',
@@ -30,7 +35,7 @@ const barVariants: Variants = {
 };
 export function AnimatedLogo() {
   const brandColors = ['rgb(243, 128, 32)', 'rgb(17, 17, 17)', 'rgb(160, 160, 160)', 'rgb(255, 255, 255)'];
-  const barX = [5, 9, 13, 17];
+  const barX = [7, 10, 13, 16];
   const segmentRotations = [-90, 0, 90, 180];
   return (
     <motion.div
@@ -45,31 +50,30 @@ export function AnimatedLogo() {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Donut Chart - now with 4 colored segments */}
+        {/* Donut Chart Frame */}
         <g style={{ transformOrigin: 'center' }}>
           {brandColors.map((color, i) => (
             <motion.circle
               key={i}
               cx="12"
               cy="12"
-              r={CIRCLE_RADIUS}
+              r={DONUT_RADIUS}
               stroke={color}
-              strokeWidth={CIRCLE_STROKE_WIDTH}
+              strokeWidth={DONUT_STROKE_WIDTH}
               strokeLinecap="butt"
               transform={`rotate(${segmentRotations[i]} 12 12)`}
-              strokeDasharray={`${CIRCLE_LENGTH / 4} ${CIRCLE_LENGTH}`}
+              strokeDasharray={`${DONUT_CIRCUMFERENCE / 4} ${DONUT_CIRCUMFERENCE}`}
               variants={donutSegmentVariants}
             />
           ))}
         </g>
-        {/* Bar Chart - slightly scaled down to emphasize donut */}
-        <g transform="scale(0.8) translate(3, 3)">
+        {/* Bar Chart (inside the donut) */}
+        <g>
           {brandColors.map((color, i) => (
             <motion.rect
               key={i}
               x={barX[i]}
-              width="2.5"
-              height="20"
+              width="2"
               fill={color}
               stroke="rgb(17, 17, 17)"
               strokeWidth="0.5"
