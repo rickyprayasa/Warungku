@@ -2,7 +2,6 @@ import { createContext, useContext, useMemo } from 'react';
 import { useWarungStore } from './store';
 import id from '@/locales/id.json';
 import en from '@/locales/en.json';
-import { useShallow } from 'zustand/react/shallow';
 const translations = { id, en };
 type Language = 'id' | 'en';
 interface I18nContextType {
@@ -12,33 +11,31 @@ interface I18nContextType {
 }
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
-  const { language, setLanguage } = useWarungStore(
-    useShallow((state) => ({
-      language: state.language,
-      setLanguage: state.setLanguage,
-    }))
-  );
-  const t = useMemo(() => {
-    return (key: string, params?: Record<string, string | number>): string => {
-      const keys = key.split('.');
-      let current: any = translations[language];
-      for (const k of keys) {
-        if (current && typeof current === 'object' && k in current) {
-          current = current[k];
-        } else {
-          return key; // Return key if not found
+  const language = useWarungStore((state) => state.language);
+  const setLanguage = useWarungStore((state) => state.setLanguage);
+  const t = useMemo(
+    () =>
+      (key: string, params?: Record<string, string | number>): string => {
+        const keys = key.split('.');
+        let current: any = translations[language];
+        for (const k of keys) {
+          if (current && typeof current === 'object' && k in current) {
+            current = current[k];
+          } else {
+            return key; // Return key if not found
+          }
         }
-      }
-      let translatedString = typeof current === 'string' ? current : key;
-      if (params) {
-        Object.keys(params).forEach(paramKey => {
-          translatedString = translatedString.replace(`{${paramKey}}`, String(params[paramKey]));
-        });
-      }
-      return translatedString;
-    };
-  }, [language]);
-  const value = { language, setLanguage, t };
+        let translatedString = typeof current === 'string' ? current : key;
+        if (params) {
+          Object.keys(params).forEach((paramKey) => {
+            translatedString = translatedString.replace(`{${paramKey}}`, String(params[paramKey]));
+          });
+        }
+        return translatedString;
+      },
+    [language]
+  );
+  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };
 export const useTranslation = () => {
