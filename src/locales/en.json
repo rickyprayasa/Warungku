@@ -132,7 +132,7 @@
     "category": "Category",
     "price": "Price",
     "date": "Date",
-    "items": "Items",
+    "items": "{count, plural, one {# item sold} other {# items sold}}",
     "totalSale": "Total Sale",
     "profit": "Profit",
     "product": "Product",

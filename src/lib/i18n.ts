@@ -8,7 +8,7 @@ type Language = 'id' | 'en';
 interface I18nContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string, params?: Record<string, string>) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
@@ -18,7 +18,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
       setLanguage: state.setLanguage,
     }))
   );
-  const t = useMemo(() => (key: string, params?: Record<string, string>): string => {
+  const t = useMemo((): I18nContextType['t'] => (key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
     let current: any = translations[language];
     for (const k of keys) {
@@ -31,7 +31,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
     let translatedString = typeof current === 'string' ? current : key;
     if (params) {
       Object.keys(params).forEach(paramKey => {
-        translatedString = translatedString.replace(`{${paramKey}}`, params[paramKey]);
+        translatedString = translatedString.replace(`{${paramKey}}`, String(params[paramKey]));
       });
     }
     return translatedString;

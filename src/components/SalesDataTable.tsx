@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { ChevronDown } from 'lucide-react';
 import type { Sale } from '@shared/types';
 import { useTranslation } from '@/lib/i18n';
+import { motion } from 'framer-motion';
 export function SalesDataTable() {
   const sales = useWarungStore((state) => state.sales);
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ export function SalesDataTable() {
                 <TableRow className="border-b-2 border-brand-black last:border-b-0">
                   <TableCell>
                     <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-9 p-0">
+                      <Button variant="ghost" size="sm" className="w-9 p-0 data-[state=open]:rotate-180 transition-transform">
                         <ChevronDown className="h-4 w-4" />
                         <span className="sr-only">Toggle</span>
                       </Button>
@@ -56,7 +57,13 @@ export function SalesDataTable() {
                   <TableCell className="font-mono text-right font-bold text-green-600">{formatCurrency(calculateProfit(sale))}</TableCell>
                 </TableRow>
                 <CollapsibleContent asChild>
-                  <tr className="bg-muted/40">
+                  <motion.tr
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="bg-muted/40"
+                  >
                     <td colSpan={5} className="p-0">
                       <div className="p-4">
                         <h4 className="font-bold mb-2">Sale Details:</h4>
@@ -84,7 +91,7 @@ export function SalesDataTable() {
                         </Table>
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 </CollapsibleContent>
               </>
             </Collapsible>

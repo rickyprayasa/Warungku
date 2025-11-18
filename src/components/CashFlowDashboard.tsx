@@ -18,10 +18,10 @@ export function CashFlowDashboard() {
     };
   }, [sales, purchases]);
   const combinedTransactions = useMemo(() => {
-    const saleTransactions = sales.map(s => ({ type: 'Sale', date: s.createdAt, amount: s.total, description: `${s.items.length} items sold` }));
-    const purchaseTransactions = purchases.map(p => ({ type: 'Purchase', date: p.createdAt, amount: p.totalCost, description: `Purchase: ${p.productName}` }));
-    return [...saleTransactions, ...purchaseTransactions].sort((a, b) => b.date - a.date);
-  }, [sales, purchases]);
+    const saleTransactions = sales.map(s => ({ type: 'Sale', date: s.createdAt, amount: s.total, description: t('tables.items', { count: s.items.length }) }));
+    const purchaseTransactions = purchases.map(p => ({ type: 'Purchase', date: p.createdAt, amount: p.totalCost, description: `${p.productName}` }));
+    return [...saleTransactions, ...purchaseTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [sales, purchases, t]);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   };

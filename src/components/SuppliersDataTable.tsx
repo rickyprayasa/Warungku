@@ -94,7 +94,7 @@ export function SuppliersDataTable() {
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-2xl font-bold">{t('dialogs.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('dialogs.deleteSupplier', { supplierName: selectedSupplier?.name || '' })}
+              {t('dialogs.deleteSupplier', { supplierName: selectedSupplier?.name ?? '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -132,7 +132,7 @@
     "category": "Kategori",
     "price": "Harga",
     "date": "Tanggal",
-    "items": "Item",
+    "items": "{count} item terjual",
     "totalSale": "Total Penjualan",
     "profit": "Laba",
     "product": "Produk",

@@ -133,7 +133,7 @@ export function ProductDataTable() {
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-2xl font-bold">{t('dialogs.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('dialogs.deleteProduct', { productName: selectedProduct?.name || '' })}
+              {t('dialogs.deleteProduct', { productName: selectedProduct?.name ?? '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
