@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 export function DashboardPage() {
   const tabContentVariants = {
     hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.42, 0, 0.58, 1] } },
   };
   const tabs = [
     { value: "products", label: "Produk", icon: Package },

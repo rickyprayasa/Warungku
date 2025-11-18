@@ -125,4 +125,15 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const newRequest = await JajananRequestEntity.create(c.env, requestData);
     return ok(c, newRequest);
   });
+  app.put('/api/jajanan-requests/:id', async (c) => {
+    const { id } = c.req.param();
+    const { status } = (await c.req.json()) as { status: JajananRequest['status'] };
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return bad(c, 'Invalid status value.');
+    }
+    const request = new JajananRequestEntity(c.env, id);
+    if (!(await request.exists())) return notFound(c, 'Request not found.');
+    await request.patch({ status, updatedAt: Date.now() });
+    return ok(c, await request.getState());
+  });
 }

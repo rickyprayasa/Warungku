@@ -32,6 +32,7 @@ interface WarungActions {
   updateSupplier: (supplierId: string, supplierData: SupplierFormValues) => Promise<Supplier>;
   deleteSupplier: (supplierId: string) => Promise<void>;
   addJajananRequest: (requestData: JajananRequestFormValues) => Promise<JajananRequest>;
+  updateJajananRequestStatus: (requestId: string, status: JajananRequest['status']) => Promise<JajananRequest>;
 }
 export const useWarungStore = create<WarungState & WarungActions>()(
   persist(
@@ -146,6 +147,17 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const newRequest = await api<JajananRequest>('/api/jajanan-requests', { method: 'POST', body: JSON.stringify(requestData) });
         set((state) => { state.jajananRequests.unshift(newRequest); });
         return newRequest;
+      },
+      updateJajananRequestStatus: async (requestId, status) => {
+        const updatedRequest = await api<JajananRequest>(`/api/jajanan-requests/${requestId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ status }),
+        });
+        set((state) => {
+          const index = state.jajananRequests.findIndex((r) => r.id === requestId);
+          if (index !== -1) state.jajananRequests[index] = updatedRequest;
+        });
+        return updatedRequest;
       },
     })),
     {

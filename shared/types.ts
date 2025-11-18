@@ -89,6 +89,7 @@ export interface JajananRequest {
   notes?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: number;
+  updatedAt?: number;
 }
 export const jajananRequestSchema = z.object({
   name: z.string().min(3, "Nama jajanan minimal 3 karakter."),
