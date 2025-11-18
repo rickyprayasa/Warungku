@@ -13,7 +13,7 @@ const I18nContext = createContext<I18nContextType | null>(null);
 export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   const language = useWarungStore((state) => state.language);
   const setLanguage = useWarungStore((state) => state.setLanguage);
-  const t = useCallback((key: string, params?: Record<string, string | number>): string => {
+  const t = useCallback((key: string, params?: Record<string, string | number>) => {
     const keys = key.split('.');
     let current: any = translations[language];
     for (const k of keys) {

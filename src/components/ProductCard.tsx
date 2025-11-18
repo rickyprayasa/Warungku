@@ -20,8 +20,9 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <motion.div 
+        <motion.div
           whileHover={{ y: -5 }}
+          transition={{ duration: 0.2 }}
           className="bg-brand-white border-2 border-brand-black rounded-none flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-hard cursor-pointer group">
           <div className="aspect-square w-full overflow-hidden border-b-2 border-brand-black">
             <img

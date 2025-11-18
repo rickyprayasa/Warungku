@@ -12,7 +12,7 @@ export function DashboardPage() {
   const { t } = useTranslation();
   const tabContentVariants = {
     hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
   };
   const tabs = [
     { value: "products", label: t('dashboard.tabs.products'), icon: Package },
