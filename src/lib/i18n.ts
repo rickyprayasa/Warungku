@@ -10,7 +10,7 @@ interface I18nContextType {
   setLanguage: (lang: Language) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
-const I18nContext = createContext<I18nContextType | undefined>(undefined);
+const I18nContext = createContext<I18nContextType>(null!);
 export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   const { language, setLanguage } = useWarungStore(
     useShallow((state) => ({
@@ -41,7 +41,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 };
 export const useTranslation = () => {
   const context = useContext(I18nContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useTranslation must be used within an I18nProvider');
   }
   return context;
