@@ -10,7 +10,7 @@ const donutGroupVariants: Variants = {
     transition: { duration: 0.4, ease: 'easeOut' },
   },
   hover: {
-    scale: 1.05,
+    scale: 1.02,
     rotate: 270, // 360 - 90
     transition: {
       duration: 4,
