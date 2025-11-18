@@ -20,8 +20,8 @@ export function AppHeader() {
     cn(
       'font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-transparent rounded-none transition-all duration-200 w-full text-left',
       isActive
-        ? 'bg-brand-white text-brand-black'
-        : 'text-brand-white hover:bg-brand-white/20'
+        ? 'bg-brand-black text-brand-white'
+        : 'text-brand-black hover:bg-brand-black/10'
     );
   const navLinks = (
     <>
@@ -36,14 +36,14 @@ export function AppHeader() {
   return (
     <Collapsible open={isMenuOpen} onOpenChange={setMenuOpen} asChild>
       <>
-        <header className="bg-brand-black border-b-4 border-brand-orange sticky top-0 z-50">
+        <header className="bg-brand-orange/90 backdrop-blur-sm border-b-4 border-brand-black sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-20">
               <Link to="/" className="flex items-center gap-2">
-                <AnimatedLogo textColor="text-brand-white" />
+                <AnimatedLogo textColor="text-brand-black" />
               </Link>
               {/* Desktop Navigation */}
-              <nav className="hidden md:flex items-center space-x-2 bg-brand-white/20 border-2 border-brand-white/50 p-1">
+              <nav className="hidden md:flex items-center space-x-2 bg-brand-black/10 border-2 border-brand-black/20 p-1">
                 {navLinks}
               </nav>
               <div className="flex items-center gap-4">
@@ -61,8 +61,8 @@ export function AppHeader() {
               {/* Mobile Navigation Trigger */}
               <div className="md:hidden">
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="icon" className="border-2 border-brand-white rounded-none">
-                    {isMenuOpen ? <X className="h-6 w-6 text-brand-white" /> : <Menu className="h-6 w-6 text-brand-white" />}
+                  <Button variant="ghost" size="icon" className="border-2 border-brand-black rounded-none">
+                    {isMenuOpen ? <X className="h-6 w-6 text-brand-black" /> : <Menu className="h-6 w-6 text-brand-black" />}
                   </Button>
                 </CollapsibleTrigger>
               </div>
@@ -77,7 +77,7 @@ export function AppHeader() {
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  className="overflow-hidden md:hidden border-t-2 border-brand-orange bg-brand-black/80 backdrop-blur-sm"
+                  className="overflow-hidden md:hidden border-t-2 border-brand-black bg-brand-orange/95 backdrop-blur-sm"
                 >
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex flex-col space-y-2">
