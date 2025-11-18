@@ -2,17 +2,17 @@ import { motion, Variants } from 'framer-motion';
 const CIRCLE_LENGTH = 2 * Math.PI * 10; // 2 * PI * R
 const donutVariants: Variants = {
   rest: {
-    strokeDashoffset: CIRCLE_LENGTH * 0.25,
+    strokeDashoffset: 0, // Show full circle by default
     transition: { duration: 0.4, ease: 'easeOut' },
   },
   hover: {
-    strokeDashoffset: 0,
+    scale: 1.05, // Add a subtle pulse on hover
     transition: { duration: 0.5, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' },
   },
 };
 const barVariants: Variants = {
   rest: (i: number) => ({
-    y: 22,
+    y: [20, 18, 16, 14][i], // Make bars visible in rest state
     transition: { duration: 0.4, ease: 'easeOut' },
   }),
   hover: (i: number) => ({
@@ -53,6 +53,8 @@ export function AnimatedLogo() {
           strokeLinecap="round"
           transform="rotate(-90 12 12)"
           strokeDasharray={CIRCLE_LENGTH}
+          originX="12"
+          originY="12"
           variants={donutVariants}
         />
         {/* Bar Chart */}
