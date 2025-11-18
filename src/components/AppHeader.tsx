@@ -24,7 +24,7 @@ export function AppHeader() {
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center space-x-6">
             <h1 className="text-3xl font-display font-extrabold text-brand-black tracking-tighter">
-              WARUNGKU
+              WarungOS
             </h1>
             <nav className="hidden md:flex items-center space-x-4">
               <NavLink to="/" className={navLinkClass}>

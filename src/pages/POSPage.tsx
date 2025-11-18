@@ -66,7 +66,10 @@ export function POSPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8 md:py-10 lg:py-12">
             <div className="mb-8 text-center">
-              <h2 className="text-3xl font-display font-bold text-brand-black">Menu Jajanan</h2>
+              <div className="flex items-center justify-center mb-2">
+                <img src="https://i.imgur.com/Xzv9T8m.png" alt="Jajanan Logo" className="h-12 w-auto mr-3" />
+                <h2 className="text-3xl font-display font-bold text-brand-black">Menu Jajanan</h2>
+              </div>
               <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia.</p>
             </div>
             <div className="max-w-2xl mx-auto mb-8">
