@@ -1,60 +1,29 @@
-import { motion, Variants } from 'framer-motion';
-// Donut chart properties
-const DONUT_RADIUS = 10.5;
-const DONUT_STROKE_WIDTH = 2.5;
-const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
-const donutGroupVariants: Variants = {
+import { motion } from 'framer-motion';
+const iconVariants = {
   rest: {
-    scale: 1,
-    rotate: -90,
-    transition: { duration: 0.4, ease: 'easeOut' },
+    '--path-1-d': 'path("M 12 2 A 10 10 0 0 1 22 12")',
+    '--path-2-d': 'path("M 2 12 A 10 10 0 0 1 12 22")',
+    '--bar-1-y': 14,
+    '--bar-2-y': 10,
+    '--bar-3-y': 6,
+    transition: { duration: 0.3, ease: 'easeInOut' },
   },
   hover: {
-    scale: 1.02,
-    rotate: 270, // 360 - 90
-    transition: {
-      duration: 4,
-      ease: 'linear',
-      repeat: Infinity,
-    },
+    '--path-1-d': 'path("M 12 2 A 10 10 0 1 1 2 12")',
+    '--path-2-d': 'path("M 22 12 A 10 10 0 0 1 12 22")',
+    '--bar-1-y': 10,
+    '--bar-2-y': 6,
+    '--bar-3-y': 14,
+    transition: { duration: 0.4, ease: 'easeInOut', repeat: Infinity, repeatType: 'reverse' },
   },
 };
-// Bar chart properties - adjusted to fit inside the donut
-const BAR_BASE_Y = 18;
-const barVariants: Variants = {
-  rest: (i: number) => ({
-    y: BAR_BASE_Y - [4, 6, 8, 5][i], // Rest heights
-    height: [4, 6, 8, 5][i],
-    transition: { duration: 0.4, ease: 'easeOut' },
-  }),
-  hover: (i: number) => ({
-    y: BAR_BASE_Y - [8, 12, 10, 7][i], // Hover heights
-    height: [8, 12, 10, 7][i],
-    transition: {
-      duration: 0.5,
-      ease: 'easeInOut',
-      repeat: Infinity,
-      repeatType: 'reverse',
-      delay: i * 0.05,
-    },
-  }),
-};
-export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: string }) {
-  const brandColors = ['rgb(243, 128, 32)', 'rgb(17, 17, 17)', 'rgb(160, 160, 160)', 'rgb(255, 255, 255)'];
-  const donutColors = ['rgb(17, 17, 17)', 'rgb(255, 255, 255)', 'rgb(160, 160, 160)']; // Black, White, Gray
-  const numDonutSegments = donutColors.length;
-  const segmentLength = DONUT_CIRCUMFERENCE / numDonutSegments;
-  const gapLength = DONUT_CIRCUMFERENCE - segmentLength;
-  const barX = [7, 10, 13, 16];
-  const separatorAngles = [0, 120, 240];
-  const innerRadius = DONUT_RADIUS - DONUT_STROKE_WIDTH / 2;
-  const outerRadius = DONUT_RADIUS + DONUT_STROKE_WIDTH / 2;
+export function AnimatedLogo() {
   return (
     <motion.div
       initial="rest"
       whileHover="hover"
       animate="rest"
-      className="flex items-center gap-2 cursor-pointer transform-gpu"
+      className="flex items-center gap-2 cursor-pointer"
     >
       <motion.svg
         viewBox="0 0 24 24"
@@ -62,53 +31,51 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Donut Chart Frame */}
-        <motion.g style={{ transformOrigin: 'center' }} variants={donutGroupVariants}>
-          {donutColors.map((color, i) => (
-            <motion.circle
-              key={i}
-              cx="12"
-              cy="12"
-              r={DONUT_RADIUS}
-              stroke={color}
-              strokeWidth={DONUT_STROKE_WIDTH}
-              strokeLinecap="butt"
-              strokeDasharray={`${segmentLength} ${gapLength}`}
-              transform={`rotate(${i * (360 / numDonutSegments)}, 12, 12)`}
-            />
-          ))}
-          {/* Segment Separators */}
-          {separatorAngles.map((angle) => (
-            <line
-              key={`sep-${angle}`}
-              x1="12"
-              y1={12 - innerRadius}
-              x2="12"
-              y2={12 - outerRadius}
-              stroke="rgb(17, 17, 17)"
-              strokeWidth="0.5"
-              transform={`rotate(${angle} 12 12)`}
-            />
-          ))}
-        </motion.g>
-        {/* Bar Chart (inside the donut) */}
-        <g>
-          {brandColors.map((color, i) => (
-            <motion.rect
-              key={i}
-              x={barX[i]}
-              width="2"
-              fill={color}
-              stroke="rgb(17, 17, 17)"
-              strokeWidth="0.5"
-              rx="1"
-              variants={barVariants}
-              custom={i}
-            />
-          ))}
-        </g>
+        {/* Donut Chart Part */}
+        <motion.path
+          d="M 12 2 A 10 10 0 0 1 22 12"
+          stroke="rgb(17, 17, 17)"
+          strokeWidth="3"
+          style={{ d: 'var(--path-1-d)' as any }}
+          variants={iconVariants}
+        />
+        <motion.path
+          d="M 2 12 A 10 10 0 0 1 12 22"
+          stroke="rgb(243, 128, 32)"
+          strokeWidth="3"
+          style={{ d: 'var(--path-2-d)' as any }}
+          variants={iconVariants}
+        />
+        {/* Bar Chart Part (inside the donut) */}
+        <motion.rect
+          x="6"
+          width="3"
+          height="8"
+          fill="rgb(17, 17, 17)"
+          rx="1"
+          style={{ y: 'var(--bar-1-y)' as any }}
+          variants={iconVariants}
+        />
+        <motion.rect
+          x="10.5"
+          width="3"
+          height="12"
+          fill="rgb(243, 128, 32)"
+          rx="1"
+          style={{ y: 'var(--bar-2-y)' as any }}
+          variants={iconVariants}
+        />
+        <motion.rect
+          x="15"
+          width="3"
+          height="16"
+          fill="rgb(17, 17, 17)"
+          rx="1"
+          style={{ y: 'var(--bar-3-y)' as any }}
+          variants={iconVariants}
+        />
       </motion.svg>
-      <span className={`font-display text-2xl font-bold ${textColor}`}>OMZETIN</span>
+      <span className="font-display text-2xl font-bold text-brand-black">OMZETIN</span>
     </motion.div>
   );
 }
