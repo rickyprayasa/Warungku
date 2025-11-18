@@ -22,8 +22,9 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
       setLanguage: state.setLanguage,
     }))
   );
-  const t = useMemo((): I18nContextType['t'] => (key: string, params?: Record<string, string | number>): string => {
-    const keys = key.split('.');
+  const t = useMemo((): I18nContextType['t'] => {
+    return (key: string, params?: Record<string, string | number>): string => {
+      const keys = key.split('.');
     let current: any = translations[language];
     for (const k of keys) {
       if (current && typeof current === 'object' && k in current) {
@@ -39,6 +40,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
       });
     }
     return translatedString;
+    };
   }, [language]);
   const value = { language, setLanguage, t };
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
