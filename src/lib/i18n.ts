@@ -10,7 +10,11 @@ interface I18nContextType {
   setLanguage: (lang: Language) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
-const I18nContext = createContext<I18nContextType>(null!);
+const I18nContext = createContext<I18nContextType>({
+  language: 'id',
+  setLanguage: () => {},
+  t: (key: string) => key,
+});
 export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   const { language, setLanguage } = useWarungStore(
     useShallow((state) => ({
