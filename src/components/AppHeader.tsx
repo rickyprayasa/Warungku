@@ -22,7 +22,7 @@ export function AppHeader() {
     <header className="bg-brand-orange border-b-4 border-brand-black sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <nav className="flex items-center space-x-4">
+          <nav className="hidden md:flex items-center space-x-4">
             <NavLink to="/" className={navLinkClass}>
               Menu
             </NavLink>
@@ -30,7 +30,7 @@ export function AppHeader() {
               Dashboard
             </NavLink>
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center">
             {isAuthenticated && (
               <Button
                 onClick={handleLogout}
@@ -41,23 +41,16 @@ export function AppHeader() {
                 Logout
               </Button>
             )}
-            <a
-              href="https://rsquareidea.my.id/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 group"
-            >
-              <span className="font-mono text-xs font-bold text-brand-black hidden sm:block">
-                Powered by
-              </span>
-              <img
-                src="https://i.imgur.com/MmO4CAn.png"
-                alt="RSQUARE Logo"
-                className="h-8 w-auto transition-transform duration-300 group-hover:scale-110"
-              />
-            </a>
           </div>
         </div>
+        <nav className="md:hidden flex items-center space-x-2 pb-4">
+            <NavLink to="/" className={navLinkClass}>
+              Menu
+            </NavLink>
+            <NavLink to="/dashboard" className={navLinkClass}>
+              Dashboard
+            </NavLink>
+        </nav>
       </div>
     </header>
   );

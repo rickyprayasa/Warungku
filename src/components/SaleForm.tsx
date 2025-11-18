@@ -86,7 +86,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
                   <FormItem className="w-24">
                     <FormLabel className="font-mono font-bold text-xs">Qty</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} onChange={event => field.onChange(+event.target.value)} className="rounded-none border-2 border-brand-black" />
+                      <Input type="number" {...field} className="rounded-none border-2 border-brand-black" />
                     </FormControl>
                   </FormItem>
                 )}
