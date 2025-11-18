@@ -9,11 +9,11 @@ interface I18nContextType {
   setLanguage: (lang: Language) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
-const I18nContext = createContext<I18nContextType | null>(null);
+const I18nContext = createContext<I18nContextType | undefined>(undefined);
 export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   const language = useWarungStore((state) => state.language);
   const setLanguage = useWarungStore((state) => state.setLanguage);
-  const t = useCallback((key: string, params?: Record<string, string | number>) => {
+  const t = useCallback((key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
     let current: any = translations[language];
     for (const k of keys) {
@@ -36,7 +36,7 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
 };
 export const useTranslation = () => {
   const context = useContext(I18nContext);
-  if (context === null) {
+  if (context === undefined) {
     throw new Error('useTranslation must be used within an I18nProvider');
   }
   return context;
