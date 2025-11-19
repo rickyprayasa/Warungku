@@ -10,8 +10,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
   app.get('/api/test-db', async (c) => {
     try {
-      const { results } = await c.env.WarungkuDB
-        .prepare('SELECT * FROM product ORDER BY name LIMIT 10')
+      const { results } = await c.env.DB
+        .prepare('SELECT * FROM products ORDER BY name LIMIT 10')
         .all();
 
       return ok(c, { products: results });
