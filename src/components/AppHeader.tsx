@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { LogOut, Menu, X } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
+import { SettingsDialog } from './SettingsDialog';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 export function AppHeader() {
@@ -46,16 +47,19 @@ export function AppHeader() {
               <nav className="hidden md:flex items-center space-x-2 bg-brand-black/10 border-2 border-brand-black/20 p-1">
                 {navLinks}
               </nav>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 {isAuthenticated && (
-                  <Button
-                    onClick={handleLogout}
-                    variant="ghost"
-                    className="hidden md:flex font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200 bg-brand-white text-brand-black hover:bg-destructive hover:text-destructive-foreground hover:shadow-hard-sm"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Keluar
-                  </Button>
+                  <>
+                    <SettingsDialog />
+                    <Button
+                      onClick={handleLogout}
+                      variant="ghost"
+                      className="hidden md:flex font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200 bg-brand-white text-brand-black hover:bg-destructive hover:text-destructive-foreground hover:shadow-hard-sm"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Keluar
+                    </Button>
+                  </>
                 )}
               </div>
               {/* Mobile Navigation Trigger */}

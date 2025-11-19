@@ -8,6 +8,7 @@ import type { Context } from "hono";
 
 export interface Env {
   GlobalDurableObject: DurableObjectNamespace<GlobalDurableObject>;
+  WarungkuDB: D1Database;
 }
 
 type Doc<T> = { v: number; data: T };
@@ -51,22 +52,22 @@ export class GlobalDurableObject extends DurableObject<Env, unknown> {
   async listPrefix(prefix: string, startAfter?: string | null, limit?: number) {
     const opts: Record<string, unknown> = { prefix };
     if (limit != null) opts.limit = limit;
-    if (startAfter)   opts.startAfter = startAfter;
-  
+    if (startAfter) opts.startAfter = startAfter;
+
     const m = await this.ctx.storage.list(opts);            // Map<string, unknown>
     const names = Array.from((m as Map<string, unknown>).keys());
     // Heuristic: if we got "limit" items, assume there might be more; use the last key as the cursor.
     const next = limit != null && names.length === limit ? names[names.length - 1] : null;
     return { keys: names, next };
   }
-  
+
   async indexAddBatch<T>(items: T[]): Promise<void> {
     if (items.length === 0) return;
     await this.ctx.storage.transaction(async (txn) => {
       for (const it of items) await txn.put('i:' + String(it), 1);
     });
   }
-  
+
   async indexRemoveBatch<T>(items: T[]): Promise<number> {
     if (items.length === 0) return 0;
     let removed = 0;
@@ -79,13 +80,13 @@ export class GlobalDurableObject extends DurableObject<Env, unknown> {
       }
     });
     return removed;
-  }  
+  }
 
   async indexDrop(_rootKey: string): Promise<void> { await this.ctx.storage.deleteAll(); }
 }
 
 export interface EntityStatics<S, T extends Entity<S>> {
-  new (env: Env, id: string): T; // inherited default ctor
+  new(env: Env, id: string): T; // inherited default ctor
   readonly entityName: string;
   readonly initialState: S;
 }

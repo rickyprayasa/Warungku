@@ -6,6 +6,8 @@ import {
 } from '@/components/ui/dialog';
 import { ProductDetailDialog } from './ProductDetailDialog';
 import { motion } from 'framer-motion';
+import { Badge } from '@/components/ui/badge';
+import { Package } from 'lucide-react';
 interface ProductCardProps {
   product: Product;
 }
@@ -17,13 +19,26 @@ export function ProductCard({ product }: ProductCardProps) {
       minimumFractionDigits: 0,
     }).format(value);
   };
+
+  const stock = product.totalStock ?? 0;
+  const stockStatus = stock === 0 ? 'out' : stock <= 5 ? 'low' : 'available';
+  const stockColor = stockStatus === 'out' ? 'bg-red-500' : stockStatus === 'low' ? 'bg-yellow-500' : 'bg-green-500';
+  const stockText = stockStatus === 'out' ? 'Habis' : stockStatus === 'low' ? `Sisa ${stock}` : `Stok ${stock}`;
+
   return (
     <Dialog>
       <DialogTrigger asChild>
         <motion.div
           whileHover={{ y: -5 }}
           transition={{ duration: 0.2 }}
-          className="bg-brand-white border-2 border-brand-black rounded-none flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-hard cursor-pointer group">
+          className="bg-brand-white border-2 border-brand-black rounded-none flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-hard cursor-pointer group relative">
+          {/* Stock Badge */}
+          <div className="absolute top-2 right-2 z-10">
+            <Badge className={`${stockColor} text-white border-2 border-brand-black rounded-none font-mono text-xs font-bold flex items-center gap-1`}>
+              <Package className="w-3 h-3" />
+              {stockText}
+            </Badge>
+          </div>
           <div className="aspect-square w-full overflow-hidden border-b-2 border-brand-black">
             <img
               src={product.imageUrl}

@@ -1,5 +1,5 @@
 import { IndexedEntity } from "./core-utils";
-import type { Product, Sale, Purchase, Supplier, JajananRequest } from "@shared/types";
+import type { Product, Sale, Purchase, Supplier, JajananRequest, StockDetail } from "@shared/types";
 const MOCK_PRODUCTS: Product[] = [
   { id: 'prod_1', name: 'Indomie Goreng', price: 3000, cost: 2500, imageUrl: 'https://i.imgur.com/k2S224j.png', category: 'Makanan' },
   { id: 'prod_2', name: 'Teh Pucuk', price: 3500, cost: 2800, imageUrl: 'https://i.imgur.com/s2h62r0.png', category: 'Minuman' },
@@ -11,8 +11,8 @@ const MOCK_PRODUCTS: Product[] = [
   { id: 'prod_8', name: 'Oreo', price: 8000, cost: 6500, imageUrl: 'https://i.imgur.com/qG01a2Z.png', category: 'Snack' },
 ];
 const MOCK_SUPPLIERS: Supplier[] = [
-    { id: 'sup_1', name: 'Indofood', contactPerson: 'Budi Santoso', phone: '081234567890' },
-    { id: 'sup_2', name: 'Mayora', contactPerson: 'Siti Aminah', phone: '082345678901' },
+  { id: 'sup_1', name: 'Indofood', contactPerson: 'Budi Santoso', phone: '081234567890' },
+  { id: 'sup_2', name: 'Mayora', contactPerson: 'Siti Aminah', phone: '082345678901' },
 ];
 export class ProductEntity extends IndexedEntity<Product> {
   static readonly entityName = "product";
@@ -29,7 +29,7 @@ export class SaleEntity extends IndexedEntity<Sale> {
 export class PurchaseEntity extends IndexedEntity<Purchase> {
   static readonly entityName = "purchase";
   static readonly indexName = "purchases";
-  static readonly initialState: Purchase = { id: "", productId: "", productName: "", quantity: 0, unitCost: 0, totalCost: 0, supplier: "", createdAt: 0 };
+  static readonly initialState: Purchase = { id: "", productId: "", productName: "", quantity: 0, packQuantity: 0, unitsPerPack: 0, unitCost: 0, totalCost: 0, supplier: "", createdAt: 0 };
   static seedData: Purchase[] = [];
 }
 export class SupplierEntity extends IndexedEntity<Supplier> {
@@ -43,4 +43,10 @@ export class JajananRequestEntity extends IndexedEntity<JajananRequest> {
   static readonly indexName = "jajananRequests";
   static readonly initialState: JajananRequest = { id: "", name: "", notes: "", status: 'pending', createdAt: 0 };
   static seedData: JajananRequest[] = [];
+}
+export class StockDetailEntity extends IndexedEntity<StockDetail> {
+  static readonly entityName = "stockDetail";
+  static readonly indexName = "stockDetails";
+  static readonly initialState: StockDetail = { id: "", productId: "", productName: "", purchaseId: "", quantity: 0, unitCost: 0, createdAt: 0 };
+  static seedData: StockDetail[] = [];
 }

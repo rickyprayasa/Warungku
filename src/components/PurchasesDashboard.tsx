@@ -58,7 +58,7 @@ export function PurchasesDashboard() {
                 Catat Pembelian
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white">
+            <DialogContent className="sm:max-w-[550px] rounded-none border-4 border-brand-black bg-brand-white max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display text-2xl font-bold">Catat Pembelian Baru</DialogTitle>
               </DialogHeader>

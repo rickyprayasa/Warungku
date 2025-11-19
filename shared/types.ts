@@ -8,15 +8,16 @@ export interface Product {
   id: string;
   name: string;
   price: number;
-  cost: number; // Buy price for profit calculation
+  cost?: number; // Optional - auto-calculated from FIFO batches (for reference only)
   imageUrl: string;
   category: string;
+  totalStock?: number; // Total available stock across all batches
 }
 // Zod schema for product validation
 export const productSchema = z.object({
   name: z.string().min(3, { message: "Nama produk minimal 3 karakter." }),
   price: z.number().min(0, { message: "Harga harus angka positif." }),
-  cost: z.number().min(0, { message: "Biaya harus angka positif." }),
+  cost: z.number().min(0, { message: "Biaya harus angka positif." }).optional(),
   category: z.string().min(3, { message: "Kategori minimal 3 karakter." }),
   imageUrl: z.string().url({ message: "URL gambar tidak valid." }),
 });
@@ -33,7 +34,9 @@ export interface Sale {
   id: string;
   items: SaleItem[];
   total: number;
+  profit: number;
   createdAt: number;
+  saleType?: 'retail' | 'display'; // Display = bulk sale for items on display
 }
 export const saleItemSchema = z.object({
   productId: z.string(),
@@ -53,17 +56,21 @@ export const saleSchema = z.object({
 export type SaleFormValues = z.infer<typeof saleSchema>;
 // Types for Purchases
 export interface Purchase {
-  id:string;
+  id: string;
   productId: string;
   productName: string;
-  quantity: number;
-  unitCost: number;
-  totalCost: number;
+  quantity: number; // Total units (packQuantity × unitsPerPack)
+  packQuantity?: number; // Number of packs/boxes purchased
+  unitsPerPack?: number; // Units per pack/box
+  unitCost: number; // Cost per individual unit
+  totalCost: number; // Total cost of purchase
   supplier: string;
   createdAt: number;
 }
 export const purchaseSchema = z.object({
   productId: z.string().min(1, "Product is required."),
+  packQuantity: z.number().min(1, "Pack quantity must be at least 1.").optional(),
+  unitsPerPack: z.number().min(1, "Units per pack must be at least 1.").optional(),
   quantity: z.number().min(1, "Quantity must be at least 1."),
   unitCost: z.number().min(0, "Unit cost must be a positive number."),
   supplier: z.string().optional(),
@@ -96,3 +103,20 @@ export const jajananRequestSchema = z.object({
   notes: z.string().optional(),
 });
 export type JajananRequestFormValues = z.infer<typeof jajananRequestSchema>;
+// Types for Stock Details (FIFO)
+export interface StockDetail {
+  id: string;
+  productId: string;
+  productName: string;
+  purchaseId: string; // Reference to purchase that created this stock
+  quantity: number; // Remaining quantity from this batch
+  unitCost: number; // Purchase cost per unit for this batch
+  createdAt: number; // When this stock batch was created
+}
+export const stockDetailSchema = z.object({
+  productId: z.string().min(1, "Product ID is required."),
+  purchaseId: z.string().min(1, "Purchase ID is required."),
+  quantity: z.number().min(0, "Quantity must be non-negative."),
+  unitCost: z.number().min(0, "Unit cost must be non-negative."),
+});
+export type StockDetailFormValues = z.infer<typeof stockDetailSchema>;

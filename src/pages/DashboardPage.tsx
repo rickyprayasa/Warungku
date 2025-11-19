@@ -6,7 +6,8 @@ import { CashFlowDashboard } from "@/components/CashFlowDashboard";
 import { FinanceDashboard } from "@/components/FinanceDashboard";
 import { SuppliersDashboard } from "@/components/SuppliersDashboard";
 import { JajananRequestsDashboard } from "@/components/JajananRequestsDashboard";
-import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox } from "lucide-react";
+import { ProductStockTable } from "@/components/ProductStockTable";
+import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 export function DashboardPage() {
   const tabContentVariants: Variants = {
@@ -15,6 +16,7 @@ export function DashboardPage() {
   };
   const tabs = [
     { value: "products", label: "Produk", icon: Package },
+    { value: "inventory", label: "Inventori", icon: Warehouse },
     { value: "sales", label: "Penjualan", icon: DollarSign },
     { value: "purchases", label: "Pembelian", icon: ShoppingCart },
     { value: "suppliers", label: "Pemasok", icon: Truck },
@@ -34,15 +36,16 @@ export function DashboardPage() {
           </p>
         </div>
         <Tabs defaultValue="products" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 md:grid-cols-7 rounded-none border-2 border-brand-black p-1 h-auto bg-muted/40">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 md:grid-cols-8 rounded-none border-2 border-brand-black p-1 h-auto bg-muted/40">
             {tabs.map(tab => (
               <TabsTrigger key={tab.value} value={tab.value} className="rounded-none font-bold uppercase text-xs sm:text-sm data-[state=active]:bg-brand-white data-[state=active]:shadow-hard-sm">
-                <tab.icon className="w-4 h-4 mr-2 hidden sm:inline-block"/>{tab.label}
+                <tab.icon className="w-4 h-4 mr-2 hidden sm:inline-block" />{tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
           <div className="mt-4 border-4 border-brand-black bg-brand-white p-6 overflow-hidden">
             <TabsContent value="products" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><ProductManagement /></motion.div></TabsContent>
+            <TabsContent value="inventory" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><ProductStockTable /></motion.div></TabsContent>
             <TabsContent value="sales" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SalesDashboard /></motion.div></TabsContent>
             <TabsContent value="purchases" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><PurchasesDashboard /></motion.div></TabsContent>
             <TabsContent value="suppliers" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SuppliersDashboard /></motion.div></TabsContent>

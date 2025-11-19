@@ -6,6 +6,7 @@ import { ChevronDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } f
 import type { Sale } from '@shared/types';
 import { motion } from 'framer-motion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Badge } from './ui/badge';
 interface SalesDataTableProps {
   sales: Sale[];
 }
@@ -62,7 +63,16 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                       </CollapsibleTrigger>
                     </TableCell>
                     <TableCell className="font-mono">{formatDate(sale.createdAt)}</TableCell>
-                    <TableCell className="font-mono">{sale.items.length}</TableCell>
+                    <TableCell className="font-mono">
+                      <div className="flex items-center gap-2">
+                        <span>{sale.items.length}</span>
+                        {sale.saleType === 'display' && (
+                          <Badge className="bg-purple-500 text-white text-xs">
+                            📦 Display
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="font-mono text-right font-bold">{formatCurrency(sale.total)}</TableCell>
                     <TableCell className="font-mono text-right font-bold text-green-600">{formatCurrency(calculateProfit(sale))}</TableCell>
                   </TableRow>

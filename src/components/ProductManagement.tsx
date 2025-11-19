@@ -23,10 +23,10 @@ export function ProductManagement() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
         <div className="mb-4 sm:mb-0">
-            <h3 className="text-2xl font-display font-bold text-brand-black">
-                Manajemen Produk
-            </h3>
-            <p className="font-mono text-sm text-muted-foreground">Tambah, edit, atau hapus produk dari daftar.</p>
+          <h3 className="text-2xl font-display font-bold text-brand-black">
+            Manajemen Produk
+          </h3>
+          <p className="font-mono text-sm text-muted-foreground">Tambah, edit, atau hapus produk dari daftar.</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -35,7 +35,7 @@ export function ProductManagement() {
               Produk Baru
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white">
+          <DialogContent className="sm:max-w-[500px] rounded-none border-4 border-brand-black bg-brand-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-display text-2xl font-bold">Tambah Produk Baru</DialogTitle>
             </DialogHeader>
@@ -45,12 +45,12 @@ export function ProductManagement() {
       </div>
       {isLoading ? (
         <div className="border-4 border-brand-black">
-            <div className="space-y-2 p-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-            </div>
+          <div className="space-y-2 p-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         </div>
       ) : (
         <ProductDataTable />

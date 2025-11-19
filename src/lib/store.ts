@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues } from '@shared/types';
+import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail } from '@shared/types';
 import { api } from './api-client';
 import { persist, createJSONStorage } from 'zustand/middleware'
 interface WarungState {
@@ -9,6 +9,7 @@ interface WarungState {
   purchases: Purchase[];
   suppliers: Supplier[];
   jajananRequests: JajananRequest[];
+  stockDetails: StockDetail[];
   initialBalance: number;
   isLoading: boolean;
   error: string | null;
@@ -20,6 +21,7 @@ interface WarungActions {
   fetchPurchases: () => Promise<void>;
   fetchSuppliers: () => Promise<void>;
   fetchJajananRequests: () => Promise<void>;
+  fetchStockDetails: (productId: string) => Promise<void>;
   setInitialBalance: (balance: number) => void;
   login: () => void;
   logout: () => void;
@@ -42,6 +44,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       purchases: [],
       suppliers: [],
       jajananRequests: [],
+      stockDetails: [],
       initialBalance: 0,
       isLoading: true,
       error: null,
@@ -96,6 +99,16 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           set({ isLoading: false, error: errorMessage });
         }
       },
+      fetchStockDetails: async (productId) => {
+        try {
+          set({ isLoading: true, error: null });
+          const stockDetails = await api<StockDetail[]>(`/api/stock-details/${productId}`);
+          set({ stockDetails, isLoading: false });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stock details';
+          set({ isLoading: false, error: errorMessage });
+        }
+      },
       setInitialBalance: (balance) => set({ initialBalance: balance }),
       login: () => set({ isAuthenticated: true }),
       logout: () => set({ isAuthenticated: false }),
@@ -119,11 +132,17 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       addSale: async (saleData) => {
         const newSale = await api<Sale>('/api/sales', { method: 'POST', body: JSON.stringify(saleData) });
         set((state) => { state.sales.unshift(newSale); });
+        // Refresh products to update stock levels
+        const products = await api<Product[]>('/api/products');
+        set({ products });
         return newSale;
       },
       addPurchase: async (purchaseData) => {
         const newPurchase = await api<Purchase>('/api/purchases', { method: 'POST', body: JSON.stringify(purchaseData) });
         set((state) => { state.purchases.unshift(newPurchase); });
+        // Refresh products to update stock levels
+        const products = await api<Product[]>('/api/products');
+        set({ products });
         return newPurchase;
       },
       addSupplier: async (supplierData) => {
