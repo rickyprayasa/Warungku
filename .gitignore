@@ -2,3 +2,4 @@
 # Bootstrap marker
 .bootstrap-complete
 node_modules
+CREDENTIALS.md
