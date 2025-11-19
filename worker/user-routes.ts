@@ -8,6 +8,20 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
   // ==================== PRODUCTS ====================
 
+  app.get('/api/test-db', async (c) => {
+    try {
+      const { results } = await c.env.WarungkuDB
+        .prepare('SELECT * FROM product ORDER BY name LIMIT 10')
+        .all();
+
+      return ok(c, { products: results });
+    } catch (err: any) {
+      console.error('D1 test error', err);
+      return bad(c, err?.message || 'Failed to query D1 database');
+    }
+  });
+
+
   app.get('/api/products', async (c) => {
     const repo = new D1Repository(c.env.DB);
     const products = await repo.getProducts();
