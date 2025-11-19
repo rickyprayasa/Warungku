@@ -12,6 +12,7 @@ export interface Product {
   imageUrl: string;
   category: string;
   totalStock?: number; // Total available stock across all batches
+  createdAt: number;
 }
 // Zod schema for product validation
 export const productSchema = z.object({
@@ -64,7 +65,8 @@ export interface Purchase {
   unitsPerPack?: number; // Units per pack/box
   unitCost: number; // Cost per individual unit
   totalCost: number; // Total cost of purchase
-  supplier: string;
+  supplier?: string;
+  supplierId?: string;
   createdAt: number;
 }
 export const purchaseSchema = z.object({
@@ -80,26 +82,33 @@ export type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 export interface Supplier {
   id: string;
   name: string;
-  contactPerson: string;
-  phone: string;
+  contactPerson?: string;
+  phone?: string;
+  address?: string;
+  createdAt: number;
 }
 export const supplierSchema = z.object({
   name: z.string().min(2, "Supplier name is required."),
-  contactPerson: z.string().min(2, "Contact person is required."),
-  phone: z.string().min(5, "Phone number is required."),
+  contactPerson: z.string().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
 });
 export type SupplierFormValues = z.infer<typeof supplierSchema>;
 // Types for Jajanan Requests
 export interface JajananRequest {
   id: string;
-  name: string;
+  requesterName: string;
+  snackName: string;
+  quantity: number;
   notes?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: number;
   updatedAt?: number;
 }
 export const jajananRequestSchema = z.object({
-  name: z.string().min(3, "Nama jajanan minimal 3 karakter."),
+  requesterName: z.string().min(3, "Nama pemohon minimal 3 karakter."),
+  snackName: z.string().min(3, "Nama jajanan minimal 3 karakter."),
+  quantity: z.number().min(1, "Jumlah minimal 1."),
   notes: z.string().optional(),
 });
 export type JajananRequestFormValues = z.infer<typeof jajananRequestSchema>;
@@ -107,8 +116,8 @@ export type JajananRequestFormValues = z.infer<typeof jajananRequestSchema>;
 export interface StockDetail {
   id: string;
   productId: string;
-  productName: string;
-  purchaseId: string; // Reference to purchase that created this stock
+  productName?: string;
+  purchaseId?: string; // Reference to purchase that created this stock
   quantity: number; // Remaining quantity from this batch
   unitCost: number; // Purchase cost per unit for this batch
   createdAt: number; // When this stock batch was created

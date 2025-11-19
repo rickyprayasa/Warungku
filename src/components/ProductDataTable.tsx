@@ -36,6 +36,9 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Input } from '@/components/ui/input';
+import { Search, Filter } from 'lucide-react';
+
 export function ProductDataTable() {
   const products = useWarungStore((state) => state.products);
   const deleteProduct = useWarungStore((state) => state.deleteProduct);
@@ -44,12 +47,30 @@ export function ProductDataTable() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const pageCount = Math.ceil(products.length / rowsPerPage);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // Get unique categories from products
+  const categories = useMemo(() => {
+    const unique = new Set(products.map(p => p.category).filter(Boolean));
+    return ['all', ...Array.from(unique)];
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchQuery, selectedCategory]);
+
+  const pageCount = Math.ceil(filteredProducts.length / rowsPerPage);
   const paginatedProducts = useMemo(() => {
     const start = page * rowsPerPage;
     const end = start + rowsPerPage;
-    return products.slice(start, end);
-  }, [products, page, rowsPerPage]);
+    return filteredProducts.slice(start, end);
+  }, [filteredProducts, page, rowsPerPage]);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -69,9 +90,9 @@ export function ProductDataTable() {
     if (selectedProduct) {
       const promise = deleteProduct(selectedProduct.id);
       toast.promise(promise, {
-        loading: 'Deleting product...',
-        success: 'Product deleted successfully!',
-        error: 'Failed to delete product.',
+        loading: 'Menghapus produk...',
+        success: 'Produk berhasil dihapus!',
+        error: (err) => err instanceof Error ? err.message : 'Gagal menghapus produk.',
       });
       await promise;
       setDeleteDialogOpen(false);
@@ -80,6 +101,40 @@ export function ProductDataTable() {
   };
   return (
     <>
+      <div className="flex flex-col sm:flex-row gap-4 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari produk..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(0);
+            }}
+            className="pl-9 rounded-none border-2 border-brand-black"
+          />
+        </div>
+        <Select
+          value={selectedCategory}
+          onValueChange={(value) => {
+            setSelectedCategory(value);
+            setPage(0);
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-[200px] rounded-none border-2 border-brand-black">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <SelectValue placeholder="Kategori" />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="rounded-none border-2 border-brand-black">
+            <SelectItem value="all">Semua Kategori</SelectItem>
+            {categories.filter(c => c !== 'all').map((category) => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="border-4 border-brand-black bg-brand-white">
         <Table>
           <TableHeader className="border-b-4 border-brand-black bg-muted/40">
@@ -101,24 +156,26 @@ export function ProductDataTable() {
                 <TableCell className="font-mono">{product.category}</TableCell>
                 <TableCell className="font-mono">{formatCurrency(product.price)}</TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-none border-2 border-brand-black bg-brand-white">
-                      <DropdownMenuItem onClick={() => handleEdit(product)} className="cursor-pointer">
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>Edit</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(product)} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Hapus</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(product)}
+                      className="h-8 w-8 rounded-none border-2 border-transparent hover:border-brand-black hover:bg-brand-orange/20"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(product)}
+                      className="h-8 w-8 rounded-none border-2 border-transparent hover:border-brand-black hover:bg-destructive/20 text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Hapus</span>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -154,7 +211,7 @@ export function ProductDataTable() {
         </div>
       </div>
       <Dialog open={isEditDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white">
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl font-bold">Edit Produk</DialogTitle>
           </DialogHeader>

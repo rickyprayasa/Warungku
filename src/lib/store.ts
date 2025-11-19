@@ -29,7 +29,9 @@ interface WarungActions {
   updateProduct: (productId: string, productData: ProductFormValues) => Promise<Product>;
   deleteProduct: (productId: string) => Promise<void>;
   addSale: (saleData: SaleFormValues) => Promise<Sale>;
+  deleteSale: (saleId: string) => Promise<void>;
   addPurchase: (purchaseData: PurchaseFormValues) => Promise<Purchase>;
+  deletePurchase: (purchaseId: string) => Promise<void>;
   addSupplier: (supplierData: SupplierFormValues) => Promise<Supplier>;
   updateSupplier: (supplierId: string, supplierData: SupplierFormValues) => Promise<Supplier>;
   deleteSupplier: (supplierId: string) => Promise<void>;
@@ -137,6 +139,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         set({ products });
         return newSale;
       },
+      deleteSale: async (saleId) => {
+        await api(`/api/sales/${saleId}`, { method: 'DELETE' });
+        set((state) => { state.sales = state.sales.filter((s) => s.id !== saleId); });
+        // Refresh products to update stock levels
+        const products = await api<Product[]>('/api/products');
+        set({ products });
+      },
       addPurchase: async (purchaseData) => {
         const newPurchase = await api<Purchase>('/api/purchases', { method: 'POST', body: JSON.stringify(purchaseData) });
         set((state) => { state.purchases.unshift(newPurchase); });
@@ -144,6 +153,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const products = await api<Product[]>('/api/products');
         set({ products });
         return newPurchase;
+      },
+      deletePurchase: async (purchaseId) => {
+        await api(`/api/purchases/${purchaseId}`, { method: 'DELETE' });
+        set((state) => { state.purchases = state.purchases.filter((p) => p.id !== purchaseId); });
+        // Refresh products to update stock levels
+        const products = await api<Product[]>('/api/products');
+        set({ products });
       },
       addSupplier: async (supplierData) => {
         const newSupplier = await api<Supplier>('/api/suppliers', { method: 'POST', body: JSON.stringify(supplierData) });

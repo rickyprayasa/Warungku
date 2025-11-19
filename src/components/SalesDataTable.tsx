@@ -2,33 +2,63 @@ import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from './ui/button';
-import { ChevronDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import { ChevronDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2 } from 'lucide-react';
 import type { Sale } from '@shared/types';
 import { motion } from 'framer-motion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
+import { useWarungStore } from '@/lib/store';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 interface SalesDataTableProps {
   sales: Sale[];
 }
+
 export function SalesDataTable({ sales }: SalesDataTableProps) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const deleteSale = useWarungStore((state) => state.deleteSale);
+
   const pageCount = Math.ceil(sales.length / rowsPerPage);
   const paginatedSales = useMemo(() => {
     const start = page * rowsPerPage;
     const end = start + rowsPerPage;
     return sales.slice(start, end);
   }, [sales, page, rowsPerPage]);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   };
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString('id-ID');
   };
+
   const calculateProfit = (sale: Sale) => {
     const totalCost = sale.items.reduce((sum, item) => sum + (item.cost * item.quantity), 0);
     return sale.total - totalCost;
   };
+
+  const handleDelete = async (id: string) => {
+    const promise = deleteSale(id);
+    toast.promise(promise, {
+      loading: 'Menghapus penjualan...',
+      success: 'Penjualan berhasil dihapus! Stok dikembalikan.',
+      error: (err) => err instanceof Error ? err.message : 'Gagal menghapus penjualan.',
+    });
+  };
+
   if (sales.length === 0) {
     return (
       <div className="text-center border-2 border-dashed border-brand-black p-12">
@@ -36,6 +66,7 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
       </div>
     );
   }
+
   return (
     <>
       <div className="border-4 border-brand-black bg-brand-white">
@@ -47,6 +78,7 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
               <TableHead className="font-bold text-brand-black">Item</TableHead>
               <TableHead className="font-bold text-brand-black text-right">Total Penjualan</TableHead>
               <TableHead className="font-bold text-brand-black text-right">Profit</TableHead>
+              <TableHead className="font-bold text-brand-black text-center">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -75,6 +107,28 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                     </TableCell>
                     <TableCell className="font-mono text-right font-bold">{formatCurrency(sale.total)}</TableCell>
                     <TableCell className="font-mono text-right font-bold text-green-600">{formatCurrency(calculateProfit(sale))}</TableCell>
+                    <TableCell className="text-center">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-none border-4 border-brand-black">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Hapus Penjualan?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tindakan ini akan menghapus data penjualan dan <strong>mengembalikan stok barang</strong> ke gudang.
+                              Tindakan ini tidak dapat dibatalkan.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(sale.id)} className="rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
                   </TableRow>
                   <CollapsibleContent asChild>
                     <motion.tr
@@ -84,7 +138,7 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                       className="bg-muted/40"
                     >
-                      <td colSpan={5} className="p-0">
+                      <td colSpan={6} className="p-0">
                         <div className="p-4">
                           <h4 className="font-bold mb-2">Detail Penjualan:</h4>
                           <Table>

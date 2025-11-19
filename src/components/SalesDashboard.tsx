@@ -66,7 +66,7 @@ export function SalesDashboard() {
                 Catat Penjualan
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl rounded-none border-4 border-brand-black bg-brand-white">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
               <DialogHeader>
                 <DialogTitle className="font-display text-2xl font-bold">Catat Penjualan Baru</DialogTitle>
               </DialogHeader>

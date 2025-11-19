@@ -22,7 +22,9 @@ export function RequestJajananForm({ onSuccess }: RequestJajananFormProps) {
   const form = useForm<JajananRequestFormValues>({
     resolver: zodResolver(jajananRequestSchema),
     defaultValues: {
-      name: '',
+      requesterName: '',
+      snackName: '',
+      quantity: 1,
       notes: '',
     },
   });
@@ -41,12 +43,44 @@ export function RequestJajananForm({ onSuccess }: RequestJajananFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-1">
         <FormField
           control={form.control}
-          name="name"
+          name="requesterName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-mono font-bold">Nama Pemohon</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Andi" {...field} className="rounded-none border-2 border-brand-black" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="snackName"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-mono font-bold">Nama Jajanan</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Seblak Ceker" {...field} className="rounded-none border-2 border-brand-black" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="quantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-mono font-bold">Jumlah</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  {...field}
+                  onChange={e => field.onChange(e.target.valueAsNumber || 1)}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  className="rounded-none border-2 border-brand-black"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -19,6 +19,7 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
       name: supplier?.name || '',
       contactPerson: supplier?.contactPerson || '',
       phone: supplier?.phone || '',
+      address: supplier?.address || '',
     },
   });
   const isSubmitting = form.formState.isSubmitting;
@@ -84,6 +85,19 @@ export function SupplierForm({ supplier, onSuccess }: SupplierFormProps) {
               <FormLabel className="font-mono font-bold">Telepon</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., 081234567890" {...field} className="rounded-none border-2 border-brand-black" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-mono font-bold">Alamat</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Jl. Raya No. 123" {...field} className="rounded-none border-2 border-brand-black" />
               </FormControl>
               <FormMessage />
             </FormItem>

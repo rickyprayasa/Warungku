@@ -2,26 +2,55 @@ import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Purchase } from '@shared/types';
 import { Button } from './ui/button';
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { useWarungStore } from '@/lib/store';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 interface PurchasesDataTableProps {
   purchases: Purchase[];
 }
+
 export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const deletePurchase = useWarungStore((state) => state.deletePurchase);
+
   const pageCount = Math.ceil(purchases.length / rowsPerPage);
   const paginatedPurchases = useMemo(() => {
     const start = page * rowsPerPage;
     const end = start + rowsPerPage;
     return purchases.slice(start, end);
   }, [purchases, page, rowsPerPage]);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   };
+
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('id-ID');
   };
+
+  const handleDelete = async (id: string) => {
+    const promise = deletePurchase(id);
+    toast.promise(promise, {
+      loading: 'Menghapus pembelian...',
+      success: 'Pembelian berhasil dihapus! Stok dikurangi.',
+      error: (err) => err instanceof Error ? err.message : 'Gagal menghapus pembelian.',
+    });
+  };
+
   if (purchases.length === 0) {
     return (
       <div className="text-center border-2 border-dashed border-brand-black p-12">
@@ -29,6 +58,7 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
       </div>
     );
   }
+
   return (
     <>
       <div className="border-4 border-brand-black bg-brand-white">
@@ -40,6 +70,7 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
               <TableHead className="font-bold text-brand-black">Jumlah</TableHead>
               <TableHead className="font-bold text-brand-black">Pemasok</TableHead>
               <TableHead className="font-bold text-brand-black text-right">Total Biaya</TableHead>
+              <TableHead className="font-bold text-brand-black text-center">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -50,6 +81,30 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
                 <TableCell className="font-mono">{purchase.quantity}</TableCell>
                 <TableCell className="font-mono">{purchase.supplier}</TableCell>
                 <TableCell className="font-mono text-right font-bold text-red-600">{formatCurrency(purchase.totalCost)}</TableCell>
+                <TableCell className="text-center">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-none border-4 border-brand-black">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Pembelian?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tindakan ini akan menghapus data pembelian dan <strong>mengurangi stok barang</strong>.
+                          Tindakan ini tidak dapat dibatalkan.
+                          <br /><br />
+                          <strong>PENTING:</strong> Pembelian hanya bisa dihapus jika stok dari pembelian ini BELUM terjual.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(purchase.id)} className="rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

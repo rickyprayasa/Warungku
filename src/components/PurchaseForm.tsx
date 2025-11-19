@@ -34,7 +34,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
       packQuantity: 1,
       unitsPerPack: 1,
       unitCost: 0,
-      supplier: '',
+      supplierId: '',
     },
   });
   useEffect(() => {
@@ -125,6 +125,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
                           const val = e.target.value;
                           field.onChange(val === '' ? '' : parseInt(val, 10) || 0);
                         }}
+                        onWheel={(e) => e.currentTarget.blur()}
                         className="rounded-none border-2 border-brand-black"
                       />
                     </FormControl>
@@ -147,6 +148,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
                           const val = e.target.value;
                           field.onChange(val === '' ? '' : parseInt(val, 10) || 0);
                         }}
+                        onWheel={(e) => e.currentTarget.blur()}
                         className="rounded-none border-2 border-brand-black"
                       />
                     </FormControl>
@@ -171,6 +173,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
                         const val = e.target.value;
                         field.onChange(val === '' ? '' : parseFloat(val) || 0);
                       }}
+                      onWheel={(e) => e.currentTarget.blur()}
                       className="rounded-none border-2 border-brand-black"
                     />
                   </FormControl>
@@ -206,6 +209,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
                         const val = e.target.value;
                         field.onChange(val === '' ? '' : parseInt(val, 10) || 0);
                       }}
+                      onWheel={(e) => e.currentTarget.blur()}
                       className="rounded-none border-2 border-brand-black"
                     />
                   </FormControl>
@@ -228,6 +232,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
                         const val = e.target.value;
                         field.onChange(val === '' ? '' : parseFloat(val) || 0);
                       }}
+                      onWheel={(e) => e.currentTarget.blur()}
                       className="rounded-none border-2 border-brand-black"
                     />
                   </FormControl>
@@ -240,7 +245,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
 
         <FormField
           control={form.control}
-          name="supplier"
+          name="supplierId"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-mono font-bold">Pemasok</FormLabel>
@@ -251,7 +256,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
-                  {suppliers.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                  {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <FormMessage />

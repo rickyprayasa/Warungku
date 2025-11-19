@@ -7,8 +7,10 @@ import { DurableObject } from "cloudflare:workers";
 import type { Context } from "hono";
 
 export interface Env {
+  // D1 Database
+  DB: D1Database;
+  //  Durable Object (keeping for now during migration)
   GlobalDurableObject: DurableObjectNamespace<GlobalDurableObject>;
-  WarungkuDB: D1Database;
 }
 
 type Doc<T> = { v: number; data: T };

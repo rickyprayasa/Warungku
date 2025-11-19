@@ -54,6 +54,7 @@ export function SuppliersDataTable() {
               <TableHead className="font-bold text-brand-black">Nama</TableHead>
               <TableHead className="font-bold text-brand-black">Narahubung</TableHead>
               <TableHead className="font-bold text-brand-black">Telepon</TableHead>
+              <TableHead className="font-bold text-brand-black">Alamat</TableHead>
               <TableHead className="w-[50px] font-bold text-brand-black text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -63,25 +64,28 @@ export function SuppliersDataTable() {
                 <TableCell className="font-bold">{supplier.name}</TableCell>
                 <TableCell className="font-mono">{supplier.contactPerson}</TableCell>
                 <TableCell className="font-mono">{supplier.phone}</TableCell>
+                <TableCell className="font-mono">{supplier.address}</TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-none border-2 border-brand-black bg-brand-white">
-                      <DropdownMenuItem onClick={() => handleEdit(supplier)} className="cursor-pointer">
-                        <Pencil className="mr-2 h-4 w-4" />
-                        <span>Edit</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(supplier)} className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Hapus</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(supplier)}
+                      className="h-8 w-8 rounded-none border-2 border-transparent hover:border-brand-black hover:bg-brand-orange/20"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(supplier)}
+                      className="h-8 w-8 rounded-none border-2 border-transparent hover:border-brand-black hover:bg-destructive/20 text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Hapus</span>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

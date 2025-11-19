@@ -16,11 +16,28 @@ import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { Info, Upload, X } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const CATEGORIES = [
+  "Makanan",
+  "Minuman",
+  "Snack",
+  "Rokok",
+  "Sembako",
+  "Alat Tulis",
+  "Kebersihan",
+  "Lainnya"
+];
+
 interface ProductFormProps {
   product?: Product | null;
   onSuccess: () => void;
 }
+
 export function ProductForm({ product, onSuccess }: ProductFormProps) {
+  // ... (existing code)
+
+
   const addProduct = useWarungStore((state) => state.addProduct);
   const updateProduct = useWarungStore((state) => state.updateProduct);
   const [imagePreview, setImagePreview] = useState<string>(product?.imageUrl || '');
@@ -145,9 +162,20 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-mono font-bold">Kategori</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Makanan, Minuman, Snack" {...field} className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange" />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger className="rounded-none border-2 border-brand-black focus:ring-brand-orange">
+                    <SelectValue placeholder="Pilih kategori" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
+                  {CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormDescription className="text-xs">
                 Kategori memudahkan filter produk
               </FormDescription>
@@ -167,7 +195,8 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                   type="number"
                   placeholder="e.g., 3000"
                   {...field}
-                  onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                  onChange={e => field.onChange(e.target.valueAsNumber || 0)}
+                  onWheel={(e) => e.currentTarget.blur()}
                   className="rounded-none border-2 border-brand-black focus-visible:ring-brand-orange"
                 />
               </FormControl>
