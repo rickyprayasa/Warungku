@@ -21,6 +21,48 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
   });
 
+  // ==================== AUTHENTICATION ====================
+
+  app.post('/api/auth/login', async (c) => {
+    try {
+      const { email, password } = await c.req.json();
+
+      if (!email || !password) {
+        return bad(c, 'Email and password required');
+      }
+
+      // Get user from database
+      const user = await c.env.DB
+        .prepare('SELECT * FROM users WHERE email = ?')
+        .bind(email)
+        .first<any>();
+
+      if (!user) {
+        return bad(c, 'Invalid credentials');
+      }
+
+      // Verify password using bcrypt
+      const bcrypt = await import('bcryptjs');
+      const isValid = await bcrypt.compare(password, user.password_hash);
+
+      if (!isValid) {
+        return bad(c, 'Invalid credentials');
+      }
+
+      return ok(c, {
+        authenticated: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role
+        }
+      });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      return bad(c, 'Login failed');
+    }
+  });
+
 
   app.get('/api/products', async (c) => {
     const repo = new D1Repository(c.env.DB);

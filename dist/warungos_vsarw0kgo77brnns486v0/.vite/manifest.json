@@ -1,8 +1,17 @@
 {
+  "node_modules/bcryptjs/index.js": {
+    "file": "assets/index-CkpZai_f.js",
+    "name": "index",
+    "src": "node_modules/bcryptjs/index.js",
+    "isDynamicEntry": true
+  },
   "virtual:cloudflare/worker-entry": {
     "file": "index.js",
     "name": "index",
     "src": "virtual:cloudflare/worker-entry",
-    "isEntry": true
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/bcryptjs/index.js"
+    ]
   }
 }
