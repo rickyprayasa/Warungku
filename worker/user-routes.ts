@@ -142,6 +142,9 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const repo = new D1Repository(c.env.DB);
 
     try {
+      const stockUpdates: Array<{ stockDetailId: string; newQuantity: number; shouldDelete: boolean }> = [];
+      const productUpdates: Array<{ productId: string; quantityReduction: number }> = [];
+
       const saleItemsWithCost = await Promise.all(items.map(async (item) => {
         const { productId, quantity, price } = item;
 
@@ -159,26 +162,24 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
           totalCost += consume * batch.unitCost;
           remaining -= consume;
 
-          // Update stock detail
+          // Prepare stock update (don't execute yet)
           const newQty = batch.quantity - consume;
-          if (newQty > 0) {
-            await repo.updateStockDetailQuantity(batch.id, newQty);
-          } else {
-            await repo.deleteStockDetail(batch.id);
-          }
+          stockUpdates.push({
+            stockDetailId: batch.id,
+            newQuantity: newQty,
+            shouldDelete: newQty === 0
+          });
         }
 
         if (remaining > 0) {
           throw new Error(`Insufficient stock for product ${productId}`);
         }
 
-        // Update product totalStock
-        const product = await repo.getProduct(productId);
-        if (product) {
-          await repo.updateProduct(productId, {
-            totalStock: (product.totalStock || 0) - quantity
-          });
-        }
+        // Prepare product update (don't execute yet)
+        productUpdates.push({
+          productId,
+          quantityReduction: quantity
+        });
 
         const avgCost = totalCost / quantity;
         return { ...item, cost: avgCost };
@@ -197,7 +198,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         createdAt: Date.now()
       };
 
-      await repo.createSale(sale);
+      // Execute all updates atomically in one transaction
+      await repo.createSaleWithStockUpdate(sale, stockUpdates, productUpdates);
       return ok(c, sale);
 
     } catch (error: any) {
@@ -431,6 +433,78 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
     const stockDetails = await repo.getStockDetails(productId);
     return ok(c, stockDetails);
+  });
+
+  // ==================== FEEDBACK ====================
+
+  app.post('/api/feedback', async (c) => {
+    const body = (await c.req.json()) as Partial<JajananRequest>;
+
+    if (!body.requesterName || !body.productName) {
+      return bad(c, 'Missing required fields.');
+    }
+
+    const repo = new D1Repository(c.env.DB);
+
+    const request: JajananRequest = {
+      id: crypto.randomUUID(),
+      productId: body.productId || '',
+      requesterName: body.requesterName,
+      snackName: body.productName,
+      quantity: body.quantity || 0,
+      notes: body.notes || '',
+      requestType: body.requestType || 'feedback',
+      status: 'pending',
+      isRead: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    await repo.createJajananRequest(request);
+    return ok(c, request);
+  });
+
+  app.get('/api/feedback/unread-count', async (c) => {
+    const repo = new D1Repository(c.env.DB);
+    const requests = await repo.getJajananRequests();
+    const unreadCount = requests.filter(r => !r.isRead).length;
+    return ok(c, { count: unreadCount });
+  });
+
+  app.put('/api/feedback/:id/mark-read', async (c) => {
+    const { id } = c.req.param();
+    const repo = new D1Repository(c.env.DB);
+
+    await repo.updateJajananRequest(id, { isRead: true, updatedAt: Date.now() });
+    return ok(c, { success: true });
+  });
+
+  // ==================== AI ====================
+
+  app.post('/api/ai/generate-description', async (c) => {
+    try {
+      const { productName, category, price } = await c.req.json();
+
+      if (!productName) {
+        return bad(c, 'Product name is required');
+      }
+
+      // Simple template-based description for now
+      // TODO: Integrate Cloudflare Workers AI when binding is configured
+      const templates: Record<string, string> = {
+        'Makanan': `${productName} adalah camilan lezat yang cocok untuk menemani hari Anda. Dijual dengan harga terjangkau Rp ${price.toLocaleString('id-ID')}.`,
+        'Minuman': `Nikmati kesegaran ${productName} yang menyegarkan. Sempurna untuk menghilangkan dahaga dengan harga Rp ${price.toLocaleString('id-ID')}.`,
+        'Snack': `${productName} adalah pilihan sempurna untuk camilan Anda. Harga hemat hanya Rp ${price.toLocaleString('id-ID')}.`,
+        'default': `${productName} berkualitas dengan harga Rp ${price.toLocaleString('id-ID')}. Stok terbatas, segera pesan sekarang!`
+      };
+
+      const description = templates[category] || templates.default;
+
+      return ok(c, { description });
+    } catch (error: any) {
+      console.error('AI description error:', error);
+      return bad(c, 'Failed to generate description');
+    }
   });
 
   // ==================== SETTINGS ====================

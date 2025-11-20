@@ -173,6 +173,58 @@ export class D1Repository {
         ]);
     }
 
+    async createSaleWithStockUpdate(
+        sale: Sale,
+        stockUpdates: Array<{ stockDetailId: string; newQuantity: number; shouldDelete: boolean }>,
+        productUpdates: Array<{ productId: string; quantityReduction: number }>
+    ): Promise<void> {
+        const statements = [
+            // Insert sale record
+            this.db.prepare(`
+                INSERT INTO sales (id, total, profit, saleType, createdAt)
+                VALUES (?, ?, ?, ?, ?)
+            `).bind(sale.id, sale.total, sale.profit, sale.saleType || 'retail', sale.createdAt),
+
+            // Insert sale items
+            ...sale.items.map(item =>
+                this.db.prepare(`
+                    INSERT INTO sale_items (id, saleId, productId, productName, quantity, price, cost)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                    crypto.randomUUID(),
+                    sale.id,
+                    item.productId,
+                    item.productName,
+                    item.quantity,
+                    item.price,
+                    item.cost
+                )
+            ),
+
+            // Update stock details
+            ...stockUpdates.map(update => {
+                if (update.shouldDelete) {
+                    return this.db.prepare('DELETE FROM stock_details WHERE id = ?').bind(update.stockDetailId);
+                } else {
+                    return this.db.prepare('UPDATE stock_details SET quantity = ? WHERE id = ?')
+                        .bind(update.newQuantity, update.stockDetailId);
+                }
+            }),
+
+            // Update product total stock
+            ...productUpdates.map(update =>
+                this.db.prepare(`
+                    UPDATE products 
+                    SET totalStock = totalStock - ? 
+                    WHERE id = ?
+                `).bind(update.quantityReduction, update.productId)
+            )
+        ];
+
+        // Execute all in one atomic transaction
+        await this.db.batch(statements);
+    }
+
     // ==================== PURCHASES ====================
 
     async getPurchases(): Promise<Purchase[]> {
@@ -354,16 +406,19 @@ export class D1Repository {
     async createJajananRequest(request: JajananRequest): Promise<JajananRequest> {
         await this.db
             .prepare(`
-        INSERT INTO snack_requests (id, requesterName, snackName, quantity, notes, status, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO snack_requests (id, productId, requesterName, snackName, quantity, notes, requestType, status, isRead, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
             .bind(
                 request.id,
+                request.productId || '',
                 request.requesterName,
                 request.snackName,
                 request.quantity,
                 request.notes || '',
+                request.requestType || 'stock_request',
                 request.status,
+                request.isRead ? 1 : 0,
                 request.createdAt,
                 request.updatedAt
             )
@@ -375,6 +430,33 @@ export class D1Repository {
         await this.db
             .prepare('UPDATE snack_requests SET status = ?, updatedAt = ? WHERE id = ?')
             .bind(status, Date.now(), id)
+            .run();
+    }
+
+    async updateJajananRequest(id: string, updates: Partial<JajananRequest>): Promise<void> {
+        const fields: string[] = [];
+        const values: any[] = [];
+
+        if (updates.status !== undefined) {
+            fields.push('status = ?');
+            values.push(updates.status);
+        }
+        if (updates.isRead !== undefined) {
+            fields.push('isRead = ?');
+            values.push(updates.isRead ? 1 : 0);
+        }
+        if (updates.updatedAt !== undefined) {
+            fields.push('updatedAt = ?');
+            values.push(updates.updatedAt);
+        }
+
+        if (fields.length === 0) return;
+
+        values.push(id);
+
+        await this.db
+            .prepare(`UPDATE snack_requests SET ${fields.join(', ')} WHERE id = ?`)
+            .bind(...values)
             .run();
     }
 

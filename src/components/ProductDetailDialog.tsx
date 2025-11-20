@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import type { Product } from '@shared/types';
 import { Button } from '@/components/ui/button';
-import { Package } from 'lucide-react';
+import { MessageSquare, PackagePlus } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { StockDetailsDialog } from './StockDetailsDialog';
-import { Badge } from '@/components/ui/badge';
+import { CustomerFeedbackDialog } from './CustomerFeedbackDialog';
 
 interface ProductDetailDialogProps {
   product: Product;
 }
+
 export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
-  const [stockDialogOpen, setStockDialogOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<'stock_request' | 'feedback' | null>(null);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -19,10 +19,6 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
       minimumFractionDigits: 0,
     }).format(value);
   };
-
-  const stock = product.totalStock ?? 0;
-  const stockStatus = stock === 0 ? 'out' : stock <= 5 ? 'low' : 'available';
-  const stockColor = stockStatus === 'out' ? 'bg-red-500' : stockStatus === 'low' ? 'bg-yellow-500' : 'bg-green-500';
 
   return (
     <div>
@@ -34,36 +30,58 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
         <h2 className="text-3xl font-display font-bold text-brand-black my-1">{product.name}</h2>
         <p className="font-mono font-bold text-brand-orange text-2xl my-4">{formatCurrency(product.price)}</p>
 
-        {/* Stock Information */}
-        <div className="border-2 border-brand-black p-4 mb-4 bg-muted/20">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Package className="w-5 h-5 text-brand-orange" />
-              <p className="font-mono font-bold">Stok Tersedia</p>
-            </div>
-            <Badge className={`${stockColor} text-white border-2 border-brand-black rounded-none font-mono font-bold`}>
-              {stock} Unit
-            </Badge>
+        {/* Description */}
+        {product.description && (
+          <div className="border-2 border-brand-black p-4 mb-4 bg-muted/20">
+            <p className="font-sans text-muted-foreground">{product.description}</p>
           </div>
+        )}
 
-          <Dialog open={stockDialogOpen} onOpenChange={setStockDialogOpen}>
+        {/* Customer Actions */}
+        <div className="flex gap-2 mt-4">
+          <Dialog open={feedbackType === 'stock_request'} onOpenChange={(open) => !open && setFeedbackType(null)}>
             <DialogTrigger asChild>
               <Button
+                onClick={() => setFeedbackType('stock_request')}
                 variant="outline"
-                size="sm"
-                className="w-full mt-2 border-2 border-brand-black rounded-none font-mono font-bold hover:bg-brand-orange hover:text-brand-black">
-                <Package className="w-4 h-4 mr-2" />
-                Lihat Detail Batch Stok
+                className="flex-1 border-2 border-brand-black rounded-none font-mono font-bold hover:bg-brand-orange hover:text-brand-black"
+              >
+                <PackagePlus className="w-4 h-4 mr-2" />
+                Request Stok
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl rounded-none border-4 border-brand-black bg-brand-white p-0">
-              <StockDetailsDialog productId={product.id} productName={product.name} />
+            <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
+              <CustomerFeedbackDialog
+                product={product}
+                type="stock_request"
+                onClose={() => setFeedbackType(null)}
+              />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={feedbackType === 'feedback'} onOpenChange={(open) => !open && setFeedbackType(null)}>
+            <DialogTrigger asChild>
+              <Button
+                onClick={() => setFeedbackType('feedback')}
+                variant="outline"
+                className="flex-1 border-2 border-brand-black rounded-none font-mono font-bold hover:bg-brand-orange hover:text-brand-black"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Kirim Feedback
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
+              <CustomerFeedbackDialog
+                product={product}
+                type="feedback"
+                onClose={() => setFeedbackType(null)}
+              />
             </DialogContent>
           </Dialog>
         </div>
 
-        <p className="text-muted-foreground font-sans">
-          Deskripsi detail untuk {product.name} akan ditampilkan di sini.
+        <p className="text-xs text-muted-foreground font-mono mt-4 text-center">
+          💬 Ada pertanyaan? Kirim feedback kepada kami!
         </p>
       </div>
     </div>

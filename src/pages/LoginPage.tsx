@@ -11,7 +11,7 @@ import { api } from '@/lib/api-client';
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useWarungStore((state) => state.login);
-  const [email, setEmail] = useState('admin@warungku.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);

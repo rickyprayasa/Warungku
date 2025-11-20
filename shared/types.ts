@@ -11,6 +11,7 @@ export interface Product {
   cost?: number; // Optional - auto-calculated from FIFO batches (for reference only)
   imageUrl: string;
   category: string;
+  description?: string; // Product description
   totalStock?: number; // Total available stock across all batches
   createdAt: number;
 }
@@ -97,11 +98,15 @@ export type SupplierFormValues = z.infer<typeof supplierSchema>;
 // Types for Jajanan Requests
 export interface JajananRequest {
   id: string;
+  productId?: string;
   requesterName: string;
   snackName: string;
+  productName?: string;
   quantity: number;
   notes?: string;
+  requestType?: 'stock_request' | 'feedback' | 'question';
   status: 'pending' | 'approved' | 'rejected';
+  isRead?: boolean;
   createdAt: number;
   updatedAt?: number;
 }

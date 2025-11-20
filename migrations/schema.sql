@@ -1,6 +1,18 @@
 -- Warungku D1 Database Schema
 -- Generated: 2025-11-19
 
+-- Users Table (Authentication)
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT DEFAULT 'admin',
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+
 -- Products Table
 CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
@@ -9,6 +21,7 @@ CREATE TABLE IF NOT EXISTS products (
   cost REAL DEFAULT 0,
   imageUrl TEXT DEFAULT '',
   category TEXT DEFAULT '',
+  description TEXT DEFAULT '',
   totalStock INTEGER DEFAULT 0,
   createdAt INTEGER NOT NULL
 );
@@ -73,11 +86,14 @@ CREATE TABLE IF NOT EXISTS suppliers (
 -- Snack Requests Table
 CREATE TABLE IF NOT EXISTS snack_requests (
   id TEXT PRIMARY KEY,
+  productId TEXT DEFAULT '',
   requesterName TEXT NOT NULL,
   snackName TEXT NOT NULL,
   quantity INTEGER NOT NULL,
   notes TEXT DEFAULT '',
+  requestType TEXT DEFAULT 'stock_request',
   status TEXT DEFAULT 'pending',
+  isRead INTEGER DEFAULT 0,
   createdAt INTEGER NOT NULL,
   updatedAt INTEGER NOT NULL
 );

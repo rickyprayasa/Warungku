@@ -32,13 +32,6 @@ export function ProductCard({ product }: ProductCardProps) {
           whileHover={{ y: -5 }}
           transition={{ duration: 0.2 }}
           className="bg-brand-white border-2 border-brand-black rounded-none flex flex-col overflow-hidden transition-shadow duration-200 hover:shadow-hard cursor-pointer group relative">
-          {/* Stock Badge */}
-          <div className="absolute top-2 right-2 z-10">
-            <Badge className={`${stockColor} text-white border-2 border-brand-black rounded-none font-mono text-xs font-bold flex items-center gap-1`}>
-              <Package className="w-3 h-3" />
-              {stockText}
-            </Badge>
-          </div>
           <div className="aspect-square w-full overflow-hidden border-b-2 border-brand-black">
             <img
               src={product.imageUrl}
