@@ -148,9 +148,9 @@ export function OpnamePage() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 {/* Column 1: Daily Cash Entry */}
-                <div className="space-y-4">
+                <div className="space-y-4 h-full">
                     {/* Daily Cash Entry Card */}
                     <Card className="border-4 border-brand-black shadow-hard bg-blue-50">
                         <CardHeader>

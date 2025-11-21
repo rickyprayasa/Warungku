@@ -70,7 +70,10 @@ export function SalesDashboard() {
               <DialogHeader>
                 <DialogTitle className="font-display text-2xl font-bold">Catat Penjualan Baru</DialogTitle>
               </DialogHeader>
-              <SaleForm onSuccess={() => setCreateDialogOpen(false)} />
+              <SaleForm onSuccess={() => {
+                setCreateDialogOpen(false);
+                fetchSales();
+              }} />
             </DialogContent>
           </Dialog>
         </div>

@@ -220,6 +220,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         total,
         profit,
         saleType: body.saleType || 'retail',
+        notes: body.notes || '',
         createdAt: Date.now()
       };
 
@@ -236,32 +237,60 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const { id } = c.req.param();
     const repo = new D1Repository(c.env.DB);
 
-    const sale = await repo.getSale(id);
-    if (!sale) return notFound(c, 'Sale not found.');
+    try {
+      const sale = await repo.getSale(id);
+      if (!sale) return notFound(c, 'Sale not found.');
 
-    // Return stock
-    for (const item of sale.items) {
-      // Create new stock detail (RETURN)
-      const stockDetail: StockDetail = {
-        id: crypto.randomUUID(),
-        productId: item.productId,
-        quantity: item.quantity,
-        unitCost: item.cost, // Use cost from sale item
-        createdAt: Date.now()
-      };
-      await repo.createStockDetail(stockDetail);
+      // Return stock for each item (tanpa membuat transaksi pembelian baru)
+      for (const item of sale.items) {
+        // Check if product still exists
+        const product = await repo.getProduct(item.productId);
+        if (!product) {
+          console.warn(`Product ${item.productId} not found, skipping stock return`);
+          continue;
+        }
 
-      // Update product totalStock
-      const product = await repo.getProduct(item.productId);
-      if (product) {
+        // Buat stock detail baru untuk item yang dikembalikan
+        // Gunakan special purchaseId untuk tracking (tetap perlu karena foreign key)
+        const returnPurchaseId = `return-${sale.id}-${item.productId}`;
+        
+        // Buat hidden purchase record (tidak akan muncul di daftar karena filter di getPurchases)
+        const returnPurchase: Purchase = {
+          id: returnPurchaseId,
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unitCost: item.cost,
+          totalCost: item.quantity * item.cost,
+          supplierId: 'stock-return', // Special flag untuk filter
+          notes: `[SYSTEM] Stok dikembalikan otomatis dari penghapusan transaksi penjualan`,
+          createdAt: Date.now()
+        };
+        await repo.createPurchase(returnPurchase);
+
+        // Buat stock detail untuk item yang dikembalikan
+        const stockDetail: StockDetail = {
+          id: crypto.randomUUID(),
+          productId: item.productId,
+          quantity: item.quantity,
+          unitCost: item.cost,
+          purchaseId: returnPurchaseId,
+          createdAt: Date.now()
+        };
+        await repo.createStockDetail(stockDetail);
+
+        // Update product totalStock
         await repo.updateProduct(item.productId, {
           totalStock: (product.totalStock || 0) + item.quantity
         });
       }
-    }
 
-    await repo.deleteSale(id);
-    return ok(c, { id });
+      await repo.deleteSale(id);
+      return ok(c, { id });
+    } catch (error: any) {
+      console.error('Delete sale error:', error);
+      return bad(c, error.message || 'Failed to delete sale');
+    }
   });
 
   // ==================== OPNAME ====================
@@ -313,6 +342,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       unitsPerPack: body.unitsPerPack,
       supplierId: body.supplierId || body.supplier,
       totalCost: totalUnits * costPerUnit,
+      notes: body.notes || '',
       createdAt: Date.now()
     };
 

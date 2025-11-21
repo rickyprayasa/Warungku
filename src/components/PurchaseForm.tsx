@@ -4,6 +4,7 @@ import { purchaseSchema, type PurchaseFormValues } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useWarungStore } from '@/lib/store';
@@ -25,6 +26,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
     }))
   );
   const [isPackPurchase, setIsPackPurchase] = useState(false);
+  const [notes, setNotes] = useState('');
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
@@ -43,13 +45,30 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
   }, [products.length, suppliers.length, fetchProducts, fetchSuppliers]);
 
   const onSubmit = async (values: PurchaseFormValues) => {
-    const promise = addPurchase(values);
+    const purchaseData = {
+      ...values,
+      notes: notes.trim() || undefined,
+    };
+    const promise = addPurchase(purchaseData);
     toast.promise(promise, {
       loading: 'Menyimpan...',
       success: 'Pembelian berhasil dicatat!',
       error: 'Gagal mencatat pembelian.',
     });
     await promise;
+    
+    // Reset form
+    form.reset({
+      productId: '',
+      quantity: 1,
+      packQuantity: 1,
+      unitsPerPack: 1,
+      unitCost: 0,
+      supplierId: '',
+    });
+    setNotes('');
+    setIsPackPurchase(false);
+    
     onSuccess();
   };
 
@@ -263,6 +282,19 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
             </FormItem>
           )}
         />
+
+        {/* Notes Field */}
+        <div className="space-y-2">
+          <label className="text-sm font-mono font-bold text-muted-foreground">Catatan (Opsional)</label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Catatan khusus untuk pembelian ini (misal: kondisi barang, promo, dll)"
+            className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-mono resize-none"
+            rows={3}
+          />
+        </div>
+
         <div className="text-right font-mono text-xl font-bold border-t-4 border-brand-black pt-4">
           Total Biaya: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalCost)}
         </div>

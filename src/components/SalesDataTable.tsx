@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from './ui/button';
-import { ChevronDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2, MessageSquare } from 'lucide-react';
 import type { Sale } from '@shared/types';
 import { motion } from 'framer-motion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -79,6 +79,7 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
               <TableHead className="font-bold text-brand-black">Item</TableHead>
               <TableHead className="font-bold text-brand-black text-right">Total Penjualan</TableHead>
               <TableHead className="font-bold text-brand-black text-right">Profit</TableHead>
+              <TableHead className="font-bold text-brand-black">Catatan</TableHead>
               <TableHead className="font-bold text-brand-black text-center">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -108,6 +109,15 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                     </TableCell>
                     <TableCell className="font-mono text-right font-bold">{formatCurrency(sale.total)}</TableCell>
                     <TableCell className="font-mono text-right font-bold text-green-600">{formatCurrency(calculateProfit(sale))}</TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground max-w-[200px]">
+                      {sale.notes ? (
+                        <span className="italic truncate block" title={sale.notes}>
+                          {sale.notes.length > 50 ? `${sale.notes.substring(0, 50)}...` : sale.notes}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">-</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-center">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -139,7 +149,7 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                       className="bg-muted/40"
                     >
-                      <td colSpan={6} className="p-0">
+                      <td colSpan={7} className="p-0">
                         <div className="p-4">
                           <h4 className="font-bold mb-2">Detail Penjualan:</h4>
                           <Table>
@@ -223,6 +233,15 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                     <p className="font-bold font-mono text-lg text-green-600">{formatCurrency(calculateProfit(sale))}</p>
                   </div>
                 </div>
+
+                {sale.notes && (
+                  <div className="mt-2 p-2 bg-blue-50/50 border-l-4 border-blue-500 rounded-r">
+                    <div className="flex items-start gap-2">
+                      <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs italic text-muted-foreground font-mono leading-relaxed">{sale.notes}</p>
+                    </div>
+                  </div>
+                )}
 
                 <CollapsibleTrigger asChild>
                   <Button variant="outline" size="sm" className="w-full mt-3 border-2 border-brand-black rounded-none font-mono font-bold hover:bg-brand-orange group">

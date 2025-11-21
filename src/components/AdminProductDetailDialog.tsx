@@ -13,9 +13,10 @@ interface AdminProductDetailDialogProps {
     product: Product | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    stockMethod?: 'FIFO' | 'LIFO';
 }
 
-export function AdminProductDetailDialog({ product, open, onOpenChange }: AdminProductDetailDialogProps) {
+export function AdminProductDetailDialog({ product, open, onOpenChange, stockMethod = 'FIFO' }: AdminProductDetailDialogProps) {
     const [stockDetails, setStockDetails] = useState<StockDetail[]>([]);
     const [purchaseHistory, setPurchaseHistory] = useState<Purchase[]>([]);
     const [salesHistory, setSalesHistory] = useState<Sale[]>([]);
@@ -28,7 +29,7 @@ export function AdminProductDetailDialog({ product, open, onOpenChange }: AdminP
         if (product && open) {
             loadProductDetails();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [product, open]);
 
     const loadProductDetails = async () => {
@@ -168,10 +169,11 @@ export function AdminProductDetailDialog({ product, open, onOpenChange }: AdminP
 
                     {/* Batch Stock Tab */}
                     <TabsContent value="batch" className="mt-4">
-                        <BatchStockInfo 
+                        <BatchStockInfo
                             productId={product.id}
                             productName={product.name}
                             totalStock={product.totalStock || 0}
+                            stockMethod={stockMethod}
                         />
                     </TabsContent>
 

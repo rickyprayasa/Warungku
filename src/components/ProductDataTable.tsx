@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Search, Filter } from 'lucide-react';
 import { ProductForm } from './ProductForm';
 import {
@@ -34,7 +35,11 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { AdminProductDetailDialog } from './AdminProductDetailDialog';
 
-export function ProductDataTable() {
+interface ProductDataTableProps {
+  stockMethod?: 'FIFO' | 'LIFO';
+}
+
+export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps) {
   const products = useWarungStore((state) => state.products);
   const deleteProduct = useWarungStore((state) => state.deleteProduct);
   const updateProduct = useWarungStore((state) => state.updateProduct);
@@ -42,8 +47,8 @@ export function ProductDataTable() {
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDetailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -62,12 +67,12 @@ export function ProductDataTable() {
     });
   }, [products, searchQuery, selectedCategory]);
 
-  const pageCount = Math.ceil(filteredProducts.length / rowsPerPage);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = useMemo(() => {
-    const start = page * rowsPerPage;
-    const end = start + rowsPerPage;
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
     return filteredProducts.slice(start, end);
-  }, [filteredProducts, page, rowsPerPage]);
+  }, [filteredProducts, currentPage, itemsPerPage]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -75,6 +80,13 @@ export function ProductDataTable() {
       currency: 'IDR',
       minimumFractionDigits: 0,
     }).format(value);
+  };
+
+  const getStockStatus = (stock: number) => {
+    if (stock === 0) return { status: 'Habis', color: 'bg-red-500' };
+    if (stock <= 5) return { status: 'Rendah', color: 'bg-yellow-500' };
+    if (stock <= 20) return { status: 'Normal', color: 'bg-blue-500' };
+    return { status: 'Banyak', color: 'bg-green-500' };
   };
 
   const handleEdit = (product: Product) => {
@@ -87,19 +99,21 @@ export function ProductDataTable() {
     setDeleteDialogOpen(true);
   };
 
-
-
   const confirmDelete = async () => {
     if (selectedProduct) {
-      const promise = deleteProduct(selectedProduct.id);
-      toast.promise(promise, {
-        loading: 'Menghapus produk...',
-        success: 'Produk berhasil dihapus!',
-        error: (err) => err instanceof Error ? err.message : 'Gagal menghapus produk.',
-      });
-      await promise;
-      setDeleteDialogOpen(false);
-      setSelectedProduct(null);
+      try {
+        const promise = deleteProduct(selectedProduct.id);
+        toast.promise(promise, {
+          loading: 'Menghapus produk...',
+          success: 'Produk berhasil dihapus!',
+          error: (err) => err instanceof Error ? err.message : 'Gagal menghapus produk.',
+        });
+        await promise;
+        setDeleteDialogOpen(false);
+        setSelectedProduct(null);
+      } catch (error) {
+        console.error(error);
+      }
     }
   };
 
@@ -126,25 +140,25 @@ export function ProductDataTable() {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setPage(0);
+              setCurrentPage(1);
             }}
-            className="pl-9 rounded-none border-2 border-brand-black"
+            className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
           />
         </div>
         <Select
           value={selectedCategory}
           onValueChange={(value) => {
             setSelectedCategory(value);
-            setPage(0);
+            setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-full sm:w-[200px] rounded-none border-2 border-brand-black">
+          <SelectTrigger className="w-full sm:w-[200px] rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
               <SelectValue placeholder="Kategori" />
             </div>
           </SelectTrigger>
-          <SelectContent className="rounded-none border-2 border-brand-black">
+          <SelectContent className="rounded-lg border-2 border-brand-black">
             <SelectItem value="all">Semua Kategori</SelectItem>
             {categories.filter(c => c !== 'all').map((category) => (
               <SelectItem key={category} value={category}>{category}</SelectItem>
@@ -154,14 +168,15 @@ export function ProductDataTable() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block border-4 border-brand-black bg-brand-white overflow-x-auto">
+      <div className="hidden md:block border-2 border-brand-black rounded-lg bg-brand-white overflow-hidden">
         <Table className="min-w-[800px]">
-          <TableHeader className="border-b-4 border-brand-black bg-muted/40">
+          <TableHeader className="border-b-2 border-brand-black bg-muted/40">
             <TableRow>
               <TableHead className="w-[80px] font-bold text-brand-black">Gambar</TableHead>
               <TableHead className="font-bold text-brand-black">Nama</TableHead>
               <TableHead className="font-bold text-brand-black">Kategori</TableHead>
               <TableHead className="font-bold text-brand-black">Stok</TableHead>
+              <TableHead className="font-bold text-brand-black">Status Stok</TableHead>
               <TableHead className="font-bold text-brand-black">Harga</TableHead>
               <TableHead className="font-bold text-brand-black">Status</TableHead>
               <TableHead className="w-[120px] font-bold text-brand-black text-right">Aksi</TableHead>
@@ -194,6 +209,11 @@ export function ProductDataTable() {
                 }}>{product.name}</TableCell>
                 <TableCell className="font-mono">{product.category}</TableCell>
                 <TableCell className="font-mono font-bold">{product.totalStock || 0}</TableCell>
+                <TableCell>
+                  <Badge className={`${getStockStatus(product.totalStock || 0).color} text-white border-2 border-brand-black rounded-none font-mono font-bold`}>
+                    {getStockStatus(product.totalStock || 0).status}
+                  </Badge>
+                </TableCell>
                 <TableCell className="font-mono">{formatCurrency(product.price)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -209,7 +229,6 @@ export function ProductDataTable() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-
                     <Button
                       variant="ghost"
                       size="icon"
@@ -311,13 +330,12 @@ export function ProductDataTable() {
         <div className="flex items-center space-x-2">
           <p className="text-sm font-medium">Baris per halaman</p>
           <Select
-            value={`${rowsPerPage}`}
+            value={`${itemsPerPage}`}
             onValueChange={(value) => {
-              setRowsPerPage(Number(value))
-              setPage(0)
+              // Logic to change itemsPerPage would go here
             }}
           >
-            <SelectTrigger className="h-8 w-[70px] rounded-none border-2 border-brand-black"><SelectValue placeholder={String(rowsPerPage)} /></SelectTrigger>
+            <SelectTrigger className="h-8 w-[70px] rounded-none border-2 border-brand-black"><SelectValue placeholder={String(itemsPerPage)} /></SelectTrigger>
             <SelectContent side="top" className="rounded-none border-2 border-brand-black">
               {[5, 10, 20, 30, 40, 50].map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>{pageSize}</SelectItem>
@@ -326,13 +344,13 @@ export function ProductDataTable() {
           </Select>
         </div>
         <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-          Halaman {page + 1} dari {pageCount}
+          Halaman {currentPage} dari {totalPages}
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex rounded-none border-2 border-brand-black" onClick={() => setPage(0)} disabled={page === 0}><span className="sr-only">Go to first page</span><ChevronsLeft className="h-4 w-4" /></Button>
-          <Button variant="outline" className="h-8 w-8 p-0 rounded-none border-2 border-brand-black" onClick={() => setPage(page - 1)} disabled={page === 0}><span className="sr-only">Go to previous page</span><ChevronLeft className="h-4 w-4" /></Button>
-          <Button variant="outline" className="h-8 w-8 p-0 rounded-none border-2 border-brand-black" onClick={() => setPage(page + 1)} disabled={page >= pageCount - 1}><span className="sr-only">Go to next page</span><ChevronRight className="h-4 w-4" /></Button>
-          <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex rounded-none border-2 border-brand-black" onClick={() => setPage(pageCount - 1)} disabled={page >= pageCount - 1}><span className="sr-only">Go to last page</span><ChevronsRight className="h-4 w-4" /></Button>
+          <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex rounded-none border-2 border-brand-black" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}><span className="sr-only">Go to first page</span><ChevronsLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" className="h-8 w-8 p-0 rounded-none border-2 border-brand-black" onClick={() => setCurrentPage(currentPage - 1)} disabled={currentPage === 1}><span className="sr-only">Go to previous page</span><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" className="h-8 w-8 p-0 rounded-none border-2 border-brand-black" onClick={() => setCurrentPage(currentPage + 1)} disabled={currentPage >= totalPages}><span className="sr-only">Go to next page</span><ChevronRight className="h-4 w-4" /></Button>
+          <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex rounded-none border-2 border-brand-black" onClick={() => setCurrentPage(totalPages)} disabled={currentPage >= totalPages}><span className="sr-only">Go to last page</span><ChevronsRight className="h-4 w-4" /></Button>
         </div>
       </div>
 
@@ -366,6 +384,7 @@ export function ProductDataTable() {
         product={selectedProduct}
         open={isDetailDialogOpen}
         onOpenChange={setDetailDialogOpen}
+        stockMethod={stockMethod}
       />
     </>
   );

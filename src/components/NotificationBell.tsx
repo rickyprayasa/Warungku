@@ -61,20 +61,11 @@ export function NotificationBell() {
         // Close popover
         setIsOpen(false);
 
-        // Navigate to relevant tab
+        // Navigate to relevant tab using query params (reliable navigation)
         if (type === 'inventory') {
-            navigate('/dashboard#inventory');
-            // Trigger tab change if on dashboard
-            setTimeout(() => {
-                const event = new CustomEvent('changeTab', { detail: 'inventory' });
-                window.dispatchEvent(event);
-            }, 100);
+            navigate('/dashboard?tab=products'); // Products tab now includes inventory
         } else {
-            navigate('/dashboard#requests');
-            setTimeout(() => {
-                const event = new CustomEvent('changeTab', { detail: 'requests' });
-                window.dispatchEvent(event);
-            }, 100);
+            navigate('/dashboard?tab=requests');
         }
     };
 

@@ -48,6 +48,7 @@ export interface Sale {
   profit: number;
   createdAt: number;
   saleType?: 'retail' | 'display'; // Display = bulk sale for items on display
+  notes?: string; // Optional notes/remarks for the sale
 }
 export const saleItemSchema = z.object({
   productId: z.string(),
@@ -63,6 +64,7 @@ export const saleSchema = z.object({
     quantity: z.number().min(1),
     price: z.number(),
   })).min(1, "Sale must have at least one item."),
+  notes: z.string().optional(),
 });
 export type SaleFormValues = z.infer<typeof saleSchema>;
 // Types for Purchases
@@ -78,6 +80,7 @@ export interface Purchase {
   supplier?: string;
   supplierId?: string;
   createdAt: number;
+  notes?: string; // Optional notes/remarks for the purchase
 }
 export const purchaseSchema = z.object({
   productId: z.string().min(1, "Product is required."),
@@ -86,6 +89,7 @@ export const purchaseSchema = z.object({
   quantity: z.number().min(1, "Quantity must be at least 1."),
   unitCost: z.number().min(0, "Unit cost must be a positive number."),
   supplier: z.string().optional(),
+  notes: z.string().optional(),
 });
 export type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 // Types for Suppliers

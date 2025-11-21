@@ -8,7 +8,6 @@ import { CashFlowDashboard } from "@/components/CashFlowDashboard";
 import { FinanceDashboard } from "@/components/FinanceDashboard";
 import { SuppliersDashboard } from "@/components/SuppliersDashboard";
 import { JajananRequestsDashboard } from "@/components/JajananRequestsDashboard";
-import { ProductStockTable } from "@/components/ProductStockTable";
 import { OpnameDashboard } from "@/components/OpnameDashboard";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3 } from "lucide-react";
@@ -49,8 +48,7 @@ export function DashboardPage() {
 
   const tabs = [
     { value: "analytics", label: "Analytics", icon: BarChart3, color: "orange" },
-    { value: "products", label: "Produk", icon: Package, color: "emerald" },
-    { value: "inventory", label: "Inventori", icon: Warehouse, color: "amber" },
+    { value: "products", label: "Produk & Stok", icon: Package, color: "emerald" },
     { value: "opname", label: "Rekon Kas", icon: ClipboardCheck, color: "purple" },
     { value: "sales", label: "Penjualan", icon: DollarSign, color: "blue" },
     { value: "purchases", label: "Pembelian", icon: ShoppingCart, color: "indigo" },
@@ -158,24 +156,28 @@ export function DashboardPage() {
           </p>
         </div>
 
+        {/* Desktop/Tablet Tabs - Hidden on Mobile */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          {/* Desktop/Tablet Tabs - Hidden on Mobile */}
-          <TabsList className="hidden md:grid w-full grid-cols-3 md:grid-cols-10 rounded-none border-4 border-brand-black p-2 h-auto bg-muted/40 gap-2">
+          <TabsList className="hidden md:grid w-full grid-cols-3 lg:grid-cols-5 h-auto bg-transparent gap-3 p-0">
             {tabs.map(tab => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className={`rounded-none font-bold uppercase text-xs sm:text-sm ${getTabStyles(tab.value, activeTab === tab.value)}`}
+                className="w-full rounded-lg border-2 border-brand-black bg-white font-bold uppercase text-xs sm:text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black data-[state=active]:translate-y-0.5 data-[state=active]:shadow-none py-3"
               >
                 <tab.icon className="w-4 h-4 mr-2 hidden sm:inline-block" />{tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
 
-          <div className="mt-4 border-4 border-brand-black bg-brand-white p-4 md:p-6 overflow-hidden">
+          {/* Visual Separator */}
+          <div className="mt-6 mb-8 border-t-4 border-brand-black relative">
+            <div className="absolute -top-[2px] left-0 right-0 h-1 bg-brand-orange"></div>
+          </div>
+
+          <div>
             <TabsContent value="analytics" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><AnalyticsDashboard /></motion.div></TabsContent>
             <TabsContent value="products" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><ProductManagement /></motion.div></TabsContent>
-            <TabsContent value="inventory" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><ProductStockTable /></motion.div></TabsContent>
             <TabsContent value="opname" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><OpnameDashboard /></motion.div></TabsContent>
             <TabsContent value="sales" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SalesDashboard /></motion.div></TabsContent>
             <TabsContent value="purchases" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><PurchasesDashboard /></motion.div></TabsContent>
@@ -186,6 +188,6 @@ export function DashboardPage() {
           </div>
         </Tabs>
       </div>
-    </div>
+    </div >
   );
 }

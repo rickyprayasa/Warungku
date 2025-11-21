@@ -132,11 +132,11 @@ export function AnalyticsDashboard() {
     // Generate trend data for chart (daily breakdown)
     // First, create a map for all dates in the range
     const trendMap = new Map<string, { date: Date; revenue: number; profit: number }>();
-    
+
     // Initialize all dates in range with zero values
     const currentDate = new Date(fromTimestamp);
     const endDate = new Date(toTimestamp);
-    
+
     while (currentDate <= endDate) {
       const dateKey = format(currentDate, 'yyyy-MM-dd');
       trendMap.set(dateKey, {
@@ -146,7 +146,7 @@ export function AnalyticsDashboard() {
       });
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     // Now fill in actual sales data
     periodSales.forEach((sale) => {
       const saleDate = new Date(sale.createdAt);
@@ -273,7 +273,7 @@ export function AnalyticsDashboard() {
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold">Analytics & Report</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-brand-black uppercase tracking-wider">Analytics & Report</h1>
           <p className="text-sm font-mono text-muted-foreground">Analisis performa dengan filter periode</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -287,7 +287,7 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('today')}
-          className="rounded-none border-2 border-brand-black font-mono font-bold"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
         >
           Hari Ini
         </Button>
@@ -295,7 +295,7 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('yesterday')}
-          className="rounded-none border-2 border-brand-black font-mono font-bold"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
         >
           Kemarin
         </Button>
@@ -303,7 +303,7 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('7days')}
-          className="rounded-none border-2 border-brand-black font-mono font-bold"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
         >
           7 Hari
         </Button>
@@ -311,7 +311,7 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('30days')}
-          className="rounded-none border-2 border-brand-black font-mono font-bold"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
         >
           30 Hari
         </Button>
@@ -319,23 +319,23 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('month')}
-          className="rounded-none border-2 border-brand-black font-mono font-bold"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
         >
           Bulan Ini
         </Button>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-3">
-        <TabsList className="grid w-full grid-cols-3 rounded-none border-2 border-brand-black p-1 h-auto bg-muted/40 gap-1">
-          <TabsTrigger value="overview" className="rounded-none font-bold text-xs md:text-sm py-2">
+        <TabsList className="grid w-full md:grid-cols-3 rounded-lg border-2 border-brand-black p-1 h-auto bg-white gap-1">
+          <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black font-bold text-xs md:text-sm py-2.5 border-2 border-transparent data-[state=active]:border-brand-black uppercase tracking-wider transition-all">
             <BarChart3 className="w-3 h-3 md:w-4 md:h-4 mr-1" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="products" className="rounded-none font-bold text-xs md:text-sm py-2">
+          <TabsTrigger value="products" className="rounded-lg data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black font-bold text-xs md:text-sm py-2.5 border-2 border-transparent data-[state=active]:border-brand-black uppercase tracking-wider transition-all">
             <Package className="w-3 h-3 md:w-4 md:h-4 mr-1" />
             Produk
           </TabsTrigger>
-          <TabsTrigger value="sales" className="rounded-none font-bold text-xs md:text-sm py-2">
+          <TabsTrigger value="sales" className="rounded-lg data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black font-bold text-xs md:text-sm py-2.5 border-2 border-transparent data-[state=active]:border-brand-black uppercase tracking-wider transition-all">
             <DollarSign className="w-3 h-3 md:w-4 md:h-4 mr-1" />
             Penjualan
           </TabsTrigger>
@@ -345,9 +345,9 @@ export function AnalyticsDashboard() {
         <TabsContent value="overview" className="space-y-3">
           {/* Quick Stats Row */}
           <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="text-xs font-mono font-bold flex items-center justify-between">
+                <CardTitle className="text-xs font-mono font-bold flex items-center justify-between uppercase tracking-wider">
                   Pendapatan
                   <DollarSign className="h-3 w-3 text-brand-orange" />
                 </CardTitle>
@@ -360,7 +360,7 @@ export function AnalyticsDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="text-xs font-mono font-bold flex items-center justify-between">
                   Profit
@@ -379,7 +379,7 @@ export function AnalyticsDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="text-xs font-mono font-bold flex items-center justify-between">
                   Growth
@@ -403,7 +403,7 @@ export function AnalyticsDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="text-xs font-mono font-bold flex items-center justify-between">
                   Pembelian
@@ -424,7 +424,7 @@ export function AnalyticsDashboard() {
           {/* Charts Section */}
           <div className="grid gap-3 md:grid-cols-1">
             {metrics.trendData.length > 0 && (
-              <Card className="border-2 border-brand-black">
+              <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <CardHeader className="pb-2 px-3 pt-3">
                   <CardTitle className="font-display text-base md:text-lg flex items-center gap-2">
                     <BarChart3 className="w-4 h-4" />
@@ -440,7 +440,7 @@ export function AnalyticsDashboard() {
 
           <div className="grid gap-3 md:grid-cols-2">
             {metrics.topProducts.length > 0 && (
-              <Card className="border-2 border-brand-black">
+              <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <CardHeader className="pb-2 px-3 pt-3">
                   <CardTitle className="font-display text-base md:text-lg flex items-center gap-2">
                     <Package className="w-4 h-4" />
@@ -454,7 +454,7 @@ export function AnalyticsDashboard() {
             )}
 
             {metrics.categoryData.length > 0 && (
-              <Card className="border-2 border-brand-black">
+              <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 <CardHeader className="pb-2 px-3 pt-3">
                   <CardTitle className="font-display text-base md:text-lg flex items-center gap-2">
                     <Users className="w-4 h-4" />
@@ -469,7 +469,7 @@ export function AnalyticsDashboard() {
           </div>
 
           {/* Category Performance - Compact */}
-          <Card className="border-2 border-brand-black">
+          <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <CardHeader className="pb-2 px-3 pt-3">
               <CardTitle className="font-display text-base md:text-lg flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
@@ -480,9 +480,9 @@ export function AnalyticsDashboard() {
               {metrics.categoryStats.length > 0 ? (
                 <div className="space-y-2">
                   {metrics.categoryStats.slice(0, 5).map((cat, index) => (
-                    <div key={cat.category} className="flex items-center justify-between p-2 border border-brand-black bg-gray-50">
+                    <div key={cat.category} className="flex items-center justify-between p-2 border-2 border-brand-black bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Badge className="rounded-none bg-brand-orange text-brand-black font-bold text-xs h-5 w-5 p-0 flex items-center justify-center">
+                        <Badge className="rounded-lg bg-brand-orange text-brand-black font-bold text-xs h-5 w-5 p-0 flex items-center justify-center border-2 border-brand-black">
                           {index + 1}
                         </Badge>
                         <div>
@@ -508,7 +508,7 @@ export function AnalyticsDashboard() {
         {/* Products Tab */}
         <TabsContent value="products" className="space-y-3">
           <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="text-xs font-mono font-bold flex items-center justify-between">
                   Total
@@ -523,7 +523,7 @@ export function AnalyticsDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="text-xs font-mono font-bold flex items-center justify-between">
                   Low Stock
@@ -538,7 +538,7 @@ export function AnalyticsDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="text-xs font-mono font-bold flex items-center justify-between">
                   Out of Stock
@@ -553,7 +553,7 @@ export function AnalyticsDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="text-xs font-mono font-bold flex items-center justify-between">
                   Nilai Stok
@@ -577,7 +577,7 @@ export function AnalyticsDashboard() {
             </Card>
           </div>
 
-          <Card className="border-2 border-brand-black">
+          <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <CardHeader className="pb-2 px-3 pt-3">
               <CardTitle className="font-display text-base md:text-lg flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -588,8 +588,8 @@ export function AnalyticsDashboard() {
               {metrics.topProducts.length > 0 ? (
                 <div className="space-y-2">
                   {metrics.topProducts.map((item, index) => (
-                    <div key={`${item.name}-${index}`} className="flex items-center gap-2 p-2 border border-brand-black bg-gray-50">
-                      <Badge className="rounded-none bg-brand-orange text-brand-black font-bold text-xs h-5 w-5 p-0 flex items-center justify-center shrink-0">
+                    <div key={`${item.name}-${index}`} className="flex items-center gap-2 p-2 border-2 border-brand-black bg-gray-50 rounded-lg">
+                      <Badge className="rounded-lg bg-brand-orange text-brand-black font-bold text-xs h-5 w-5 p-0 flex items-center justify-center border-2 border-brand-black shrink-0">
                         {index + 1}
                       </Badge>
                       <div className="flex-1 min-w-0">
@@ -616,7 +616,7 @@ export function AnalyticsDashboard() {
         {/* Sales Tab */}
         <TabsContent value="sales" className="space-y-3">
           <div className="grid gap-2 md:grid-cols-2">
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="font-display text-base md:text-lg">Ringkasan Penjualan</CardTitle>
               </CardHeader>
@@ -646,7 +646,7 @@ export function AnalyticsDashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-brand-black">
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <CardHeader className="pb-2 px-3 pt-3">
                 <CardTitle className="font-display text-base md:text-lg">Profit Analysis</CardTitle>
               </CardHeader>

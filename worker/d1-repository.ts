@@ -186,6 +186,7 @@ export class D1Repository {
             total: sale.total,
             profit: sale.profit,
             saleType: sale.saleType,
+            notes: sale.notes || '',
             createdAt: sale.createdAt,
             items: (itemsResults || [])
                 .filter((item: any) => item.saleId === sale.id)
@@ -203,9 +204,9 @@ export class D1Repository {
         const statements = [
             // Insert sale record
             this.db.prepare(`
-        INSERT INTO sales (id, total, profit, saleType, createdAt)
-        VALUES (?, ?, ?, ?, ?)
-      `).bind(sale.id, sale.total, sale.profit, sale.saleType || 'retail', sale.createdAt),
+        INSERT INTO sales (id, total, profit, saleType, notes, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(sale.id, sale.total, sale.profit, sale.saleType || 'retail', sale.notes || '', sale.createdAt),
 
             // Insert sale items
             ...sale.items.map(item =>
@@ -249,9 +250,9 @@ export class D1Repository {
         const statements = [
             // Insert sale record
             this.db.prepare(`
-                INSERT INTO sales (id, total, profit, saleType, createdAt)
-                VALUES (?, ?, ?, ?, ?)
-            `).bind(sale.id, sale.total, sale.profit, sale.saleType || 'retail', sale.createdAt),
+                INSERT INTO sales (id, total, profit, saleType, notes, createdAt)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `).bind(sale.id, sale.total, sale.profit, sale.saleType || 'retail', sale.notes || '', sale.createdAt),
 
             // Insert sale items
             ...sale.items.map(item =>
@@ -304,6 +305,7 @@ export class D1Repository {
                     s.name as supplier
                 FROM purchases p
                 LEFT JOIN suppliers s ON p.supplierId = s.id
+                WHERE COALESCE(p.supplierId, '') != 'stock-return'
                 ORDER BY p.createdAt DESC
             `)
             .all<Purchase>();
@@ -313,8 +315,8 @@ export class D1Repository {
     async createPurchase(purchase: Purchase): Promise<Purchase> {
         await this.db
             .prepare(`
-        INSERT INTO purchases (id, productId, productName, quantity, unitCost, packQuantity, unitsPerPack, supplierId, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO purchases (id, productId, productName, quantity, unitCost, packQuantity, unitsPerPack, supplierId, totalCost, notes, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
             .bind(
                 purchase.id,
@@ -325,6 +327,8 @@ export class D1Repository {
                 purchase.packQuantity || null,
                 purchase.unitsPerPack || null,
                 purchase.supplierId || null,
+                purchase.totalCost || (purchase.quantity * purchase.unitCost),
+                purchase.notes || '',
                 purchase.createdAt
             )
             .run();

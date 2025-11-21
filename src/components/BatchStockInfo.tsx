@@ -9,16 +9,17 @@ interface BatchStockInfoProps {
   productId: string;
   productName: string;
   totalStock: number;
+  stockMethod?: 'FIFO' | 'LIFO';
   className?: string;
 }
 
-export function BatchStockInfo({ productId, productName, totalStock, className }: BatchStockInfoProps) {
+export function BatchStockInfo({ productId, productName, totalStock, stockMethod = 'FIFO', className }: BatchStockInfoProps) {
   const [stockDetails, setStockDetails] = useState<StockDetail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadStockDetails();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
 
   const loadStockDetails = async () => {
@@ -27,6 +28,7 @@ export function BatchStockInfo({ productId, productName, totalStock, className }
       const res = await fetch(`/api/stock-details/${productId}`);
       if (res.ok) {
         const data = await res.json();
+        // Assuming API returns sorted by createdAt DESC (newest first)
         setStockDetails(data.data || []);
       } else {
         console.error('Failed to load stock details:', res.status);
@@ -118,7 +120,10 @@ export function BatchStockInfo({ productId, productName, totalStock, className }
           Batch Stock Information - {productName}
         </CardTitle>
         <p className="text-sm text-muted-foreground font-mono mt-1">
-          Sistem FIFO (First In First Out) - Stock terlama keluar lebih dulu
+          {stockMethod === 'FIFO'
+            ? 'Sistem FIFO (First In First Out) - Stock terlama keluar lebih dulu'
+            : 'Sistem LIFO (Last In First Out) - Stock terbaru keluar lebih dulu'
+          }
         </p>
       </CardHeader>
       <CardContent className="p-6 space-y-6">
@@ -163,13 +168,13 @@ export function BatchStockInfo({ productId, productName, totalStock, className }
         <div>
           <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
             <Layers className="w-5 h-5" />
-            Detail Batch (FIFO Order)
+            Detail Batch ({stockMethod} Order)
           </h3>
           <div className="space-y-3">
             {stockDetails.map((batch, index) => {
               const isNewest = index === 0;
               const isOldest = index === stockDetails.length - 1;
-              const willSellNext = isOldest;
+              const willSellNext = stockMethod === 'FIFO' ? isOldest : isNewest;
 
               return (
                 <div
@@ -265,15 +270,17 @@ export function BatchStockInfo({ productId, productName, totalStock, className }
           </div>
         </div>
 
-        {/* FIFO Explanation */}
+        {/* Method Explanation */}
         <div className="p-3 bg-blue-50 border-2 border-blue-200">
           <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
             <Layers className="w-4 h-4" />
-            Tentang Sistem FIFO
+            Tentang Sistem {stockMethod}
           </h4>
           <p className="text-xs text-muted-foreground font-mono leading-relaxed">
-            Sistem FIFO (First In First Out) memastikan stok yang masuk lebih dulu akan keluar lebih dulu saat terjadi penjualan.
-            Ini membantu mengurangi risiko produk kadaluarsa dan memberikan perhitungan cost yang lebih akurat.
+            {stockMethod === 'FIFO'
+              ? 'Sistem FIFO (First In First Out) memastikan stok yang masuk lebih dulu akan keluar lebih dulu saat terjadi penjualan. Ini membantu mengurangi risiko produk kadaluarsa.'
+              : 'Sistem LIFO (Last In First Out) memastikan stok yang masuk paling akhir akan keluar lebih dulu saat terjadi penjualan. Ini sering digunakan saat harga beli cenderung naik untuk menyesuaikan COGS dengan harga pasar terkini.'
+            }
           </p>
         </div>
       </CardContent>

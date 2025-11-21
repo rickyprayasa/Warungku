@@ -62,7 +62,10 @@ export function PurchasesDashboard() {
               <DialogHeader>
                 <DialogTitle className="font-display text-2xl font-bold">Catat Pembelian Baru</DialogTitle>
               </DialogHeader>
-              <PurchaseForm onSuccess={() => setCreateDialogOpen(false)} />
+              <PurchaseForm onSuccess={() => {
+                setCreateDialogOpen(false);
+                fetchPurchases();
+              }} />
             </DialogContent>
           </Dialog>
         </div>

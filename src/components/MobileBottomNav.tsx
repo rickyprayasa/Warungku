@@ -22,17 +22,17 @@ const tabs = [
         submenu: [
             { label: "Tambah Produk", action: "add-product", path: "/dashboard?tab=products" },
             { label: "Lihat Semua", action: "view-all-products", path: "/dashboard?tab=products" },
+            { label: "Pembelian", action: "purchases", path: "/dashboard?tab=purchases" },
         ]
     },
     {
-        value: "inventory",
-        label: "Stok",
-        icon: Warehouse,
-        path: "/dashboard?tab=inventory",
+        value: "opname",
+        label: "Rekon",
+        icon: ClipboardCheck,
+        path: "/dashboard?tab=opname",
         submenu: [
-            { label: "Cek Stok", action: "check-stock", path: "/dashboard?tab=inventory" },
-            { label: "Pembelian", action: "purchases", path: "/dashboard?tab=purchases" },
-            { label: "Opname", action: "opname", path: "/dashboard?tab=opname" },
+            { label: "Buka Rekon", action: "open-opname", path: "/dashboard?tab=opname" },
+            { label: "Riwayat Kas", action: "cashflow", path: "/dashboard?tab=cashflow" },
         ]
     },
     {
@@ -48,7 +48,6 @@ const tabs = [
 ];
 
 const moreTabs = [
-    { value: "opname", label: "Rekon", icon: ClipboardCheck, path: "/dashboard?tab=opname" },
     { value: "purchases", label: "Beli", icon: ShoppingCart, path: "/dashboard?tab=purchases" },
     { value: "suppliers", label: "Pemasok", icon: Truck, path: "/dashboard?tab=suppliers" },
     { value: "requests", label: "Request", icon: Inbox, path: "/dashboard?tab=requests" },

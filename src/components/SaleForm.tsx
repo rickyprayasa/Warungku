@@ -4,6 +4,7 @@ import { saleSchema, type SaleFormValues } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -20,6 +21,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const addSale = useWarungStore((state) => state.addSale);
   const [isDisplaySale, setIsDisplaySale] = useState(false);
+  const [notes, setNotes] = useState('');
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
@@ -42,6 +44,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
     const saleData = {
       ...values,
       saleType: isDisplaySale ? 'display' as const : 'retail' as const,
+      notes: notes.trim() || undefined,
     };
 
     const promise = addSale(saleData);
@@ -53,6 +56,14 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
       error: 'Gagal mencatat penjualan.',
     });
     await promise;
+    
+    // Reset form
+    form.reset({
+      items: [{ productId: '', productName: '', quantity: 1, price: 0 }],
+    });
+    setNotes('');
+    setIsDisplaySale(false);
+    
     onSuccess();
   };
 
@@ -308,6 +319,18 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
           <PlusCircle className="w-4 h-4 mr-2" /> Tambah Item
         </Button>
 
+        {/* Notes Field */}
+        <div className="space-y-2">
+          <label className="text-sm font-mono font-bold text-muted-foreground">Catatan (Opsional)</label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Catatan khusus untuk penjualan ini (misal: customer, kondisi khusus, dll)"
+            className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-mono resize-none"
+            rows={3}
+          />
+        </div>
+
         <div className="text-right font-mono text-2xl font-bold border-t-4 border-brand-black pt-4 text-brand-orange">
           TOTAL: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total)}
         </div>
@@ -315,8 +338,8 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
           type="submit"
           disabled={form.formState.isSubmitting}
           className={`w-full border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12 ${isDisplaySale
-              ? 'bg-purple-500 text-white hover:bg-purple-700'
-              : 'bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white'
+            ? 'bg-purple-500 text-white hover:bg-purple-700'
+            : 'bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white'
             }`}
         >
           {form.formState.isSubmitting

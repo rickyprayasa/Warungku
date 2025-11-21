@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Purchase } from '@shared/types';
 import { Button } from './ui/button';
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2 } from 'lucide-react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2, MessageSquare } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
@@ -71,6 +71,7 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
               <TableHead className="font-bold text-brand-black">Jumlah</TableHead>
               <TableHead className="font-bold text-brand-black">Pemasok</TableHead>
               <TableHead className="font-bold text-brand-black text-right">Total Biaya</TableHead>
+              <TableHead className="font-bold text-brand-black">Catatan</TableHead>
               <TableHead className="font-bold text-brand-black text-center">Aksi</TableHead>
             </TableRow>
           </TableHeader>
@@ -82,6 +83,15 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
                 <TableCell className="font-mono">{purchase.quantity}</TableCell>
                 <TableCell className="font-mono">{purchase.supplier}</TableCell>
                 <TableCell className="font-mono text-right font-bold text-red-600">{formatCurrency(purchase.totalCost)}</TableCell>
+                <TableCell className="font-mono text-sm text-muted-foreground max-w-[200px]">
+                  {purchase.notes ? (
+                    <span className="italic truncate block" title={purchase.notes}>
+                      {purchase.notes.length > 50 ? `${purchase.notes.substring(0, 50)}...` : purchase.notes}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300">-</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-center">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -156,6 +166,15 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
                 <p className="font-bold font-mono text-lg text-red-600">{formatCurrency(purchase.totalCost)}</p>
               </div>
             </div>
+
+            {purchase.notes && (
+              <div className="mt-2 p-2 bg-blue-50/50 border-l-4 border-blue-500 rounded-r">
+                <div className="flex items-start gap-2">
+                  <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs italic text-muted-foreground font-mono leading-relaxed">{purchase.notes}</p>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
