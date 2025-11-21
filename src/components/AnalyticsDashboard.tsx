@@ -130,32 +130,42 @@ export function AnalyticsDashboard() {
     const outOfStockProducts = validProducts.filter((p) => (p.totalStock || 0) === 0).length;
 
     // Generate trend data for chart (daily breakdown)
-    const trendMap = new Map<string, { revenue: number; profit: number }>();
+    // First, create a map for all dates in the range
+    const trendMap = new Map<string, { date: Date; revenue: number; profit: number }>();
+    
+    // Initialize all dates in range with zero values
+    const currentDate = new Date(fromTimestamp);
+    const endDate = new Date(toTimestamp);
+    
+    while (currentDate <= endDate) {
+      const dateKey = format(currentDate, 'yyyy-MM-dd');
+      trendMap.set(dateKey, {
+        date: new Date(currentDate),
+        revenue: 0,
+        profit: 0,
+      });
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Now fill in actual sales data
     periodSales.forEach((sale) => {
-      const dateKey = format(new Date(sale.createdAt), 'dd/MM');
+      const saleDate = new Date(sale.createdAt);
+      const dateKey = format(saleDate, 'yyyy-MM-dd');
       const existing = trendMap.get(dateKey);
       if (existing) {
         existing.revenue += Number(sale.total) || 0;
         existing.profit += Number(sale.profit) || 0;
-      } else {
-        trendMap.set(dateKey, {
-          revenue: Number(sale.total) || 0,
-          profit: Number(sale.profit) || 0,
-        });
       }
     });
 
-    const trendData = Array.from(trendMap.entries())
-      .map(([date, data]) => ({
-        date,
-        revenue: data.revenue,
-        profit: data.profit,
-      }))
-      .sort((a, b) => {
-        const [dayA, monthA] = a.date.split('/').map(Number);
-        const [dayB, monthB] = b.date.split('/').map(Number);
-        return monthA - monthB || dayA - dayB;
-      });
+    // Convert to array and sort by date
+    const trendData = Array.from(trendMap.values())
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .map((item) => ({
+        date: format(item.date, 'dd/MM'),
+        revenue: item.revenue,
+        profit: item.profit,
+      }));
 
     // Top selling products (filtered by period)
     const productSalesMap = new Map<string, { product: any; quantity: number; revenue: number }>();

@@ -24,13 +24,17 @@ export function BatchStockInfo({ productId, productName, totalStock, className }
   const loadStockDetails = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/products/${productId}/stock-details`);
+      const res = await fetch(`/api/stock-details/${productId}`);
       if (res.ok) {
         const data = await res.json();
         setStockDetails(data.data || []);
+      } else {
+        console.error('Failed to load stock details:', res.status);
+        setStockDetails([]);
       }
     } catch (error) {
       console.error('Failed to load stock details:', error);
+      setStockDetails([]);
     } finally {
       setIsLoading(false);
     }

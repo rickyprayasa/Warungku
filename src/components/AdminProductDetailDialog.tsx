@@ -37,10 +37,13 @@ export function AdminProductDetailDialog({ product, open, onOpenChange }: AdminP
         setIsLoading(true);
         try {
             // Fetch stock details (batch info)
-            const stockRes = await fetch(`/api/products/${product.id}/stock-details`);
+            const stockRes = await fetch(`/api/stock-details/${product.id}`);
             if (stockRes.ok) {
                 const data = await stockRes.json();
                 setStockDetails(data.data || []);
+            } else {
+                console.error('Failed to fetch stock details:', stockRes.status);
+                setStockDetails([]);
             }
 
             // Filter purchases for this product
