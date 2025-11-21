@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon } from 'lucide-react';
+import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const tabs = [
@@ -53,6 +53,7 @@ const moreTabs = [
     { value: "requests", label: "Request", icon: Inbox, path: "/dashboard?tab=requests" },
     { value: "cashflow", label: "Kas", icon: ArrowRightLeft, path: "/dashboard?tab=cashflow" },
     { value: "finance", label: "Finance", icon: Banknote, path: "/dashboard?tab=finance" },
+    { value: "analytics", label: "Analytics", icon: BarChart3, path: "/dashboard?tab=analytics" },
 ];
 
 export function MobileBottomNav() {
@@ -62,10 +63,8 @@ export function MobileBottomNav() {
     const [activeTab, setActiveTab] = useState("pos");
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
 
-    // Long press detection
-    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-    const isLongPress = useRef(false);
-    const currentTabRef = useRef<string | null>(null);
+    // Long press detection removed
+
 
     useEffect(() => {
         const path = location.pathname;
@@ -97,30 +96,9 @@ export function MobileBottomNav() {
         }
     };
 
-    const handleTabTouchStart = (tabValue: string) => {
-        isLongPress.current = false;
-        currentTabRef.current = tabValue;
-        longPressTimer.current = setTimeout(() => {
-            isLongPress.current = true;
-            setActiveSubmenu(tabValue);
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        }, 500);
-    };
 
-    const handleTabTouchEnd = () => {
-        if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current);
-            longPressTimer.current = null;
-        }
-    };
 
     const handleTabClick = (tab: any) => {
-        if (isLongPress.current) {
-            isLongPress.current = false;
-            return;
-        }
         navigate(tab.path);
     };
 
@@ -128,29 +106,9 @@ export function MobileBottomNav() {
         setActiveSubmenu(tabValue);
     };
 
-    const handleMoreTouchStart = () => {
-        isLongPress.current = false;
-        longPressTimer.current = setTimeout(() => {
-            isLongPress.current = true;
-            setShowMore(true);
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        }, 500);
-    };
 
-    const handleMoreTouchEnd = () => {
-        if (longPressTimer.current) {
-            clearTimeout(longPressTimer.current);
-            longPressTimer.current = null;
-        }
-    };
 
     const handleMoreClick = () => {
-        if (isLongPress.current) {
-            isLongPress.current = false;
-            return;
-        }
         setShowMore(!showMore);
     };
 
@@ -234,17 +192,26 @@ export function MobileBottomNav() {
                         return (
                             <button
                                 key={tab.value}
-                                onClick={() => handleTabClick(tab)}
-                                onDoubleClick={() => handleTabDoubleClick(tab.value)}
-                                onTouchStart={() => handleTabTouchStart(tab.value)}
-                                onTouchEnd={handleTabTouchEnd}
                                 className={cn(
-                                    "flex flex-col items-center justify-center transition-colors active:bg-gray-100",
+                                    "flex flex-col items-center justify-center transition-colors active:bg-gray-100 relative w-full h-full",
                                     isActive ? "bg-brand-orange text-brand-black" : "text-muted-foreground hover:bg-muted"
                                 )}
                             >
                                 <Icon className="w-5 h-5 mb-1" />
                                 <span className="text-[10px] font-bold font-mono">{tab.label}</span>
+
+                                {/* Quick Action Trigger */}
+                                {tab.submenu && (
+                                    <div
+                                        className="absolute top-1 right-1 p-1 rounded-full hover:bg-black/10 active:bg-black/20 transition-colors"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveSubmenu(tab.value);
+                                        }}
+                                    >
+                                        <MoreHorizontal className="w-3 h-3" />
+                                    </div>
+                                )}
                             </button>
                         );
                     })}
@@ -253,8 +220,6 @@ export function MobileBottomNav() {
                     <button
                         onClick={handleMoreClick}
                         onDoubleClick={handleMoreDoubleClick}
-                        onTouchStart={handleMoreTouchStart}
-                        onTouchEnd={handleMoreTouchEnd}
                         onContextMenu={(e) => {
                             e.preventDefault();
                         }}

@@ -22,7 +22,7 @@ export function FinanceDashboard() {
     const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
     const totalCogs = sales.reduce((sum, sale) =>
       sum + sale.items.reduce((itemSum, item) => itemSum + (item.cost * item.quantity), 0),
-    0);
+      0);
     const totalPurchases = purchases.reduce((sum, purchase) => sum + purchase.totalCost, 0);
     const net = totalRevenue - totalCogs;
     const margin = totalRevenue > 0 ? (net / totalRevenue) * 100 : 0;
@@ -88,15 +88,15 @@ export function FinanceDashboard() {
           Ekspor Laporan
         </Button>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
         {kpiData.map((kpi, index) => (
           <Card key={index} className="rounded-none border-2 border-brand-black shadow-hard">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-mono font-bold uppercase">{kpi.title}</CardTitle>
-              <kpi.icon className="h-5 w-5 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2 p-3 md:p-6">
+              <CardTitle className="text-[10px] md:text-sm font-mono font-bold uppercase truncate">{kpi.title}</CardTitle>
+              <kpi.icon className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold font-display text-brand-orange">{kpi.value}</div>
+            <CardContent className="p-3 pt-0 md:p-6 md:pt-0">
+              <div className="text-xl md:text-3xl font-bold font-display text-brand-orange">{kpi.value}</div>
             </CardContent>
           </Card>
         ))}

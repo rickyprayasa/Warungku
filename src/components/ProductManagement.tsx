@@ -54,12 +54,12 @@ export function ProductManagement() {
 
   const StatCard = ({ title, value, icon: Icon, color, bgColor }: any) => (
     <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all duration-200 bg-white group relative overflow-hidden">
-      <div className={`absolute top-0 right-0 p-2 ${bgColor} border-l-2 border-b-2 border-brand-black rounded-bl-lg rounded-tr-lg`}>
-        <Icon className={`w-6 h-6 ${color}`} />
+      <div className={`absolute top-0 right-0 p-1.5 md:p-2 ${bgColor} border-l-2 border-b-2 border-brand-black rounded-bl-lg rounded-tr-lg`}>
+        <Icon className={`w-4 h-4 md:w-6 md:h-6 ${color}`} />
       </div>
-      <CardContent className="p-6 pt-8">
-        <p className="text-sm font-mono font-bold text-muted-foreground uppercase tracking-wider mb-1">{title}</p>
-        <p className="text-4xl font-display font-black text-brand-black">{value}</p>
+      <CardContent className="p-3 pt-5 md:p-6 md:pt-8">
+        <p className="text-[10px] md:text-sm font-mono font-bold text-muted-foreground uppercase tracking-wider mb-0.5 md:mb-1 truncate">{title}</p>
+        <p className="text-2xl md:text-4xl font-display font-black text-brand-black">{value}</p>
       </CardContent>
     </Card>
   );
@@ -114,7 +114,7 @@ export function ProductManagement() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <StatCard
           title="Total Produk"
           value={totalProducts}
