@@ -158,22 +158,7 @@ export function DashboardPage() {
 
         {/* Desktop/Tablet Tabs - Hidden on Mobile */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="hidden md:grid w-full grid-cols-3 lg:grid-cols-5 h-auto bg-transparent gap-3 p-0">
-            {tabs.map(tab => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className="w-full rounded-lg border-2 border-brand-black bg-white font-bold uppercase text-xs sm:text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black data-[state=active]:translate-y-0.5 data-[state=active]:shadow-none py-3"
-              >
-                <tab.icon className="w-4 h-4 mr-2 hidden sm:inline-block" />{tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {/* Visual Separator */}
-          <div className="mt-6 mb-8 border-t-4 border-brand-black relative">
-            <div className="absolute -top-[2px] left-0 right-0 h-1 bg-brand-orange"></div>
-          </div>
+          {/* TabsList removed as navigation is now in Sidebar */}
 
           <div>
             <TabsContent value="analytics" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><AnalyticsDashboard /></motion.div></TabsContent>

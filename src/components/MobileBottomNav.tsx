@@ -192,6 +192,8 @@ export function MobileBottomNav() {
                         return (
                             <button
                                 key={tab.value}
+                                onClick={() => handleTabClick(tab)}
+                                onDoubleClick={() => handleTabDoubleClick(tab.value)}
                                 className={cn(
                                     "flex flex-col items-center justify-center transition-colors active:bg-gray-100 relative w-full h-full",
                                     isActive ? "bg-brand-orange text-brand-black" : "text-muted-foreground hover:bg-muted"

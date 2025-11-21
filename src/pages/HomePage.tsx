@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppFooter } from '@/components/AppFooter';
 import { Toaster } from '@/components/ui/sonner';
+import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { useWarungStore } from '@/lib/store';
 
@@ -24,12 +25,22 @@ export function HomePage() {
   }, [isAuthenticated, fetchProducts, fetchSales, fetchPurchases, fetchSuppliers]);
 
   return (
-    <div className="relative min-h-screen bg-brand-white text-brand-black flex flex-col">
-      <AppHeader />
-      <main className="flex-grow">
-        <Outlet />
-      </main>
-      <AppFooter />
+    <div className="relative min-h-screen bg-brand-white text-brand-black flex">
+      {/* Sidebar for Desktop */}
+      <Sidebar />
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header shows on mobile always, and on desktop ONLY if not authenticated */}
+        <div className={isAuthenticated ? "md:hidden" : ""}>
+          <AppHeader />
+        </div>
+
+        <main className="flex-grow pt-16 md:pt-20">
+          <Outlet />
+        </main>
+        {!isAuthenticated && <AppFooter />}
+      </div>
+
       {isAuthenticated && <MobileBottomNav />}
       <Toaster richColors closeButton theme="light" />
     </div>

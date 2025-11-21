@@ -3,7 +3,7 @@ import { useWarungStore } from '@/lib/store';
 import { ProductCard } from '@/components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Search, PlusCircle, ArrowDown } from 'lucide-react';
+import { AlertTriangle, Search, PlusCircle, ArrowDown, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { RequestJajananForm } from '@/components/RequestJajananForm';
 import { SnackIconBackground } from '@/components/SnackIconBackground';
 import { motion } from 'framer-motion';
+
 const MobileProductRow = ({ product }: { product: Product }) => {
   const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   const isActive = product.isActive ?? true;
@@ -22,7 +23,7 @@ const MobileProductRow = ({ product }: { product: Product }) => {
     <Dialog>
       <DialogTrigger asChild disabled={!isActive}>
         <TableRow className={cn(
-          "border-b-2 border-brand-black last:border-b-0 cursor-pointer",
+          "border-b-2 border-brand-black last:border-b-0 cursor-pointer hover:bg-brand-orange/10 transition-colors",
           !isActive && "grayscale opacity-60 bg-gray-100 cursor-not-allowed"
         )}>
           <TableCell className="w-[60px] p-2 relative">
@@ -59,6 +60,7 @@ const MobileProductRow = ({ product }: { product: Product }) => {
     </Dialog>
   );
 };
+
 export function POSPage() {
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const products = useWarungStore((state) => state.products);
@@ -67,13 +69,17 @@ export function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isRequestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
   const categories = useMemo(() => {
     const allCategories = products.map((p) => p.category);
     return ['All', ...Array.from(new Set(allCategories))];
   }, [products]);
+
   const filteredProducts = useMemo(() => {
     let filtered = products;
     if (searchTerm) {
@@ -87,6 +93,7 @@ export function POSPage() {
     }
     return filtered;
   }, [products, selectedCategory, searchTerm]);
+
   return (
     <div className="min-h-screen bg-muted/40 relative overflow-hidden">
       <SnackIconBackground />
@@ -100,7 +107,8 @@ export function POSPage() {
               </div>
               <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia atau ajukan yang baru.</p>
             </div>
-            <div className="max-w-2xl mx-auto mb-4">
+
+            <div className="max-w-2xl mx-auto mb-6 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
@@ -111,7 +119,56 @@ export function POSPage() {
                   className="w-full rounded-none border-2 border-brand-black h-12 pl-10 font-mono"
                 />
               </div>
+
+              {/* View Toggle & Category Filter */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                {/* View Toggle */}
+                <div className="flex items-center border-2 border-brand-black bg-brand-white">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className={cn(
+                      "rounded-none h-10 px-3 hover:bg-brand-orange/20",
+                      viewMode === 'grid' ? "bg-brand-orange text-brand-black" : "text-muted-foreground"
+                    )}
+                  >
+                    <LayoutGrid className="w-5 h-5" />
+                  </Button>
+                  <div className="w-0.5 h-6 bg-brand-black/10" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      "rounded-none h-10 px-3 hover:bg-brand-orange/20",
+                      viewMode === 'list' ? "bg-brand-orange text-brand-black" : "text-muted-foreground"
+                    )}
+                  >
+                    <List className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                {/* Categories */}
+                <div className="flex items-center flex-wrap gap-2 justify-center sm:justify-end">
+                  {categories.map((category) => (
+                    <Button
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      className={cn(
+                        'font-mono uppercase font-bold text-xs px-3 py-1 border-2 border-brand-black rounded-none transition-all duration-200 h-8',
+                        selectedCategory === category
+                          ? 'bg-brand-black text-brand-white'
+                          : 'bg-brand-white text-brand-black hover:bg-brand-orange hover:text-brand-black hover:shadow-hard-sm'
+                      )}
+                    >
+                      {category === 'All' ? 'Semua' : category}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
+
             <div className="flex flex-col items-center justify-center mb-8">
               <motion.div
                 animate={{ y: [0, 5, 0] }}
@@ -136,22 +193,7 @@ export function POSPage() {
                 </DialogContent>
               </Dialog>
             </div>
-            <div className="flex items-center justify-center flex-wrap gap-2 mb-8">
-              {categories.map((category) => (
-                <Button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={cn(
-                    'font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200',
-                    selectedCategory === category
-                      ? 'bg-brand-black text-brand-white'
-                      : 'bg-brand-white text-brand-black hover:bg-brand-orange hover:text-brand-black hover:shadow-hard-sm'
-                  )}
-                >
-                  {category === 'All' ? 'Semua' : category}
-                </Button>
-              ))}
-            </div>
+
             {isLoading && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
@@ -163,6 +205,7 @@ export function POSPage() {
                 ))}
               </div>
             )}
+
             {error && (
               <Alert variant="destructive" className="border-2 border-brand-black rounded-none">
                 <AlertTriangle className="h-4 w-4" />
@@ -170,22 +213,25 @@ export function POSPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+
             {!isLoading && !error && (
               <>
-                {/* Desktop Grid View */}
-                <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
-                </div>
-                {/* Mobile List View */}
-                <div className="sm:hidden border-4 border-brand-black bg-brand-white">
-                  <Table>
-                    <TableBody>
-                      {filteredProducts.map((product) => <MobileProductRow key={product.id} product={product} />)}
-                    </TableBody>
-                  </Table>
-                </div>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+                  </div>
+                ) : (
+                  <div className="border-4 border-brand-black bg-brand-white">
+                    <Table>
+                      <TableBody>
+                        {filteredProducts.map((product) => <MobileProductRow key={product.id} product={product} />)}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </>
             )}
+
             {!isLoading && !error && filteredProducts.length === 0 && (
               <div className="col-span-full text-center border-2 border-dashed border-brand-black p-12">
                 <p className="font-mono text-muted-foreground">Produk tidak ditemukan.</p>

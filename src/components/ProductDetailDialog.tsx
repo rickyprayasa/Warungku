@@ -28,7 +28,24 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
       <div className="p-6">
         <p className="text-sm font-mono uppercase text-muted-foreground">{product.category}</p>
         <h2 className="text-3xl font-display font-bold text-brand-black my-1">{product.name}</h2>
-        <p className="font-mono font-bold text-brand-orange text-2xl my-4">{formatCurrency(product.price)}</p>
+
+        {product.isPromo && product.promoPrice ? (
+          <div className="my-4">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-mono text-muted-foreground line-through decoration-2 decoration-red-500">
+                {formatCurrency(product.price)}
+              </span>
+              <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full border border-red-200">
+                PROMO
+              </span>
+            </div>
+            <p className="font-mono font-bold text-red-600 text-3xl">
+              {formatCurrency(product.promoPrice)}
+            </p>
+          </div>
+        ) : (
+          <p className="font-mono font-bold text-brand-orange text-2xl my-4">{formatCurrency(product.price)}</p>
+        )}
 
         {/* Description */}
         {product.description && (

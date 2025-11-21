@@ -39,7 +39,7 @@ export function AppHeader() {
   return (
     <Collapsible open={isMenuOpen} onOpenChange={setMenuOpen} asChild>
       <>
-        <header className="bg-brand-orange/90 backdrop-blur-sm border-b-4 border-brand-black sticky top-0 z-50">
+        <header className="bg-brand-orange/90 backdrop-blur-sm border-b-4 border-brand-black fixed top-0 left-0 right-0 z-50 w-full">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-20">
               {/* Logo */}
@@ -47,26 +47,25 @@ export function AppHeader() {
                 <AnimatedLogo textColor="text-brand-black" />
               </Link>
 
-              {/* Desktop Navigation */}
-              <nav className="hidden md:flex items-center space-x-2 bg-brand-black/10 border-2 border-brand-black/20 p-1">
+              {/* Desktop Navigation - HIDDEN (Moved to Sidebar) */}
+              <nav className="hidden md:hidden items-center space-x-2 bg-brand-black/10 border-2 border-brand-black/20 p-1">
                 {navLinks}
               </nav>
 
+              {/* Desktop Actions - HIDDEN (Moved to Sidebar) */}
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center gap-2">
-                {isAuthenticated && (
-                  <>
-                    <NotificationBell />
-                    <SettingsDialog />
-                    <Button
-                      onClick={handleLogout}
-                      variant="ghost"
-                      className="font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200 bg-brand-white text-brand-black hover:bg-destructive hover:text-destructive-foreground hover:shadow-hard-sm"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Keluar
-                    </Button>
-                  </>
+                {!isAuthenticated ? (
+                  <Button
+                    onClick={() => navigate('/login')}
+                    variant="ghost"
+                    className="font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200 bg-brand-white text-brand-black hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm"
+                  >
+                    Masuk
+                  </Button>
+                ) : (
+                  // Authenticated actions are handled by Sidebar, but we can keep this empty or add specific header actions if needed
+                  null
                 )}
               </div>
 

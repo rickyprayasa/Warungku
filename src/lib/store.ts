@@ -11,6 +11,12 @@ interface WarungState {
   jajananRequests: JajananRequest[];
   stockDetails: StockDetail[];
   initialBalance: number;
+  storeProfile: {
+    name: string;
+    address: string;
+    phone: string;
+    logoUrl?: string;
+  };
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
@@ -23,6 +29,7 @@ interface WarungActions {
   fetchJajananRequests: () => Promise<void>;
   fetchStockDetails: (productId: string) => Promise<void>;
   setInitialBalance: (balance: number) => void;
+  updateStoreProfile: (profile: WarungState['storeProfile']) => void;
   login: () => void;
   logout: () => void;
   addProduct: (productData: ProductFormValues) => Promise<Product>;
@@ -49,6 +56,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       jajananRequests: [],
       stockDetails: [],
       initialBalance: 0,
+      storeProfile: {
+        name: 'Warungku',
+        address: '',
+        phone: '',
+      },
       isLoading: true,
       error: null,
       isAuthenticated: false,
@@ -113,6 +125,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         }
       },
       setInitialBalance: (balance) => set({ initialBalance: balance }),
+      updateStoreProfile: (profile) => set({ storeProfile: profile }),
       login: () => set({ isAuthenticated: true }),
       logout: () => set({ isAuthenticated: false }),
       addProduct: async (productData) => {
@@ -208,6 +221,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       partialize: (state) => ({
         initialBalance: state.initialBalance,
         isAuthenticated: state.isAuthenticated,
+        storeProfile: state.storeProfile,
       }),
     }
   )

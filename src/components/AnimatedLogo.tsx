@@ -1,8 +1,9 @@
 import { motion, Variants } from 'framer-motion';
 // Donut chart properties
 const DONUT_RADIUS = 10.5;
-const DONUT_STROKE_WIDTH = 2.5;
+const DONUT_STROKE_WIDTH = 3.5; // Increased from 2.5
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+
 const donutGroupVariants: Variants = {
   rest: {
     scale: 1,
@@ -19,6 +20,7 @@ const donutGroupVariants: Variants = {
     },
   },
 };
+
 // Bar chart properties - adjusted to fit inside the donut
 const BAR_BASE_Y = 18;
 const barVariants: Variants = {
@@ -39,28 +41,29 @@ const barVariants: Variants = {
     },
   }),
 };
+
 export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: string }) {
   const brandColors = ['rgb(243, 128, 32)', 'rgb(17, 17, 17)', 'rgb(160, 160, 160)', 'rgb(255, 255, 255)'];
   const donutColors = ['rgb(17, 17, 17)', 'rgb(255, 255, 255)', 'rgb(160, 160, 160)']; // Black, White, Gray
   const numDonutSegments = donutColors.length;
   const segmentLength = DONUT_CIRCUMFERENCE / numDonutSegments;
   const gapLength = DONUT_CIRCUMFERENCE - segmentLength;
+
   const barX = [7, 10, 13, 16];
-  const separatorAngles = [0, 120, 240];
-  const innerRadius = DONUT_RADIUS - DONUT_STROKE_WIDTH / 2;
-  const outerRadius = DONUT_RADIUS + DONUT_STROKE_WIDTH / 2;
+
   return (
     <motion.div
       initial="rest"
       whileHover="hover"
       animate="rest"
-      className="flex items-center gap-2 cursor-pointer transform-gpu"
+      className="flex items-center gap-3 cursor-pointer transform-gpu"
     >
       <motion.svg
         viewBox="0 0 24 24"
-        className="w-8 h-8"
+        className="w-12 h-12"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        style={{ overflow: 'visible' }}
       >
         {/* Donut Chart Frame */}
         <motion.g style={{ transformOrigin: 'center' }} variants={donutGroupVariants}>
@@ -72,25 +75,15 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
               r={DONUT_RADIUS}
               stroke={color}
               strokeWidth={DONUT_STROKE_WIDTH}
-              strokeLinecap="butt"
+              strokeLinecap="round"
               strokeDasharray={`${segmentLength} ${gapLength}`}
               transform={`rotate(${i * (360 / numDonutSegments)}, 12, 12)`}
             />
           ))}
-          {/* Segment Separators */}
-          {separatorAngles.map((angle) => (
-            <line
-              key={`sep-${angle}`}
-              x1="12"
-              y1={12 - innerRadius}
-              x2="12"
-              y2={12 - outerRadius}
-              stroke="rgb(17, 17, 17)"
-              strokeWidth="0.5"
-              transform={`rotate(${angle} 12 12)`}
-            />
-          ))}
+
+
         </motion.g>
+
         {/* Bar Chart (inside the donut) */}
         <g>
           {brandColors.map((color, i) => (
@@ -108,7 +101,7 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
           ))}
         </g>
       </motion.svg>
-      <span className={`font-display text-2xl font-bold ${textColor}`}>OMZETIN</span>
+      <span className={`font-display text-4xl font-bold tracking-tight ${textColor}`}>OMZETIN</span>
     </motion.div>
   );
 }

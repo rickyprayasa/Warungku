@@ -7,7 +7,9 @@ export function AppFooter() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           {/* Column 1: Brand */}
           <div className="text-center md:text-left">
-            <h3 className="font-display text-2xl font-bold text-brand-orange uppercase tracking-wider">OMZETIN</h3>
+            <a href="/" className="inline-block hover:opacity-80 transition-opacity">
+              <h3 className="font-display text-2xl font-bold text-brand-orange uppercase tracking-wider">OMZETIN</h3>
+            </a>
             <p className="font-mono text-sm text-gray-400 max-w-md mt-2">
               Sistem POS modern untuk warung, dirancang untuk Generasi Z.
             </p>

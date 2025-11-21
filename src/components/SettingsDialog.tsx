@@ -13,7 +13,7 @@ import { Settings, Trash2, Database, Download, Upload, Info, AlertTriangle, Pack
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
 
-export function SettingsDialog() {
+export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
 
@@ -161,14 +161,16 @@ export function SettingsDialog() {
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-none border-2 border-brand-black hover:bg-brand-orange hover:text-brand-white"
-                    title="Pengaturan"
-                >
-                    <Settings className="w-5 h-5" />
-                </Button>
+                {trigger || (
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-none border-2 border-brand-black hover:bg-brand-orange hover:text-brand-white"
+                        title="Pengaturan"
+                    >
+                        <Settings className="w-5 h-5" />
+                    </Button>
+                )}
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-[550px] rounded-none border-4 border-brand-black max-h-[90vh] overflow-y-auto">

@@ -4,11 +4,17 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "warungos-vsarw0kgo77brnns486v0",
+  "name": "omzetin",
   "main": "worker/index.ts",
   "compatibility_date": "2025-04-24",
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "routes": [
+    {
+      "pattern": "omzetin.web.id",
+      "custom_domain": true
+    }
   ],
   "assets": {
     "not_found_handling": "single-page-application",
