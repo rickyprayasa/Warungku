@@ -578,28 +578,18 @@ export function AnalyticsDashboard() {
               {metrics.topProducts.length > 0 ? (
                 <div className="space-y-2">
                   {metrics.topProducts.map((item, index) => (
-                    <div key={item.product.id} className="flex items-center gap-2 p-2 border border-brand-black bg-gray-50">
+                    <div key={`${item.name}-${index}`} className="flex items-center gap-2 p-2 border border-brand-black bg-gray-50">
                       <Badge className="rounded-none bg-brand-orange text-brand-black font-bold text-xs h-5 w-5 p-0 flex items-center justify-center shrink-0">
                         {index + 1}
                       </Badge>
-                      {item.product.imageUrl && (
-                        <img
-                          src={item.product.imageUrl}
-                          alt={item.product.name}
-                          className="w-10 h-10 object-cover border border-brand-black shrink-0"
-                        />
-                      )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm truncate">{item.product.name}</p>
+                        <p className="font-bold text-sm truncate">{item.name}</p>
                         <p className="text-[10px] text-muted-foreground font-mono">
-                          {item.product.category}
+                          {formatNumber(item.quantity)} unit terjual
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="font-bold font-mono text-sm">{formatNumber(item.quantity)}</p>
-                        <p className="text-[10px] text-muted-foreground font-mono">
-                          {formatCurrency(item.revenue)}
-                        </p>
+                        <p className="font-bold font-mono text-sm">{formatCurrency(item.revenue)}</p>
                       </div>
                     </div>
                   ))}
