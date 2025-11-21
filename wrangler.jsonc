@@ -4,7 +4,7 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "warungos-vsarw0kgo77brnns486v0",
+  "name": "warungku",
   "main": "worker/index.ts",
   "compatibility_date": "2025-04-24",
   "compatibility_flags": [
