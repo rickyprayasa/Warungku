@@ -61,8 +61,9 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
 
   return (
     <>
-      <div className="border-4 border-brand-black bg-brand-white">
-        <Table>
+      {/* Desktop Table View */}
+      <div className="hidden md:block border-4 border-brand-black bg-brand-white overflow-x-auto">
+        <Table className="min-w-[800px]">
           <TableHeader className="border-b-4 border-brand-black bg-muted/40">
             <TableRow>
               <TableHead className="font-bold text-brand-black">Tanggal</TableHead>
@@ -109,6 +110,54 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {paginatedPurchases.map((purchase) => (
+          <div key={purchase.id} className="border-4 border-brand-black bg-brand-white p-3 shadow-hard-sm">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground font-mono">{formatDate(purchase.createdAt)}</p>
+                <h3 className="font-bold text-lg leading-tight mt-1">{purchase.productName}</h3>
+                <p className="text-sm text-muted-foreground font-mono mt-1">Pemasok: {purchase.supplier}</p>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 border-2 border-brand-black rounded-none text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-none border-4 border-brand-black">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Hapus Pembelian?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tindakan ini akan menghapus data pembelian dan <strong>mengurangi stok barang</strong>.
+                      Tindakan ini tidak dapat dibatalkan.
+                      <br /><br />
+                      <strong>PENTING:</strong> Pembelian hanya bisa dihapus jika stok dari pembelian ini BELUM terjual.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDelete(purchase.id)} className="rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground font-mono">Jumlah</p>
+                <p className="font-bold font-mono text-lg">{purchase.quantity}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground font-mono">Total Biaya</p>
+                <p className="font-bold font-mono text-lg text-red-600">{formatCurrency(purchase.totalCost)}</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
       <div className="flex items-center justify-end space-x-2 py-4 font-mono">
         <div className="flex items-center space-x-2">

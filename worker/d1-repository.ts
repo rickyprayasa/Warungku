@@ -1,7 +1,7 @@
 // D1 Repository for Warungku
 // Handles all database operations with Cloudflare D1
 
-import type { Product, Sale, Purchase, Supplier, StockDetail, JajananRequest } from '@shared/types';
+import type { Product, Sale, Purchase, Supplier, StockDetail, JajananRequest, OpnamePayload } from '@shared/types';
 
 export class D1Repository {
     constructor(private db: D1Database) { }
@@ -25,8 +25,8 @@ export class D1Repository {
     async createProduct(product: Product): Promise<Product> {
         await this.db
             .prepare(`
-        INSERT INTO products (id, name, price, cost, imageUrl, category, totalStock, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO products (id, name, price, cost, imageUrl, category, description, isPromo, promoPrice, isActive, totalStock, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
             .bind(
                 product.id,
@@ -35,6 +35,10 @@ export class D1Repository {
                 product.cost || 0,
                 product.imageUrl || '',
                 product.category || '',
+                product.description || '',
+                product.isPromo ? 1 : 0,
+                product.promoPrice || 0,
+                product.isActive !== undefined ? (product.isActive ? 1 : 0) : 1,
                 product.totalStock || 0,
                 product.createdAt
             )
@@ -70,6 +74,22 @@ export class D1Repository {
             fields.push('totalStock = ?');
             values.push(updates.totalStock);
         }
+        if (updates.description !== undefined) {
+            fields.push('description = ?');
+            values.push(updates.description);
+        }
+        if (updates.isPromo !== undefined) {
+            fields.push('isPromo = ?');
+            values.push(updates.isPromo ? 1 : 0);
+        }
+        if (updates.promoPrice !== undefined) {
+            fields.push('promoPrice = ?');
+            values.push(updates.promoPrice);
+        }
+        if (updates.isActive !== undefined) {
+            fields.push('isActive = ?');
+            values.push(updates.isActive ? 1 : 0);
+        }
 
         if (fields.length === 0) return;
 
@@ -94,6 +114,54 @@ export class D1Repository {
             }
             throw error;
         }
+    }
+
+    async addStock(productId: string, quantity: number, unitCost: number): Promise<void> {
+        const product = await this.getProduct(productId);
+        if (!product) throw new Error('Product not found');
+
+        const purchaseId = crypto.randomUUID();
+        const stockDetailId = crypto.randomUUID();
+        const now = Date.now();
+
+        const statements = [
+            // Create "Manual Adjustment" purchase record
+            this.db.prepare(`
+                INSERT INTO purchases (id, productId, productName, quantity, unitCost, totalCost, supplierId, createdAt)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+                purchaseId,
+                productId,
+                product.name,
+                quantity,
+                unitCost,
+                quantity * unitCost,
+                'manual-adjustment', // Special ID for manual adjustments
+                now
+            ),
+
+            // Create stock detail
+            this.db.prepare(`
+                INSERT INTO stock_details (id, productId, purchaseId, quantity, unitCost, createdAt)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `).bind(
+                stockDetailId,
+                productId,
+                purchaseId,
+                quantity,
+                unitCost,
+                now
+            ),
+
+            // Update product total stock
+            this.db.prepare(`
+                UPDATE products 
+                SET totalStock = totalStock + ? 
+                WHERE id = ?
+            `).bind(quantity, productId)
+        ];
+
+        await this.db.batch(statements);
     }
 
     // ==================== SALES ====================
@@ -482,5 +550,69 @@ export class D1Repository {
             `),
             this.db.prepare('DELETE FROM snack_requests'),
         ]);
+    }
+    // ==================== OPNAME ====================
+
+    async createOpname(payload: OpnamePayload): Promise<void> {
+        const batch: any[] = [];
+        const timestamp = Date.now();
+        const saleId = crypto.randomUUID();
+
+        let totalRefund = 0;
+        const saleItems: any[] = [];
+
+        for (const item of payload.items) {
+            if (item.quantity <= 0) continue;
+
+            const product = await this.getProduct(item.productId);
+            if (!product) continue;
+
+            const refundAmount = product.price * item.quantity;
+            totalRefund += refundAmount;
+
+            saleItems.push({
+                productId: product.id,
+                productName: product.name,
+                quantity: -item.quantity,
+                price: product.price,
+                cost: product.cost || 0
+            });
+
+            // Update product total stock (Increase)
+            batch.push(this.db.prepare(
+                'UPDATE products SET totalStock = totalStock + ? WHERE id = ?'
+            ).bind(item.quantity, product.id));
+
+            // Add to stock_details (Return/In)
+            const stockId = crypto.randomUUID();
+            batch.push(this.db.prepare(
+                'INSERT INTO stock_details (id, productId, quantity, unitCost, purchaseId, createdAt) VALUES (?, ?, ?, ?, ?, ?)'
+            ).bind(stockId, product.id, item.quantity, product.cost || 0, 'OPNAME-' + saleId, timestamp));
+        }
+
+        if (saleItems.length === 0) return;
+
+        // Insert Sale Record (Negative Total)
+        batch.push(this.db.prepare(
+            'INSERT INTO sales (id, items, total, profit, createdAt, saleType) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(saleId, JSON.stringify(saleItems), -totalRefund, 0, timestamp, 'opname'));
+
+        // Insert Sale Items
+        for (const item of saleItems) {
+            batch.push(this.db.prepare(`
+                INSERT INTO sale_items (id, saleId, productId, productName, quantity, price, cost)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+                crypto.randomUUID(),
+                saleId,
+                item.productId,
+                item.productName,
+                item.quantity,
+                item.price,
+                item.cost
+            ));
+        }
+
+        await this.db.batch(batch);
     }
 }

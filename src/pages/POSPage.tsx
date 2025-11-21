@@ -16,23 +16,46 @@ import { SnackIconBackground } from '@/components/SnackIconBackground';
 import { motion } from 'framer-motion';
 const MobileProductRow = ({ product }: { product: Product }) => {
   const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+  const isActive = product.isActive ?? true;
+
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <TableRow className="border-b-2 border-brand-black last:border-b-0 cursor-pointer">
-          <TableCell className="w-[60px] p-2">
-            <img src={product.imageUrl} alt={product.name} className="w-12 h-12 object-cover border-2 border-brand-black" />
+      <DialogTrigger asChild disabled={!isActive}>
+        <TableRow className={cn(
+          "border-b-2 border-brand-black last:border-b-0 cursor-pointer",
+          !isActive && "grayscale opacity-60 bg-gray-100 cursor-not-allowed"
+        )}>
+          <TableCell className="w-[60px] p-2 relative">
+            <div className="relative w-12 h-12">
+              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover border-2 border-brand-black" />
+              {product.isPromo ? (
+                <div className="absolute -top-2 -left-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rotate-[-10deg] z-10">
+                  PROMO
+                </div>
+              ) : null}
+            </div>
           </TableCell>
           <TableCell className="p-2">
             <p className="font-bold text-sm">{product.name}</p>
             <p className="font-mono text-xs text-muted-foreground">{product.category}</p>
           </TableCell>
-          <TableCell className="font-mono text-right p-2 font-bold text-brand-orange">{formatCurrency(product.price)}</TableCell>
+          <TableCell className="font-mono text-right p-2">
+            {product.isPromo ? (
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-muted-foreground line-through decoration-red-500 decoration-2">{formatCurrency(product.price)}</span>
+                <span className="font-bold text-brand-orange">{formatCurrency(product.promoPrice || product.price)}</span>
+              </div>
+            ) : (
+              <span className="font-bold text-brand-orange">{formatCurrency(product.price)}</span>
+            )}
+          </TableCell>
         </TableRow>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
-        <ProductDetailDialog product={product} />
-      </DialogContent>
+      {isActive ? (
+        <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
+          <ProductDetailDialog product={product} />
+        </DialogContent>
+      ) : null}
     </Dialog>
   );
 };
@@ -65,9 +88,9 @@ export function POSPage() {
     return filtered;
   }, [products, selectedCategory, searchTerm]);
   return (
-    <div className="bg-muted/40 relative overflow-hidden">
+    <div className="min-h-screen bg-muted/40 relative overflow-hidden">
       <SnackIconBackground />
-      <main className="flex-1 overflow-y-auto relative z-10">
+      <main className="flex-1 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8 md:py-10 lg:py-12">
             <div className="mb-8 text-center">
@@ -163,11 +186,11 @@ export function POSPage() {
                 </div>
               </>
             )}
-             {!isLoading && !error && filteredProducts.length === 0 && (
-                <div className="col-span-full text-center border-2 border-dashed border-brand-black p-12">
-                    <p className="font-mono text-muted-foreground">Produk tidak ditemukan.</p>
-                </div>
-             )}
+            {!isLoading && !error && filteredProducts.length === 0 && (
+              <div className="col-span-full text-center border-2 border-dashed border-brand-black p-12">
+                <p className="font-mono text-muted-foreground">Produk tidak ditemukan.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

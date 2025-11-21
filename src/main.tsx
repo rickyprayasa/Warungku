@@ -14,6 +14,7 @@ import { HomePage } from '@/pages/HomePage'
 import { POSPage } from '@/pages/POSPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { OpnamePage } from '@/pages/OpnamePage';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 const router = createBrowserRouter([
   {
@@ -30,6 +31,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "opname",
+        element: (
+          <ProtectedRoute>
+            <OpnamePage />
           </ProtectedRoute>
         ),
       },

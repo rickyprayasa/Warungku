@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS products (
   imageUrl TEXT DEFAULT '',
   category TEXT DEFAULT '',
   description TEXT DEFAULT '',
+  isPromo INTEGER DEFAULT 0,
+  promoPrice REAL DEFAULT 0,
   totalStock INTEGER DEFAULT 0,
   createdAt INTEGER NOT NULL
 );

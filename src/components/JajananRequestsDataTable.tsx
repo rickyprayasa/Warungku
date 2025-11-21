@@ -29,6 +29,7 @@ export function JajananRequestsDataTable() {
     });
   };
   const formatDate = (timestamp: number) => {
+    if (!timestamp) return '-';
     return new Date(timestamp).toLocaleString('id-ID');
   };
   if (requests.length === 0) {
@@ -40,7 +41,8 @@ export function JajananRequestsDataTable() {
   }
   return (
     <>
-      <div className="border-4 border-brand-black bg-brand-white">
+      {/* Desktop Table View */}
+      <div className="hidden md:block border-4 border-brand-black bg-brand-white">
         <Table>
           <TableHeader className="border-b-4 border-brand-black bg-muted/40">
             <TableRow>
@@ -55,7 +57,7 @@ export function JajananRequestsDataTable() {
             {paginatedRequests.map((request) => (
               <TableRow key={request.id} className="border-b-2 border-brand-black last:border-b-0">
                 <TableCell className="font-mono">{formatDate(request.createdAt)}</TableCell>
-                <TableCell className="font-bold">{request.name}</TableCell>
+                <TableCell className="font-bold">{request.snackName}</TableCell>
                 <TableCell className="font-mono text-sm text-muted-foreground">{request.notes || '-'}</TableCell>
                 <TableCell>
                   <Badge
@@ -94,6 +96,55 @@ export function JajananRequestsDataTable() {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {paginatedRequests.map((request) => (
+          <div key={request.id} className="border-4 border-brand-black bg-brand-white p-3 shadow-hard-sm">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h3 className="font-bold text-lg leading-tight">{request.snackName}</h3>
+                <p className="text-xs text-muted-foreground font-mono mt-1">{formatDate(request.createdAt)}</p>
+              </div>
+              <Badge
+                className={cn('rounded-sm font-bold uppercase text-xs', {
+                  'bg-yellow-400 text-yellow-900': request.status === 'pending',
+                  'bg-green-400 text-green-900': request.status === 'approved',
+                  'bg-red-400 text-red-900': request.status === 'rejected',
+                })}
+              >
+                {request.status}
+              </Badge>
+            </div>
+
+            {request.notes && (
+              <div className="mb-3 p-2 bg-gray-50 border-2 border-dashed border-gray-200">
+                <p className="text-sm font-mono text-muted-foreground">{request.notes}</p>
+              </div>
+            )}
+
+            {request.status === 'pending' && (
+              <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t-2 border-dashed border-brand-black/20">
+                <Button
+                  onClick={() => handleStatusChange(request.id, 'approved')}
+                  className="bg-green-500 hover:bg-green-600 text-white border-2 border-brand-black rounded-none font-bold"
+                >
+                  <CheckCircle className="mr-1 h-4 w-4" />
+                  Setujui
+                </Button>
+                <Button
+                  onClick={() => handleStatusChange(request.id, 'rejected')}
+                  variant="destructive"
+                  className="border-2 border-brand-black rounded-none font-bold"
+                >
+                  <XCircle className="mr-1 h-4 w-4" />
+                  Tolak
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
       <div className="flex items-center justify-end space-x-2 py-4 font-mono">
         <div className="flex items-center space-x-2">

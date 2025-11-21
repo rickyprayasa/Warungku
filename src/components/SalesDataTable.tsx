@@ -69,8 +69,9 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
 
   return (
     <>
-      <div className="border-4 border-brand-black bg-brand-white">
-        <Table>
+      {/* Desktop Table View */}
+      <div className="hidden md:block border-4 border-brand-black bg-brand-white overflow-x-auto">
+        <Table className="min-w-[800px]">
           <TableHeader className="border-b-4 border-brand-black bg-muted/40">
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
@@ -172,6 +173,87 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {paginatedSales.map((sale) => (
+          <Collapsible key={sale.id}>
+            <div className="border-4 border-brand-black bg-brand-white shadow-hard-sm">
+              <div className="p-3">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground font-mono">{formatDate(sale.createdAt)}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="font-bold text-lg font-mono">{sale.items.length} Item</span>
+                      {sale.saleType === 'display' && (
+                        <Badge className="bg-purple-500 text-white text-xs">📦 Display</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 border-2 border-brand-black rounded-none text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-none border-4 border-brand-black">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Penjualan?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tindakan ini akan menghapus data penjualan dan <strong>mengembalikan stok barang</strong> ke gudang.
+                          Tindakan ini tidak dapat dibatalkan.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(sale.id)} className="rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground font-mono">Total</p>
+                    <p className="font-bold font-mono text-lg">{formatCurrency(sale.total)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground font-mono">Profit</p>
+                    <p className="font-bold font-mono text-lg text-green-600">{formatCurrency(calculateProfit(sale))}</p>
+                  </div>
+                </div>
+
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full mt-3 border-2 border-brand-black rounded-none font-mono font-bold hover:bg-brand-orange group">
+                    <ChevronDown className="h-4 w-4 mr-1 group-data-[state=open]:rotate-180 transition-transform" />
+                    Lihat Detail
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+
+              <CollapsibleContent>
+                <div className="border-t-2 border-dashed border-brand-black/20 p-3 bg-muted/20">
+                  <h4 className="font-bold mb-2 text-sm">Detail Penjualan:</h4>
+                  <div className="space-y-2">
+                    {sale.items.map((item, index) => (
+                      <div key={index} className="bg-white p-2 border-2 border-brand-black/10">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="font-bold text-sm">{item.productName}</span>
+                          <span className="font-mono text-xs">×{item.quantity}</span>
+                        </div>
+                        <div className="flex justify-between text-xs font-mono">
+                          <span>@ {formatCurrency(item.price)}</span>
+                          <span className="font-bold">{formatCurrency(item.price * item.quantity)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+        ))}
       </div>
       <div className="flex items-center justify-end space-x-2 py-4 font-mono">
         <div className="flex items-center space-x-2">

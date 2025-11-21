@@ -35,7 +35,7 @@ export function ProductManagement() {
               Produk Baru
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] rounded-none border-4 border-brand-black bg-brand-white max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
             <DialogHeader>
               <DialogTitle className="font-display text-2xl font-bold">Tambah Produk Baru</DialogTitle>
             </DialogHeader>

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { ok, bad, notFound } from './core-utils';
 import { D1Repository } from './d1-repository';
-import type { Product, Sale, SaleFormValues, Purchase, Supplier, JajananRequest, StockDetail } from "@shared/types";
+import type { Product, Sale, SaleFormValues, Purchase, Supplier, JajananRequest, StockDetail, OpnamePayload } from "@shared/types";
 
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
@@ -96,6 +96,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       cost: body.cost || 0,
       imageUrl: body.imageUrl || '',
       category: body.category || '',
+      description: body.description || '',
+      isPromo: body.isPromo || false,
+      promoPrice: body.promoPrice || 0,
+      isActive: body.isActive !== undefined ? body.isActive : true,
       totalStock: 0,
       createdAt: Date.now()
     };
@@ -126,6 +130,27 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!deleted) return notFound(c, 'Product not found.');
 
     return ok(c, { id });
+  });
+
+  app.post('/api/products/:id/add-stock', async (c) => {
+    const { id } = c.req.param();
+    const { quantity, unitCost } = await c.req.json();
+
+    if (!quantity || quantity <= 0) {
+      return bad(c, 'Quantity must be greater than 0');
+    }
+
+    if (unitCost === undefined || unitCost < 0) {
+      return bad(c, 'Unit cost must be non-negative');
+    }
+
+    const repo = new D1Repository(c.env.DB);
+    try {
+      await repo.addStock(id, quantity, unitCost);
+      return ok(c, { success: true });
+    } catch (error: any) {
+      return bad(c, error.message);
+    }
   });
 
   // ==================== SALES ====================
@@ -237,6 +262,20 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
     await repo.deleteSale(id);
     return ok(c, { id });
+  });
+
+  // ==================== OPNAME ====================
+
+  app.post('/api/opname', async (c) => {
+    try {
+      const payload = await c.req.json<OpnamePayload>();
+      const repo = new D1Repository(c.env.DB);
+      await repo.createOpname(payload);
+      return ok(c, { success: true });
+    } catch (error: any) {
+      console.error('Failed to create opname:', error);
+      return bad(c, error.message || 'Failed to create opname');
+    }
   });
 
   // ==================== PURCHASES ====================

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail } from '@shared/types';
+import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload } from '@shared/types';
 import { api } from './api-client';
 import { persist, createJSONStorage } from 'zustand/middleware'
 interface WarungState {
@@ -37,6 +37,7 @@ interface WarungActions {
   deleteSupplier: (supplierId: string) => Promise<void>;
   addJajananRequest: (requestData: JajananRequestFormValues) => Promise<JajananRequest>;
   updateJajananRequestStatus: (requestId: string, status: JajananRequest['status']) => Promise<JajananRequest>;
+  createOpname: (payload: OpnamePayload) => Promise<void>;
 }
 export const useWarungStore = create<WarungState & WarungActions>()(
   persist(
@@ -193,6 +194,12 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           if (index !== -1) state.jajananRequests[index] = updatedRequest;
         });
         return updatedRequest;
+      },
+      createOpname: async (payload) => {
+        await api('/api/opname', { method: 'POST', body: JSON.stringify(payload) });
+        const products = await api<Product[]>('/api/products');
+        const sales = await api<Sale[]>('/api/sales');
+        set({ products, sales });
       },
     })),
     {

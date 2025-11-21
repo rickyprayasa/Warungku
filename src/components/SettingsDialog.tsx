@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Settings, Trash2, Database, Download, Upload, Info, AlertTriangle } from 'lucide-react';
+import { Settings, Trash2, Database, Download, Upload, Info, AlertTriangle, Package } from 'lucide-react';
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
 
@@ -140,20 +140,21 @@ export function SettingsDialog() {
         alert(
             'OMZETIN (Warungku)\n\n' +
             'Version: 1.0.0\n' +
-            'Build: Production\n\n' +
-            'Features:\n' +
-            '✓ FIFO Stock Management\n' +
-            '✓ Pack/Box Purchase\n' +
-            '✓ Display Sale Mode\n' +
-            '✓ Real-time Stock Validation\n' +
-            '✓ Price Override & Discounts\n' +
-            '✓ Comprehensive Reports\n\n' +
-            'Technology:\n' +
+            'Developed by: RSQUARE\n\n' +
+            '📦 Fitur Utama:\n' +
+            '✓ Manajemen Stok FIFO\n' +
+            '✓ Pembelian Pack/Box\n' +
+            '✓ Mode Jual Display & Retail\n' +
+            '✓ Validasi Stok Real-time\n' +
+            '✓ Override Harga & Promo\n' +
+            '✓ Rekonsiliasi Kas Harian\n' +
+            '✓ Laporan Keuangan Lengkap\n\n' +
+            '🛠️ Teknologi:\n' +
             '• Frontend: React + TypeScript\n' +
             '• Backend: Cloudflare Workers\n' +
-            '• Database: Durable Objects (SQLite)\n' +
-            '• UI: shadcn/ui + Tailwind CSS\n\n' +
-            '© 2025 OMZETIN'
+            '• Database: Cloudflare D1 (SQLite)\n' +
+            '• UI: Shadcn/ui + Tailwind CSS\n\n' +
+            '© 2025 RSQUARE - All Rights Reserved'
         );
     };
 
@@ -182,6 +183,35 @@ export function SettingsDialog() {
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
+                    {/* Opname Configuration Section */}
+                    <div className="border-2 border-brand-black p-4 space-y-3 bg-blue-50">
+                        <h3 className="font-mono font-bold flex items-center gap-2">
+                            <Package className="w-4 h-4" />
+                            Konfigurasi Opname
+                        </h3>
+
+                        <div>
+                            <label className="text-sm font-mono font-bold mb-2 block">
+                                Mode Opname Default
+                            </label>
+                            <select
+                                value={localStorage.getItem('opnameMode') || 'retail'}
+                                onChange={(e) => {
+                                    localStorage.setItem('opnameMode', e.target.value);
+                                    toast.success(`Mode opname diubah ke: ${e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1)}`);
+                                }}
+                                className="w-full border-2 border-brand-black p-2 font-mono rounded-none"
+                            >
+                                <option value="retail">Retail (Hitung semua produk)</option>
+                                <option value="display">Display (Produk display saja)</option>
+                                <option value="spot-check">Spot Check (Sampling random)</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground font-mono mt-1">
+                                Mode ini menentukan cara default opname stok
+                            </p>
+                        </div>
+                    </div>
+
                     {/* Data Management Section */}
                     <div className="border-2 border-brand-black p-4 space-y-3">
                         <h3 className="font-mono font-bold flex items-center gap-2">
@@ -259,12 +289,12 @@ export function SettingsDialog() {
                         </Button>
                     </div>
 
-                    {/* Database Info */}
-                    <Alert className="border-2 border-blue-500 bg-blue-50">
-                        <AlertDescription className="text-xs font-mono text-blue-800">
-                            💡 <strong>Ready for Production:</strong> Aplikasi sudah siap untuk
-                            deployment ke Cloudflare Workers dengan Durable Objects storage.
-                            Auth dapat ditambahkan via Cloudflare Access atau custom middleware.
+                    {/* System Info */}
+                    <Alert className="border-2 border-brand-black bg-gradient-to-r from-brand-orange/10 to-brand-white">
+                        <AlertDescription className="text-xs font-mono text-brand-black">
+                            <strong>🏢 Developed by RSQUARE</strong><br />
+                            Sistem manajemen warung modern dengan teknologi cloud.
+                            Data Anda aman tersimpan di Cloudflare D1 dengan backup otomatis.
                         </AlertDescription>
                     </Alert>
                 </div>

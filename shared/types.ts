@@ -12,16 +12,25 @@ export interface Product {
   imageUrl: string;
   category: string;
   description?: string; // Product description
+  isPromo?: boolean; // Is this product on promo
+  promoPrice?: number; // Promo price (if on promo)
+  isActive?: boolean;
   totalStock?: number; // Total available stock across all batches
+  minStockLevel?: number; // Minimum stock level for low stock alerts (default: 10)
   createdAt: number;
 }
 // Zod schema for product validation
 export const productSchema = z.object({
-  name: z.string().min(3, { message: "Nama produk minimal 3 karakter." }),
-  price: z.number().min(0, { message: "Harga harus angka positif." }),
-  cost: z.number().min(0, { message: "Biaya harus angka positif." }).optional(),
-  category: z.string().min(3, { message: "Kategori minimal 3 karakter." }),
-  imageUrl: z.string().url({ message: "URL gambar tidak valid." }),
+  name: z.string().min(1, "Nama produk harus diisi"),
+  price: z.number().min(0, "Harga tidak boleh negatif"),
+  cost: z.number().min(0).optional(),
+  imageUrl: z.string().optional(),
+  category: z.string().min(1, "Kategori harus dipilih"),
+  description: z.string().optional(),
+  isPromo: z.boolean().optional(),
+  promoPrice: z.number().min(0).optional(),
+  isActive: z.boolean().optional(),
+  minStockLevel: z.number().min(0, "Minimum stock level tidak boleh negatif").optional(),
 });
 export type ProductFormValues = z.infer<typeof productSchema>;
 // Types for Sales
@@ -134,3 +143,29 @@ export const stockDetailSchema = z.object({
   unitCost: z.number().min(0, "Unit cost must be non-negative."),
 });
 export type StockDetailFormValues = z.infer<typeof stockDetailSchema>;
+
+// Types for Opname
+export interface OpnameItem {
+  productId: string;
+  quantity: number; // Sisa fisik (yang akan diretur/dikembalikan ke stok)
+}
+
+export interface OpnamePayload {
+  items: OpnameItem[];
+}
+
+// Types for Cash Entry (Daily Sales)
+export interface CashEntry {
+  id: string;
+  amount: number; // Uang cash hari ini
+  date: string; // Format: YYYY-MM-DD for grouping by day
+  notes?: string;
+  createdAt: number;
+}
+
+export const cashEntrySchema = z.object({
+  amount: z.number().min(0, "Jumlah uang tidak boleh negatif."),
+  notes: z.string().optional(),
+});
+
+export type CashEntryFormValues = z.infer<typeof cashEntrySchema>;
