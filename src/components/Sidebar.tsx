@@ -201,8 +201,8 @@ export function Sidebar() {
                             <p className="font-mono text-[10px] text-muted-foreground">
                                 Powered by <span className="font-bold text-brand-black">RSQUARE</span>
                             </p>
-                            <a href="https://omzetin.web.id" target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-brand-orange hover:underline">
-                                omzetin.web.id
+                            <a href="https://www.rsquareidea.my.id" target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-brand-orange hover:underline">
+                                www.rsquareidea.my.id
                             </a>
                         </div>
                     </>
