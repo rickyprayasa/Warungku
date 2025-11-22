@@ -14,6 +14,11 @@ interface ImageCaptureProps {
     onOpenChange: (open: boolean) => void;
 }
 
+// Detect if device is mobile
+const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+};
+
 export function ProductImageCapture({ currentImage, onImageCapture, open, onOpenChange }: ImageCaptureProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -21,7 +26,8 @@ export function ProductImageCapture({ currentImage, onImageCapture, open, onOpen
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState("camera");
+    const [isMobile] = useState(isMobileDevice());
+    const [activeTab, setActiveTab] = useState(isMobileDevice() ? "camera" : "upload");
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
 
@@ -41,7 +47,7 @@ export function ProductImageCapture({ currentImage, onImageCapture, open, onOpen
                 setImageSrc(currentImage);
             } else {
                 setImageSrc(null);
-                setActiveTab("camera");
+                setActiveTab(isMobile ? "camera" : "upload");
             }
         } else {
             stopCamera();
@@ -187,7 +193,7 @@ export function ProductImageCapture({ currentImage, onImageCapture, open, onOpen
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && handleClose()}>
-            <DialogContent className="sm:max-w-[600px] border-2 border-brand-black rounded-lg bg-brand-white p-0 overflow-hidden gap-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <DialogContent className="sm:max-w-[600px] max-h-[95vh] border-2 border-brand-black rounded-lg bg-brand-white p-0 overflow-hidden gap-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <DialogHeader className="p-4 border-b-2 border-brand-black bg-brand-orange flex flex-row items-center justify-between space-y-0">
                     <DialogTitle className="font-display text-xl font-bold flex items-center text-brand-black uppercase tracking-wider">
                         <Camera className="w-6 h-6 mr-2 border-2 border-brand-black p-0.5 bg-white rounded-sm" />
@@ -197,19 +203,21 @@ export function ProductImageCapture({ currentImage, onImageCapture, open, onOpen
 
                 <div className="p-0 bg-gray-100">
                     {!imageSrc ? (
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col h-[500px]">
-                            <TabsList className="w-full grid grid-cols-2 rounded-none border-b-2 border-brand-black p-0 h-14 bg-white">
-                                <TabsTrigger
-                                    value="camera"
-                                    onClick={startCamera}
-                                    className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-brand-orange h-full font-bold border-r-2 border-brand-black uppercase tracking-wider text-xs sm:text-sm transition-all"
-                                >
-                                    <Camera className="w-4 h-4 mr-2" /> Kamera
-                                </TabsTrigger>
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col h-[60vh] sm:h-[500px]">
+                            <TabsList className={`w-full rounded-none border-b-2 border-brand-black p-0 h-14 bg-white ${isMobile ? 'grid grid-cols-2' : ''}`}>
+                                {isMobile && (
+                                    <TabsTrigger
+                                        value="camera"
+                                        onClick={startCamera}
+                                        className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-brand-orange h-full font-bold border-r-2 border-brand-black uppercase tracking-wider text-xs sm:text-sm transition-all"
+                                    >
+                                        <Camera className="w-4 h-4 mr-2" /> Kamera
+                                    </TabsTrigger>
+                                )}
                                 <TabsTrigger
                                     value="upload"
                                     onClick={stopCamera}
-                                    className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-brand-orange h-full font-bold uppercase tracking-wider text-xs sm:text-sm transition-all"
+                                    className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-brand-orange h-full font-bold uppercase tracking-wider text-xs sm:text-sm transition-all w-full"
                                 >
                                     <Upload className="w-4 h-4 mr-2" /> Upload File
                                 </TabsTrigger>
@@ -315,9 +323,9 @@ export function ProductImageCapture({ currentImage, onImageCapture, open, onOpen
                                     </Button>
                                     <Button
                                         onClick={handleSave}
-                                        className="h-12 bg-brand-green text-white border-2 border-brand-black rounded-lg font-bold hover:bg-green-600 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all uppercase tracking-wider text-sm"
+                                        className="h-12 bg-green-600 text-white border-2 border-brand-black rounded-lg font-bold hover:bg-green-700 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all uppercase tracking-wider text-sm"
                                     >
-                                        <Check className="w-5 h-5 mr-2" /> Simpan
+                                        <Check className="w-5 h-5 mr-2" /> Simpan Foto
                                     </Button>
                                 </div>
                             </div>

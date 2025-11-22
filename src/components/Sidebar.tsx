@@ -90,22 +90,15 @@ export function Sidebar() {
             "hidden md:flex flex-col h-screen sticky top-0 bg-brand-white border-r-4 border-brand-black z-40 transition-all duration-300",
             collapsed ? "w-20" : "w-64"
         )}>
-            {/* Store Header */}
             <div className={cn(
                 "border-b-4 border-brand-black bg-brand-orange/10 relative",
                 collapsed ? "p-4" : "p-6"
             )}>
                 {!collapsed ? (
                     <div className="flex flex-col items-center gap-4">
-                        {storeProfile.logoUrl ? (
-                            <div className="w-20 h-20 rounded-full border-4 border-brand-black overflow-hidden bg-white">
-                                <img src={storeProfile.logoUrl} alt={storeProfile.name} className="w-full h-full object-cover" />
-                            </div>
-                        ) : (
-                            <div className="w-20 h-20 rounded-full border-4 border-brand-black bg-brand-orange flex items-center justify-center">
-                                <Store className="w-10 h-10 text-brand-black" />
-                            </div>
-                        )}
+                        <div className="w-20 h-20 rounded-full border-4 border-brand-black bg-brand-orange flex items-center justify-center">
+                            <Store className="w-10 h-10 text-brand-black" />
+                        </div>
 
                         <div className="text-center">
                             <h2 className="font-display font-black text-xl text-brand-black uppercase leading-tight">
@@ -118,15 +111,9 @@ export function Sidebar() {
                     </div>
                 ) : (
                     <div className="flex justify-center">
-                        {storeProfile.logoUrl ? (
-                            <div className="w-12 h-12 rounded-full border-2 border-brand-black overflow-hidden bg-white">
-                                <img src={storeProfile.logoUrl} alt={storeProfile.name} className="w-full h-full object-cover" />
-                            </div>
-                        ) : (
-                            <div className="w-12 h-12 rounded-full border-2 border-brand-black bg-brand-orange flex items-center justify-center">
-                                <Store className="w-6 h-6 text-brand-black" />
-                            </div>
-                        )}
+                        <div className="w-12 h-12 rounded-full border-2 border-brand-black bg-brand-orange flex items-center justify-center">
+                            <Store className="w-6 h-6 text-brand-black" />
+                        </div>
                     </div>
                 )}
 

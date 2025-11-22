@@ -12,7 +12,6 @@ import { NotificationBell } from './NotificationBell';
 
 export function AppHeader() {
   const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
-  const storeProfile = useWarungStore((state) => state.storeProfile);
   const logout = useWarungStore((state) => state.logout);
   const navigate = useNavigate();
   const [isMenuOpen, setMenuOpen] = useState(false);
@@ -44,21 +43,8 @@ export function AppHeader() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-20">
               {/* Logo */}
-              <Link to="/" className="flex items-center gap-2">
-                {storeProfile?.logoUrl ? (
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={storeProfile.logoUrl}
-                      alt={storeProfile.name || 'Store Logo'}
-                      className="w-8 h-8 md:w-12 md:h-12 object-contain rounded-full border-2 border-brand-black"
-                    />
-                    <span className="font-display text-2xl md:text-4xl font-bold tracking-tight text-brand-black">
-                      {storeProfile.name || 'OMZETIN'}
-                    </span>
-                  </div>
-                ) : (
-                  <AnimatedLogo textColor="text-brand-black" />
-                )}
+              <Link to="/" className="flex items-center gap-3">
+                <AnimatedLogo textColor="text-brand-white" />
               </Link>
 
               {/* Desktop Navigation - HIDDEN (Moved to Sidebar) */}
