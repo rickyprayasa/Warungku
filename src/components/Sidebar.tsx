@@ -38,51 +38,6 @@ export function Sidebar() {
         navigate('/login');
     };
 
-    const isActiveLink = (path: string, tab?: string) => {
-        if (tab) {
-            const searchParams = new URLSearchParams(location.search);
-            return location.pathname === path && searchParams.get('tab') === tab;
-        }
-        return location.pathname === path && !location.search;
-    };
-
-    const NavItem = ({ to, icon: Icon, label, tab }: { to: string; icon: any; label: string; tab?: string }) => {
-        const active = isActiveLink(to, tab);
-        const content = (
-            <NavLink
-                to={tab ? `${to}?tab=${tab}` : to}
-                preventScrollReset
-                className={cn(
-                    'flex items-center gap-3 font-mono uppercase font-bold text-sm px-4 py-3 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10',
-                    active
-                        ? 'border-brand-orange bg-brand-orange/20 text-brand-black'
-                        : 'text-muted-foreground hover:text-brand-black',
-                    collapsed && 'justify-center'
-                )}
-            >
-                <Icon className="w-5 h-5 flex-shrink-0" />
-                {!collapsed && label}
-            </NavLink>
-        );
-
-        if (collapsed) {
-            return (
-                <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            {content}
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="font-mono">
-                            {label}
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            );
-        }
-
-        return content;
-    };
-
     if (!isAuthenticated) return null;
 
     return (
@@ -135,8 +90,8 @@ export function Sidebar() {
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Utama</p>
                     </div>
                 )}
-                <NavItem to="/" icon={Store} label="Kasir (POS)" />
-                <NavItem to="/dashboard" tab="analytics" icon={BarChart3} label="Dasbor" />
+                <NavItem to="/" icon={Store} label="Kasir (POS)" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="analytics" icon={BarChart3} label="Dasbor" collapsed={collapsed} />
 
                 {/* INVENTARIS */}
                 {!collapsed && (
@@ -144,8 +99,8 @@ export function Sidebar() {
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Inventaris</p>
                     </div>
                 )}
-                <NavItem to="/dashboard" tab="products" icon={Package} label="Produk & Stok" />
-                <NavItem to="/dashboard" tab="suppliers" icon={Truck} label="Pemasok" />
+                <NavItem to="/dashboard" tab="products" icon={Package} label="Produk & Stok" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="suppliers" icon={Truck} label="Pemasok" collapsed={collapsed} />
 
                 {/* TRANSAKSI */}
                 {!collapsed && (
@@ -153,9 +108,9 @@ export function Sidebar() {
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Transaksi</p>
                     </div>
                 )}
-                <NavItem to="/dashboard" tab="sales" icon={DollarSign} label="Penjualan" />
-                <NavItem to="/dashboard" tab="purchases" icon={ShoppingCart} label="Pembelian" />
-                <NavItem to="/dashboard" tab="requests" icon={Inbox} label="Request Masuk" />
+                <NavItem to="/dashboard" tab="sales" icon={DollarSign} label="Penjualan" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="purchases" icon={ShoppingCart} label="Pembelian" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="requests" icon={Inbox} label="Request Masuk" collapsed={collapsed} />
 
                 {/* KEUANGAN */}
                 {!collapsed && (
@@ -163,9 +118,9 @@ export function Sidebar() {
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Keuangan</p>
                     </div>
                 )}
-                <NavItem to="/dashboard" tab="cashflow" icon={ArrowRightLeft} label="Arus Kas" />
-                <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" />
-                <NavItem to="/dashboard" tab="opname" icon={ClipboardCheck} label="Rekon Kas" />
+                <NavItem to="/dashboard" tab="cashflow" icon={ArrowRightLeft} label="Arus Kas" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="opname" icon={ClipboardCheck} label="Rekon Kas" collapsed={collapsed} />
 
             </nav>
 
@@ -255,4 +210,52 @@ export function Sidebar() {
             </div>
         </aside>
     );
+}
+
+function NavItem({ to, icon: Icon, label, tab, collapsed }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean }) {
+    const location = useLocation();
+
+    const isActive = () => {
+        if (tab) {
+            const searchParams = new URLSearchParams(location.search);
+            return location.pathname === to && searchParams.get('tab') === tab;
+        }
+        return location.pathname === to && !location.search;
+    };
+
+    const active = isActive();
+
+    const content = (
+        <NavLink
+            to={tab ? `${to}?tab=${tab}` : to}
+            preventScrollReset
+            className={cn(
+                'flex items-center gap-3 font-mono uppercase font-bold text-sm px-4 py-3 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10',
+                active
+                    ? 'border-brand-orange bg-brand-orange/20 text-brand-black'
+                    : 'text-muted-foreground hover:text-brand-black',
+                collapsed && 'justify-center'
+            )}
+        >
+            <Icon className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && label}
+        </NavLink>
+    );
+
+    if (collapsed) {
+        return (
+            <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        {content}
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-mono">
+                        {label}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    }
+
+    return content;
 }
