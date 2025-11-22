@@ -60,7 +60,7 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
     >
       <motion.svg
         viewBox="0 0 24 24"
-        className="w-12 h-12"
+        className="w-8 h-8 md:w-12 md:h-12"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         style={{ overflow: 'visible' }}
@@ -101,7 +101,7 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
           ))}
         </g>
       </motion.svg>
-      <span className={`font-display text-4xl font-bold tracking-tight ${textColor}`}>OMZETIN</span>
+      <span className={`font-display text-2xl md:text-4xl font-bold tracking-tight ${textColor}`}>OMZETIN</span>
     </motion.div>
   );
 }

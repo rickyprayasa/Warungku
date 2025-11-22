@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { AppHeader } from '@/components/AppHeader';
 import { AppFooter } from '@/components/AppFooter';
 import { Toaster } from '@/components/ui/sonner';
@@ -43,6 +43,12 @@ export function HomePage() {
 
       {isAuthenticated && <MobileBottomNav />}
       <Toaster richColors closeButton theme="light" />
+      <ScrollRestoration
+        getKey={(location) => {
+          // Don't restore scroll position for dashboard tab changes
+          return location.pathname;
+        }}
+      />
     </div>
   );
 }

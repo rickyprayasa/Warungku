@@ -148,9 +148,9 @@ export function OpnamePage() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                {/* Column 1: Daily Cash Entry */}
-                <div className="space-y-4 h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column: Input and System Cash */}
+                <div className="space-y-6">
                     {/* Daily Cash Entry Card */}
                     <Card className="border-4 border-brand-black shadow-hard bg-blue-50">
                         <CardHeader>
@@ -216,10 +216,8 @@ export function OpnamePage() {
                             )}
                         </CardContent>
                     </Card>
-                </div>
 
-                {/* Column 2: System Cash & Physical Cash */}
-                <div className="space-y-4">
+                    {/* System Cash Card */}
                     <Card className="border-4 border-brand-black shadow-hard">
                         <CardHeader>
                             <CardTitle className="font-display text-xl flex items-center gap-2">
@@ -261,7 +259,11 @@ export function OpnamePage() {
                             </div>
                         </CardContent>
                     </Card>
+                </div>
 
+                {/* Right Column: Physical Cash and Comparison */}
+                <div className="space-y-6">
+                    {/* Physical Cash Card */}
                     <Card className="border-4 border-brand-black shadow-hard">
                         <CardHeader>
                             <CardTitle className="font-display text-xl flex items-center gap-2">
@@ -284,10 +286,8 @@ export function OpnamePage() {
                             </div>
                         </CardContent>
                     </Card>
-                </div>
 
-                {/* Column 3: Comparison Result */}
-                <div className="space-y-4">
+                    {/* Comparison Result Card */}
                     <Card className={cn(
                         "border-4 border-brand-black shadow-hard transition-all",
                         hasDifference && actualCashNum > 0
