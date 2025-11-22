@@ -101,7 +101,16 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
           ))}
         </g>
       </motion.svg>
-      <span className={`font-display text-2xl md:text-4xl font-bold tracking-tight ${textColor}`}>OMZETIN</span>
+      <span
+        className={`font-display text-2xl md:text-4xl font-bold tracking-tight ${textColor}`}
+        style={{
+          WebkitTextStroke: '2px #000000',
+          paintOrder: 'stroke fill',
+          textShadow: '3px 3px 0px rgba(0,0,0,0.2)'
+        }}
+      >
+        OMZETIN
+      </span>
     </motion.div>
   );
 }
