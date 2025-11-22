@@ -66,6 +66,7 @@ export function POSPage() {
   const products = useWarungStore((state) => state.products);
   const isLoading = useWarungStore((state) => state.isLoading);
   const error = useWarungStore((state) => state.error);
+  const storeProfile = useWarungStore((state) => state.storeProfile);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isRequestDialogOpen, setRequestDialogOpen] = useState(false);
@@ -102,7 +103,11 @@ export function POSPage() {
           <div className="py-8 md:py-10 lg:py-12">
             <div className="mb-8 text-center">
               <div className="flex flex-col items-center justify-center mb-4">
-                <img src="https://i.imgur.com/Xzv9T8m.png" alt="Jajanan Logo" className="h-20 w-auto mb-4" />
+                {storeProfile.logoUrl ? (
+                  <img src={storeProfile.logoUrl} alt={storeProfile.name} className="h-20 w-auto mb-4 object-contain" />
+                ) : (
+                  <h1 className="text-5xl font-display font-black text-brand-black mb-4">{storeProfile.name}</h1>
+                )}
                 <h2 className="text-4xl font-display font-bold text-brand-black">Menu Jajanan</h2>
               </div>
               <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia atau ajukan yang baru.</p>
