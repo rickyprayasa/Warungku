@@ -20,10 +20,33 @@ const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m
 const OpnamePage = lazy(() => import('@/pages/OpnamePage').then(m => ({ default: m.OpnamePage })));
 const ProtectedRoute = lazy(() => import('@/components/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
 
-// Loading component for Suspense fallback
+// Loading component with OMZETIN logo animation
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-orange"></div>
+  <div className="flex flex-col items-center justify-center min-h-screen gap-4 bg-white">
+    {/* Logo dengan animasi pulse dan rotate */}
+    <div className="relative">
+      <img
+        src="/omzetin-logo.svg"
+        alt="OMZETIN"
+        className="w-16 h-16 animate-pulse"
+        style={{
+          animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite, spin 3s linear infinite'
+        }}
+      />
+    </div>
+    {/* Loading text */}
+    <div className="text-brand-black font-mono text-sm animate-pulse">
+      Loading...
+    </div>
+    {/* CSS animation definitions */}
+    <style dangerouslySetInnerHTML={{
+      __html: `
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `
+    }} />
   </div>
 );
 const router = createBrowserRouter([
