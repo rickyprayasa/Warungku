@@ -103,16 +103,20 @@ export class D1Repository {
 
     async deleteProduct(id: string): Promise<boolean> {
         try {
-            const result = await this.db
-                .prepare('DELETE FROM products WHERE id = ?')
-                .bind(id)
-                .run();
-            return (result.meta.changes || 0) > 0;
+            // Cascade delete: Delete related records first, then the product
+            // This avoids foreign key constraint errors
+            await this.db.batch([
+                // 1. Delete stock_details (references both products and purchases)
+                this.db.prepare('DELETE FROM stock_details WHERE productId = ?').bind(id),
+                // 2. Delete purchases (references products)
+                this.db.prepare('DELETE FROM purchases WHERE productId = ?').bind(id),
+                // 3. Delete the product itself
+                this.db.prepare('DELETE FROM products WHERE id = ?').bind(id)
+            ]);
+            return true;
         } catch (error: any) {
-            if (error.message && (error.message.includes('FOREIGN KEY') || error.message.includes('constraint'))) {
-                throw new Error('Produk tidak dapat dihapus karena memiliki riwayat transaksi.');
-            }
-            throw error;
+            console.error('Delete product error:', error);
+            throw new Error('Gagal menghapus produk: ' + (error.message || 'Unknown error'));
         }
     }
 
