@@ -9,20 +9,39 @@ import { useWarungStore } from '@/lib/store';
 
 export function HomePage() {
   const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
+  const checkSession = useWarungStore((state) => state.checkSession);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const fetchSales = useWarungStore((state) => state.fetchSales);
   const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
   const fetchSuppliers = useWarungStore((state) => state.fetchSuppliers);
 
-  // Fetch all data when authenticated
+  // Check session validity and fetch data when authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchProducts();
-      fetchSales();
-      fetchPurchases();
-      fetchSuppliers();
+    // Validate session on mount
+    const isSessionValid = checkSession();
+
+    if (isSessionValid && isAuthenticated) {
+      // Load critical data immediately (fast initial render)
+      const loadCriticalData = async () => {
+        await Promise.all([
+          fetchProducts(),
+          fetchSales(),
+        ]);
+      };
+
+      // Defer heavy data loading (prevent blocking)
+      const loadDeferredData = async () => {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await Promise.all([
+          fetchPurchases(),
+          fetchSuppliers(),
+        ]);
+      };
+
+      loadCriticalData();
+      loadDeferredData();
     }
-  }, [isAuthenticated, fetchProducts, fetchSales, fetchPurchases, fetchSuppliers]);
+  }, [isAuthenticated, checkSession, fetchProducts, fetchSales, fetchPurchases, fetchSuppliers]);
 
   return (
     <div className="relative min-h-screen bg-brand-white text-brand-black flex">

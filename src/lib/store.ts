@@ -20,6 +20,7 @@ interface WarungState {
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
+  sessionExpiry: number | null;
 }
 interface WarungActions {
   fetchProducts: () => Promise<void>;
@@ -32,6 +33,7 @@ interface WarungActions {
   updateStoreProfile: (profile: WarungState['storeProfile']) => void;
   login: () => void;
   logout: () => void;
+  checkSession: () => boolean;
   addProduct: (productData: ProductFormValues) => Promise<Product>;
   updateProduct: (productId: string, productData: ProductFormValues) => Promise<Product>;
   deleteProduct: (productId: string) => Promise<void>;
@@ -64,6 +66,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       isLoading: true,
       error: null,
       isAuthenticated: false,
+      sessionExpiry: null,
       fetchProducts: async () => {
         try {
           set({ isLoading: true, error: null });
@@ -126,8 +129,25 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
       setInitialBalance: (balance) => set({ initialBalance: balance }),
       updateStoreProfile: (profile) => set({ storeProfile: profile }),
-      login: () => set({ isAuthenticated: true }),
-      logout: () => set({ isAuthenticated: false }),
+      login: () => {
+        const SESSION_DURATION = 30 * 60 * 1000; // 30 minutes
+        set({
+          isAuthenticated: true,
+          sessionExpiry: Date.now() + SESSION_DURATION
+        });
+      },
+      logout: () => set({
+        isAuthenticated: false,
+        sessionExpiry: null
+      }),
+      checkSession: () => {
+        const state = useWarungStore.getState();
+        if (state.sessionExpiry && Date.now() > state.sessionExpiry) {
+          set({ isAuthenticated: false, sessionExpiry: null });
+          return false;
+        }
+        return state.isAuthenticated;
+      },
       addProduct: async (productData) => {
         const newProduct = await api<Product>('/api/products', { method: 'POST', body: JSON.stringify(productData) });
         set((state) => { state.products.push(newProduct); });
