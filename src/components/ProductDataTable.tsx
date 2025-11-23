@@ -201,7 +201,17 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
                   setSelectedProduct(product);
                   setDetailDialogOpen(true);
                 }}>
-                  <img src={product.imageUrl} alt={product.name} className="w-12 h-12 object-cover border-2 border-brand-black" />
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-12 h-12 object-cover border-2 border-brand-black"
+                    onError={(e) => {
+                      // Fallback to placeholder if image fails to load
+                      e.currentTarget.src = '/omzetin-logo.svg';
+                    }}
+                  />
                 </TableCell>
                 <TableCell className="font-bold" onClick={() => {
                   setSelectedProduct(product);
