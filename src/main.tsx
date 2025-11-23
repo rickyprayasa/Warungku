@@ -20,47 +20,73 @@ const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m
 const OpnamePage = lazy(() => import('@/pages/OpnamePage').then(m => ({ default: m.OpnamePage })));
 const ProtectedRoute = lazy(() => import('@/components/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
 
-// Loading component with OMZETIN logo-style animation
+// Neo-brutalism style loading animation
 const PageLoader = () => {
   return (
     <div className="fixed inset-0 bg-white flex flex-col items-center justify-center overflow-hidden">
-      {/* Logo with continuous rotation and bounce animation */}
-      <div
-        className="relative"
-        style={{
-          animation: 'logoBounce 1.5s ease-in-out infinite'
-        }}
-      >
-        <img
-          src="/omzetin-logo.svg"
-          alt="OMZETIN"
-          className="w-20 h-20"
-          style={{
-            animation: 'logoSpin 2s linear infinite'
-          }}
-        />
+      {/* Neo-brutalism loading squares */}
+      <div className="relative" style={{ animation: 'bounce 1.2s ease-in-out infinite' }}>
+        <div style={{
+          width: '80px',
+          height: '80px',
+          backgroundColor: '#F38020',
+          border: '4px solid #1A1A1A',
+          boxShadow: '8px 8px 0px #1A1A1A',
+          position: 'relative',
+          animation: 'rotate 3s linear infinite'
+        }}>
+          {/* Inner square */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '40px',
+            height: '40px',
+            backgroundColor: '#FEFEFE',
+            border: '3px solid #1A1A1A',
+          }} />
+        </div>
       </div>
 
-      {/* Loading text with pulse */}
-      <div className="mt-6 text-brand-black font-mono text-sm animate-pulse">
-        Loading...
+      {/* Loading text with neo-brutalism style */}
+      <div style={{
+        marginTop: '40px',
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        fontWeight: 'bold',
+        color: '#1A1A1A',
+        backgroundColor: '#F38020',
+        padding: '12px 24px',
+        border: '3px solid #1A1A1A',
+        boxShadow: '4px 4px 0px #1A1A1A',
+        textTransform: 'uppercase',
+        letterSpacing: '2px',
+        animation: 'pulse 1.5s ease-in-out infinite'
+      }}>
+        Loading
       </div>
 
       {/* CSS animations */}
       <style dangerouslySetInnerHTML={{
         __html: `
-          @keyframes logoSpin {
+          @keyframes rotate {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
           }
           
-          @keyframes logoBounce {
+          @keyframes bounce {
             0%, 100% { 
               transform: translateY(0) scale(1);
             }
             50% { 
-              transform: translateY(-10px) scale(1.05);
+              transform: translateY(-15px) scale(1.1);
             }
+          }
+          
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
           }
         `
       }} />
