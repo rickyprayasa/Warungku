@@ -111,6 +111,7 @@ export default ({ mode }: { mode: string }) => {
       sourcemap: false, // Remove sourcemaps from production (saves 30-40%)
       target: 'es2015', // Broader browser support
       cssCodeSplit: true, // Split CSS files
+      cssMinify: true, // Minify CSS
       rollupOptions: {
         output: {
           // Manual chunk splitting for better caching
@@ -138,6 +139,12 @@ export default ({ mode }: { mode: string }) => {
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: 'assets/[name]-[hash][extname]',
         },
+        // Enable tree-shaking
+        treeshake: {
+          moduleSideEffects: false,
+          propertyReadSideEffects: false,
+          tryCatchDeoptimization: false,
+        },
       },
       // Increase chunk size warning limit (we're splitting intentionally)
       chunkSizeWarningLimit: 1000,
@@ -146,7 +153,16 @@ export default ({ mode }: { mode: string }) => {
         compress: {
           drop_console: true, // Remove console.logs in production
           drop_debugger: true,
+          pure_funcs: ['console.log', 'console.info', 'console.debug'], // Remove specific console methods
+          passes: 2, // Multiple passes for better compression
         },
+        mangle: {
+          safari10: true, // Fix Safari 10 issues
+        },
+      },
+      // Module preload for faster loading
+      modulePreload: {
+        polyfill: true,
       },
     },
     customLogger: env.VITE_LOGGER_TYPE === 'json' ? customLogger : undefined,
