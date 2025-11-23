@@ -1,7 +1,7 @@
 import '@/lib/errorReporter';
 import { enableMapSet } from "immer";
 enableMapSet();
-import { StrictMode } from 'react'
+import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -11,41 +11,66 @@ import {
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import '@/index.css'
-import { HomePage } from '@/pages/HomePage'
-import { POSPage } from '@/pages/POSPage';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { LoginPage } from '@/pages/LoginPage';
-import { OpnamePage } from '@/pages/OpnamePage';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+
+// Lazy load all page components for code splitting
+const HomePage = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })));
+const POSPage = lazy(() => import('@/pages/POSPage').then(m => ({ default: m.POSPage })));
+const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const OpnamePage = lazy(() => import('@/pages/OpnamePage').then(m => ({ default: m.OpnamePage })));
+const ProtectedRoute = lazy(() => import('@/components/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-orange"></div>
+  </div>
+);
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomePage />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <HomePage />
+      </Suspense>
+    ),
     errorElement: <RouteErrorBoundary />,
     children: [
       {
         index: true,
-        element: <POSPage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <POSPage />
+          </Suspense>
+        ),
       },
       {
         path: "dashboard",
         element: (
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
+          <Suspense fallback={<PageLoader />}>
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          </Suspense>
         ),
       },
       {
         path: "opname",
         element: (
-          <ProtectedRoute>
-            <OpnamePage />
-          </ProtectedRoute>
+          <Suspense fallback={<PageLoader />}>
+            <ProtectedRoute>
+              <OpnamePage />
+            </ProtectedRoute>
+          </Suspense>
         ),
       },
       {
         path: "login",
-        element: <LoginPage />,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <LoginPage />
+          </Suspense>
+        ),
       },
     ]
   },

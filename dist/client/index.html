@@ -1,31 +1,40 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/omzetin-logo.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-    <script type="module" crossorigin src="/assets/index-DDRDgYgD.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-gydMG57X.css">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script>
-        window.addEventListener('error', (event) => {
-          const isOurAppError = event.filename && event.filename.startsWith(window.location.origin);
-          if (isOurAppError) {
-            navigator.sendBeacon('/api/client-errors', JSON.stringify({
-              message: event.message,
-              url: window.location.href,
-              userAgent: navigator.userAgent,
-              source: event.filename,
-              lineno: event.lineno,
-              colno: event.colno,
-              stack: event.error ? event.error.stack : null,
-              timestamp: new Date().toISOString()
-            }));
-          }
-        }, true);
-    </script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/omzetin-logo.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Performance optimization: DNS prefetch and preconnect -->
+  <link rel="preconnect" href="https://omzetin.web.id" />
+  <link rel="dns-prefetch" href="https://omzetin.web.id" />
+  <title>OMZETIN</title>
+  <script type="module" crossorigin src="/assets/index-DkCS-pVS.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/react-vendor-COK2o_vP.js">
+  <link rel="modulepreload" crossorigin href="/assets/ui-vendor-sVitQP3n.js">
+  <link rel="modulepreload" crossorigin href="/assets/charts-DrKKQBI3.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-BMVkO4Ng.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script>
+    window.addEventListener('error', (event) => {
+      const isOurAppError = event.filename && event.filename.startsWith(window.location.origin);
+      if (isOurAppError) {
+        navigator.sendBeacon('/api/client-errors', JSON.stringify({
+          message: event.message,
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          source: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          stack: event.error ? event.error.stack : null,
+          timestamp: new Date().toISOString()
+        }));
+      }
+    }, true);
+  </script>
+</body>
+
 </html>

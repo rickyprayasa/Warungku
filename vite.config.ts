@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import { exec } from "node:child_process";
 import pino from "pino";
 import { cloudflare } from "@cloudflare/vite-plugin";
+import viteCompression from "vite-plugin-compression";
 
 const logger = pino();
 
@@ -44,7 +45,7 @@ const customLogger = {
   hasErrorLogged: () => false,
 
   // Keep these as-is
-  clearScreen: () => {},
+  clearScreen: () => { },
   hasWarned: false,
 };
 
@@ -89,13 +90,62 @@ function watchDependenciesPlugin() {
 export default ({ mode }: { mode: string }) => {
   const env = loadEnv(mode, process.cwd());
   return defineConfig({
-    plugins: [react(), cloudflare(), watchDependenciesPlugin()],
+    plugins: [
+      react(),
+      cloudflare(),
+      watchDependenciesPlugin(),
+      // Compression plugins for production
+      viteCompression({
+        algorithm: 'gzip',
+        ext: '.gz',
+        threshold: 1024, // Only compress files > 1KB
+      }),
+      viteCompression({
+        algorithm: 'brotliCompress',
+        ext: '.br',
+        threshold: 1024,
+      }),
+    ],
     build: {
-      minify: true,
-      sourcemap: "inline", // Use inline source maps for better error reporting
+      minify: 'terser', // Better minification than esbuild
+      sourcemap: false, // Remove sourcemaps from production (saves 30-40%)
+      target: 'es2015', // Broader browser support
+      cssCodeSplit: true, // Split CSS files
       rollupOptions: {
         output: {
-          sourcemapExcludeSources: false, // Include original source in source maps
+          // Manual chunk splitting for better caching
+          manualChunks: {
+            // Core React vendor bundle
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            // UI components vendor bundle
+            'ui-vendor': [
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-alert-dialog',
+              '@radix-ui/react-select',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-switch',
+              '@radix-ui/react-label',
+            ],
+            // Charts library (heavy dependency)
+            'charts': ['recharts'],
+            // Animation library (heavy dependency)
+            'animation': ['framer-motion'],
+            // State management and utilities
+            'utils': ['zustand', 'sonner', 'react-hook-form', 'zod'],
+          },
+          // Optimize chunk names
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash][extname]',
+        },
+      },
+      // Increase chunk size warning limit (we're splitting intentionally)
+      chunkSizeWarningLimit: 1000,
+      // Enable Terser options for better compression
+      terserOptions: {
+        compress: {
+          drop_console: true, // Remove console.logs in production
+          drop_debugger: true,
         },
       },
     },
