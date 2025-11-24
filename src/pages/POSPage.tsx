@@ -96,7 +96,7 @@ export function POSPage() {
   }, [products, selectedCategory, searchTerm]);
 
   return (
-    <div className="bg-muted/40 relative">
+    <div className="bg-muted/40 relative overflow-x-hidden">
       <SnackIconBackground />
       <div className="flex-1 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

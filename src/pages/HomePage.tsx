@@ -69,11 +69,11 @@ export function HomePage() {
   }, [isAuthenticated, checkSession, fetchProducts, fetchSales, fetchPurchases, fetchSuppliers]);
 
   return (
-    <div className="relative min-h-screen bg-brand-white text-brand-black">
+    <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden max-w-screen">
       {/* Sidebar for Desktop */}
       <Sidebar />
 
-      <div className={`flex flex-col min-w-0 transition-all duration-300 ${isAuthenticated ? (sidebarCollapsed ? 'md:ml-20' : 'md:ml-64') : ''}`}>
+      <div className={`flex flex-col min-w-0 transition-all duration-300 overflow-x-hidden ${isAuthenticated ? (sidebarCollapsed ? 'md:ml-20' : 'md:ml-64') : ''}`}>
         {/* Header shows on mobile always, and on desktop ONLY if not authenticated */}
         <div className={isAuthenticated ? "md:hidden" : ""}>
           <AppHeader />
