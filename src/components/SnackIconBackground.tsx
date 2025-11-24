@@ -7,10 +7,19 @@ interface IconStyle {
   Icon: React.ElementType;
   style: React.CSSProperties;
 }
-const generateRandomStyles = (count: number): IconStyle[] => {
+const generateRandomStyles = (count: number, isMobile: boolean): IconStyle[] => {
   return Array.from({ length: count }, (_, i) => {
     const Icon = icons[Math.floor(Math.random() * icons.length)];
-    const size = Math.random() * 32 + 24; // 24px to 56px
+    // Smaller icons on mobile
+    const size = isMobile
+      ? Math.random() * 20 + 20  // 20px to 40px on mobile
+      : Math.random() * 32 + 24; // 24px to 56px on desktop
+
+    // More transparent on mobile to reduce visual clutter
+    const opacity = isMobile
+      ? Math.random() * 0.06 + 0.03  // 0.03 to 0.09 on mobile
+      : Math.random() * 0.1 + 0.05;   // 0.05 to 0.15 on desktop
+
     return {
       id: i,
       Icon,
@@ -21,7 +30,7 @@ const generateRandomStyles = (count: number): IconStyle[] => {
         width: `${size}px`,
         height: `${size}px`,
         transform: `rotate(${Math.random() * 360}deg)`,
-        opacity: Math.random() * 0.1 + 0.05, // 0.05 to 0.15
+        opacity,
         color: 'rgb(17, 17, 17)',
       },
     };
@@ -30,7 +39,21 @@ const generateRandomStyles = (count: number): IconStyle[] => {
 export function SnackIconBackground() {
   const [iconStyles, setIconStyles] = useState<IconStyle[]>([]);
   useEffect(() => {
-    setIconStyles(generateRandomStyles(30));
+    // Detect if mobile based on window width
+    const isMobile = window.innerWidth < 768;
+    // Use fewer icons on mobile (12) vs desktop (30)
+    const iconCount = isMobile ? 12 : 30;
+    setIconStyles(generateRandomStyles(iconCount, isMobile));
+
+    // Re-generate on resize
+    const handleResize = () => {
+      const isMobileNow = window.innerWidth < 768;
+      const count = isMobileNow ? 12 : 30;
+      setIconStyles(generateRandomStyles(count, isMobileNow));
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
