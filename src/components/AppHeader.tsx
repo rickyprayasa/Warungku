@@ -64,8 +64,10 @@ export function AppHeader() {
                     Masuk
                   </Button>
                 ) : (
-                  // Authenticated actions are handled by Sidebar, but we can keep this empty or add specific header actions if needed
-                  null
+                  <>
+                    <NotificationBell />
+                    <SettingsDialog />
+                  </>
                 )}
               </div>
 

@@ -5,6 +5,8 @@ import { AppFooter } from '@/components/AppFooter';
 import { Toaster } from '@/components/ui/sonner';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { FloatingNotification } from '@/components/FloatingNotification';
+import { FloatingClock } from '@/components/FloatingClock';
 import { useWarungStore } from '@/lib/store';
 
 export function HomePage() {
@@ -69,9 +71,13 @@ export function HomePage() {
   }, [isAuthenticated, checkSession, fetchProducts, fetchSales, fetchPurchases, fetchSuppliers]);
 
   return (
-    <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden max-w-screen">
+    <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden">
       {/* Sidebar for Desktop */}
       <Sidebar />
+
+      {/* Floating Components - Outside main content flow */}
+      <FloatingClock />
+      <FloatingNotification />
 
       <div className={`flex flex-col min-h-screen min-w-0 transition-all duration-300 overflow-x-hidden ${isAuthenticated ? (sidebarCollapsed ? 'md:ml-20' : 'md:ml-64') : ''}`}>
         {/* Header shows on mobile always, and on desktop ONLY if not authenticated */}
