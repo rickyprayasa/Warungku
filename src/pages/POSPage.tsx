@@ -96,11 +96,11 @@ export function POSPage() {
   }, [products, selectedCategory, searchTerm]);
 
   return (
-    <div className="min-h-screen bg-muted/40 relative overflow-hidden">
+    <div className="bg-muted/40 relative">
       <SnackIconBackground />
-      <main className="flex-1 relative z-10">
+      <div className="flex-1 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-8 md:py-10 lg:py-12">
+          <div className="py-8 md:py-10 lg:py-12 pb-0">
             <div className="mb-8 text-center">
               <div className="flex flex-col items-center justify-center mb-4">
                 {storeProfile.logoUrl ? (
@@ -244,7 +244,7 @@ export function POSPage() {
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

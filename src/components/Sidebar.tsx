@@ -42,11 +42,11 @@ export function Sidebar() {
 
     return (
         <aside className={cn(
-            "hidden md:flex flex-col h-screen sticky top-0 bg-brand-white border-r-4 border-brand-black z-40 transition-all duration-300",
+            "hidden md:flex flex-col h-screen fixed top-0 left-0 bg-brand-white border-r-4 border-brand-black z-40 transition-all duration-300 overflow-hidden",
             collapsed ? "w-20" : "w-64"
         )}>
             <div className={cn(
-                "border-b-4 border-brand-black bg-brand-orange/10 relative",
+                "border-b-4 border-brand-black bg-brand-orange/10 relative overflow-visible",
                 collapsed ? "p-4" : "p-6"
             )}>
                 {!collapsed ? (
@@ -72,14 +72,19 @@ export function Sidebar() {
                     </div>
                 )}
 
-                {/* Toggle Button */}
-                <button
-                    onClick={toggleCollapsed}
-                    className="absolute -right-3 top-4 w-6 h-6 rounded-full bg-brand-orange border-2 border-brand-black flex items-center justify-center hover:bg-brand-black hover:text-brand-white transition-colors z-10"
-                >
-                    {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-                </button>
+                {/* Toggle Button - moved outside overflow-hidden boundary */}
             </div>
+
+            {/* Toggle Button positioned relative to sidebar */}
+            <button
+                onClick={toggleCollapsed}
+                className={cn(
+                    "fixed top-4 w-6 h-6 rounded-full bg-brand-orange border-2 border-brand-black flex items-center justify-center hover:bg-brand-black hover:text-brand-white transition-all duration-300 z-50",
+                    collapsed ? "left-[68px]" : "left-[244px]"
+                )}
+            >
+                {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+            </button>
 
             {/* Navigation */}
             <nav className="flex-1 py-6 space-y-1 overflow-y-auto">
