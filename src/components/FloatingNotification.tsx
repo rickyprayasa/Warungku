@@ -71,7 +71,7 @@ export function FloatingNotification() {
     };
 
     return (
-        <div className="fixed top-20 right-6 z-[9999] md:top-6 md:right-6 pointer-events-auto">
+        <div className="hidden md:block fixed top-6 right-6 z-[9999] pointer-events-auto">
             <Popover open={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger asChild>
                     <button

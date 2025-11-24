@@ -69,10 +69,10 @@ export function FloatingClock() {
     const dateInfo = formatDate(currentTime);
 
     // Calculate left position based on sidebar state (on desktop only)
-    const leftPosition = sidebarCollapsed ? 'md:left-[calc(5rem+1.5rem)]' : 'md:left-[calc(16rem+1.5rem)]';
+    const leftPosition = sidebarCollapsed ? 'left-[calc(5rem+1.5rem)]' : 'left-[calc(16rem+1.5rem)]';
 
     return (
-        <div className={`fixed top-20 left-6 z-[9999] md:top-6 ${leftPosition} pointer-events-auto select-none transition-all duration-300`}>
+        <div className={`hidden md:block fixed top-6 z-[9999] ${leftPosition} pointer-events-auto select-none transition-all duration-300`}>
             <div className="bg-brand-white border-4 border-brand-black rounded-none shadow-hard overflow-hidden">
                 {isCollapsed ? (
                     // Collapsed View - Compact horizontal layout
