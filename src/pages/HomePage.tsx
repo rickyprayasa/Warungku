@@ -73,13 +73,13 @@ export function HomePage() {
       {/* Sidebar for Desktop */}
       <Sidebar />
 
-      <div className={`flex flex-col min-w-0 transition-all duration-300 overflow-x-hidden ${isAuthenticated ? (sidebarCollapsed ? 'md:ml-20' : 'md:ml-64') : ''}`}>
+      <div className={`flex flex-col min-h-screen min-w-0 transition-all duration-300 overflow-x-hidden ${isAuthenticated ? (sidebarCollapsed ? 'md:ml-20' : 'md:ml-64') : ''}`}>
         {/* Header shows on mobile always, and on desktop ONLY if not authenticated */}
         <div className={isAuthenticated ? "md:hidden" : ""}>
           <AppHeader />
         </div>
 
-        <main className="flex-grow pt-16 md:pt-20">
+        <main className="pt-16 md:pt-20">
           <Outlet />
         </main>
         {!isAuthenticated && <AppFooter />}
