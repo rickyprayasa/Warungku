@@ -134,7 +134,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
   app.post('/api/products/:id/add-stock', async (c) => {
     const { id } = c.req.param();
-    const { quantity, unitCost } = await c.req.json();
+    const { quantity, unitCost, isInitialStock } = await c.req.json();
 
     if (!quantity || quantity <= 0) {
       return bad(c, 'Quantity must be greater than 0');
@@ -146,7 +146,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
     const repo = new D1Repository(c.env.DB);
     try {
-      await repo.addStock(id, quantity, unitCost);
+      await repo.addStock(id, quantity, unitCost, isInitialStock || false);
       return ok(c, { success: true });
     } catch (error: any) {
       return bad(c, error.message);

@@ -120,7 +120,7 @@ export class D1Repository {
         }
     }
 
-    async addStock(productId: string, quantity: number, unitCost: number): Promise<void> {
+    async addStock(productId: string, quantity: number, unitCost: number, isInitialStock: boolean = false): Promise<void> {
         const product = await this.getProduct(productId);
         if (!product) throw new Error('Product not found');
 
@@ -128,8 +128,11 @@ export class D1Repository {
         const stockDetailId = crypto.randomUUID();
         const now = Date.now();
 
+        // Use different supplierId based on context
+        const supplierId = isInitialStock ? 'initial-stock' : 'manual-adjustment';
+
         const statements = [
-            // Create "Manual Adjustment" purchase record
+            // Create purchase record (will be filtered out if initial stock)
             this.db.prepare(`
                 INSERT INTO purchases (id, productId, productName, quantity, unitCost, totalCost, supplierId, createdAt)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -140,7 +143,7 @@ export class D1Repository {
                 quantity,
                 unitCost,
                 quantity * unitCost,
-                'manual-adjustment', // Special ID for manual adjustments
+                supplierId,
                 now
             ),
 
@@ -354,7 +357,7 @@ export class D1Repository {
                     s.name as supplier
                 FROM purchases p
                 LEFT JOIN suppliers s ON p.supplierId = s.id
-                WHERE COALESCE(p.supplierId, '') != 'stock-return'
+                WHERE COALESCE(p.supplierId, '') NOT IN ('stock-return', 'initial-stock')
                 ORDER BY p.createdAt DESC
             `)
             .all<Purchase>();

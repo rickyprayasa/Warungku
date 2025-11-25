@@ -117,7 +117,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           try {
             await api(`/api/products/${newProduct.id}/add-stock`, {
               method: 'POST',
-              body: JSON.stringify({ quantity: initialStock, unitCost: calculatedUnitCost })
+              body: JSON.stringify({ quantity: initialStock, unitCost: calculatedUnitCost, isInitialStock: true })
             });
             // Refresh products to reflect stock change
             await fetchProducts();

@@ -3,7 +3,7 @@ import { useWarungStore } from '@/lib/store';
 import { ProductCard } from '@/components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Search, PlusCircle, ArrowDown, LayoutGrid, List } from 'lucide-react';
+import { AlertTriangle, Search, PlusCircle, ArrowDown, LayoutGrid, List, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
@@ -71,6 +71,8 @@ export function POSPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isRequestDialogOpen, setRequestDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   useEffect(() => {
     fetchProducts();
@@ -94,6 +96,17 @@ export function POSPage() {
     }
     return filtered;
   }, [products, selectedCategory, searchTerm]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchTerm]);
 
   return (
     <div className="bg-muted/40 relative overflow-x-hidden">
@@ -223,13 +236,13 @@ export function POSPage() {
               <>
                 {viewMode === 'grid' ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                    {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+                    {paginatedProducts.map((product) => <ProductCard key={product.id} product={product} />)}
                   </div>
                 ) : (
                   <div className="border-4 border-brand-black bg-brand-white">
                     <Table>
                       <TableBody>
-                        {filteredProducts.map((product) => <MobileProductRow key={product.id} product={product} />)}
+                        {paginatedProducts.map((product) => <MobileProductRow key={product.id} product={product} />)}
                       </TableBody>
                     </Table>
                   </div>
@@ -240,6 +253,70 @@ export function POSPage() {
             {!isLoading && !error && filteredProducts.length === 0 && (
               <div className="col-span-full text-center border-2 border-dashed border-brand-black p-12">
                 <p className="font-mono text-muted-foreground">Produk tidak ditemukan.</p>
+              </div>
+            )}
+
+            {/* Pagination Controls */}
+            {!isLoading && !error && filteredProducts.length > 0 && totalPages > 1 && (
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-brand-white border-2 border-brand-black p-4">
+                <div className="font-mono text-sm text-muted-foreground">
+                  Menampilkan {startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} dari {filteredProducts.length} produk
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-none border-2 border-brand-black bg-brand-white text-brand-black hover:bg-brand-orange disabled:opacity-50 disabled:cursor-not-allowed h-10 w-10 p-0"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                      // Show first page, last page, current page, and pages around current
+                      const showPage = page === 1 || 
+                                       page === totalPages || 
+                                       (page >= currentPage - 1 && page <= currentPage + 1);
+                      
+                      const showEllipsis = (page === currentPage - 2 && currentPage > 3) || 
+                                          (page === currentPage + 2 && currentPage < totalPages - 2);
+
+                      if (!showPage && !showEllipsis) return null;
+
+                      if (showEllipsis) {
+                        return (
+                          <span key={page} className="px-2 font-mono text-muted-foreground">
+                            ...
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <Button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={cn(
+                            "rounded-none border-2 border-brand-black h-10 min-w-10 px-3 font-mono font-bold",
+                            currentPage === page
+                              ? "bg-brand-black text-brand-white"
+                              : "bg-brand-white text-brand-black hover:bg-brand-orange"
+                          )}
+                        >
+                          {page}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-none border-2 border-brand-black bg-brand-white text-brand-black hover:bg-brand-orange disabled:opacity-50 disabled:cursor-not-allowed h-10 w-10 p-0"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
             )}
           </div>
