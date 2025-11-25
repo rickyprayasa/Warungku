@@ -53,11 +53,12 @@ export function Sidebar() {
                     <div className="flex flex-col items-center gap-4">
                         {/* RSQUARE Logo */}
                         <div className="relative">
-                            <div className="w-20 h-20 rounded-lg border-4 border-brand-black bg-gradient-to-br from-brand-orange via-yellow-400 to-orange-600 flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                                <div className="text-center">
-                                    <div className="font-display font-black text-2xl text-brand-black leading-none">R²</div>
-                                    <div className="font-mono font-bold text-[8px] text-brand-black/80 tracking-wider">SQUARE</div>
-                                </div>
+                            <div className="w-20 h-20 rounded-lg border-4 border-brand-black bg-white flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-2">
+                                <img 
+                                    src="/rsquare-logo.png" 
+                                    alt="RSQUARE Logo" 
+                                    className="w-full h-full object-contain"
+                                />
                             </div>
                         </div>
 
@@ -72,8 +73,12 @@ export function Sidebar() {
                     </div>
                 ) : (
                     <div className="flex justify-center">
-                        <div className="w-12 h-12 rounded-lg border-2 border-brand-black bg-gradient-to-br from-brand-orange via-yellow-400 to-orange-600 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            <div className="font-display font-black text-lg text-brand-black">R²</div>
+                        <div className="w-12 h-12 rounded-lg border-2 border-brand-black bg-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-1">
+                            <img 
+                                src="/rsquare-logo.png" 
+                                alt="RSQUARE Logo" 
+                                className="w-full h-full object-contain"
+                            />
                         </div>
                     </div>
                 )}
