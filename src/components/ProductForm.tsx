@@ -42,6 +42,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const addProduct = useWarungStore((state) => state.addProduct);
   const updateProduct = useWarungStore((state) => state.updateProduct);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
+  const adjustStock = useWarungStore((state) => state.adjustStock);
 
   const [imagePreview, setImagePreview] = useState<string>(product?.imageUrl || '');
   const [description, setDescription] = useState(product?.description || '');
@@ -51,8 +52,8 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const [isImageCaptureOpen, setIsImageCaptureOpen] = useState(false);
 
   // Initial Stock States (Only for new products)
-  const [initialStock, setInitialStock] = useState(0);
-  const [initialCost, setInitialCost] = useState(0);
+  const [initialStock, setInitialStock] = useState(product?.totalStock || 0);
+  const [initialCost, setInitialCost] = useState(product?.cost || 0);
 
   // Cost Input Mode: 'perUnit' or 'perPackage'
   const [costInputMode, setCostInputMode] = useState<'perUnit' | 'perPackage'>('perUnit');
@@ -71,6 +72,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
       price: product?.price || 0,
       category: product?.category || '',
       imageUrl: product?.imageUrl || '',
+      minStockLevel: product?.minStockLevel || 10,
     },
   });
   const isSubmitting = form.formState.isSubmitting;
@@ -87,7 +89,19 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
       };
 
       if (isEditing && product) {
-        const promise = updateProduct(product.id, productData);
+        // Include cost in update
+        const updateData = {
+          ...productData,
+          cost: calculatedUnitCost
+        };
+
+        const promise = updateProduct(product.id, updateData);
+
+        // Handle Stock Update if changed
+        if (initialStock !== (product.totalStock || 0)) {
+          await adjustStock(product.id, initialStock, calculatedUnitCost);
+        }
+
         toast.promise(promise, {
           loading: 'Menyimpan...',
           success: 'Produk berhasil diupdate!',
@@ -216,130 +230,133 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
               )}
             />
 
-            {/* Initial Stock Fields (Only for New Products) */}
-            {!isEditing && (
-              <div className="p-5 bg-muted/50 rounded-lg border-2 border-dashed border-brand-black/20 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <FormLabel className="font-bold font-mono uppercase text-sm text-brand-black">Stok Awal (Opsional)</FormLabel>
-                    <FormDescription className="text-xs font-mono mt-1">Input stok yang sudah ada di gudang</FormDescription>
-                  </div>
+            {/* Stock & Cost Fields (Available for both New and Edit) */}
+            <div className="p-5 bg-muted/50 rounded-lg border-2 border-dashed border-brand-black/20 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <FormLabel className="font-bold font-mono uppercase text-sm text-brand-black">
+                    {isEditing ? "Atur Stok & Harga" : "Stok Awal (Opsional)"}
+                  </FormLabel>
+                  <FormDescription className="text-xs font-mono mt-1">
+                    {isEditing ? "Update stok dan harga beli" : "Input stok yang sudah ada di gudang"}
+                  </FormDescription>
                 </div>
+              </div>
 
+              <FormItem>
+                <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Jumlah Stok</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={initialStock || ''}
+                    onChange={(e) => setInitialStock(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
+                  />
+                </FormControl>
+                <FormDescription className="text-xs font-mono">Kosongkan jika 0</FormDescription>
+              </FormItem>
+
+              {/* Cost Input Mode Toggle */}
+              <div className="space-y-3">
+                <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Cara Input Harga Beli</FormLabel>
+                <div className="flex items-center border-2 border-brand-black bg-brand-white rounded-lg overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setCostInputMode('perUnit')}
+                    className={`flex-1 px-4 py-2.5 font-bold font-mono text-sm transition-all ${costInputMode === 'perUnit'
+                      ? 'bg-brand-orange text-brand-black'
+                      : 'bg-white text-muted-foreground hover:bg-brand-orange/10'
+                      }`}
+                  >
+                    Per Unit
+                  </button>
+                  <div className="w-0.5 h-8 bg-brand-black/20" />
+                  <button
+                    type="button"
+                    onClick={() => setCostInputMode('perPackage')}
+                    className={`flex-1 px-4 py-2.5 font-bold font-mono text-sm transition-all ${costInputMode === 'perPackage'
+                      ? 'bg-brand-orange text-brand-black'
+                      : 'bg-white text-muted-foreground hover:bg-brand-orange/10'
+                      }`}
+                  >
+                    Per Paket/Dus
+                  </button>
+                </div>
+              </div>
+
+              {/* Conditional Fields Based on Mode */}
+              {costInputMode === 'perUnit' ? (
                 <FormItem>
-                  <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Jumlah Stok</FormLabel>
+                  <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga Beli (Per Unit)</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      value={initialStock || ''}
-                      onChange={(e) => setInitialStock(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Rp</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={initialCost || ''}
+                        onChange={(e) => setInitialCost(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
+                      />
+                    </div>
                   </FormControl>
-                  <FormDescription className="text-xs font-mono">Kosongkan jika 0</FormDescription>
+                  <FormDescription className="text-xs font-mono">Untuk hitung profit</FormDescription>
                 </FormItem>
-
-                {/* Cost Input Mode Toggle */}
-                <div className="space-y-3">
-                  <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Cara Input Harga Beli</FormLabel>
-                  <div className="flex items-center border-2 border-brand-black bg-brand-white rounded-lg overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setCostInputMode('perUnit')}
-                      className={`flex-1 px-4 py-2.5 font-bold font-mono text-sm transition-all ${costInputMode === 'perUnit'
-                        ? 'bg-brand-orange text-brand-black'
-                        : 'bg-white text-muted-foreground hover:bg-brand-orange/10'
-                        }`}
-                    >
-                      Per Unit
-                    </button>
-                    <div className="w-0.5 h-8 bg-brand-black/20" />
-                    <button
-                      type="button"
-                      onClick={() => setCostInputMode('perPackage')}
-                      className={`flex-1 px-4 py-2.5 font-bold font-mono text-sm transition-all ${costInputMode === 'perPackage'
-                        ? 'bg-brand-orange text-brand-black'
-                        : 'bg-white text-muted-foreground hover:bg-brand-orange/10'
-                        }`}
-                    >
-                      Per Paket/Dus
-                    </button>
-                  </div>
-                </div>
-
-                {/* Conditional Fields Based on Mode */}
-                {costInputMode === 'perUnit' ? (
-                  <FormItem>
-                    <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga Beli (Per Unit)</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Rp</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={initialCost || ''}
-                          onChange={(e) => setInitialCost(Math.max(0, parseInt(e.target.value) || 0))}
-                          className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
-                        />
-                      </div>
-                    </FormControl>
-                    <FormDescription className="text-xs font-mono">Untuk hitung profit</FormDescription>
-                  </FormItem>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <FormItem>
-                        <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga 1 Paket</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Rp</span>
-                            <Input
-                              type="number"
-                              min="0"
-                              placeholder="72000"
-                              value={packagePrice || ''}
-                              onChange={(e) => setPackagePrice(Math.max(0, parseInt(e.target.value) || 0))}
-                              className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
-                            />
-                          </div>
-                        </FormControl>
-                      </FormItem>
-
-                      <FormItem>
-                        <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Isi Paket</FormLabel>
-                        <FormControl>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormItem>
+                      <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga 1 Paket</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Rp</span>
                           <Input
                             type="number"
-                            min="1"
-                            placeholder="24"
-                            value={packageQuantity || ''}
-                            onChange={(e) => setPackageQuantity(Math.max(1, parseInt(e.target.value) || 0))}
-                            className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
+                            min="0"
+                            placeholder="72000"
+                            value={packagePrice || ''}
+                            onChange={(e) => setPackagePrice(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
                           />
-                        </FormControl>
-                      </FormItem>
-                    </div>
+                        </div>
+                      </FormControl>
+                    </FormItem>
 
-                    {/* Auto-calculated Unit Cost Display */}
-                    {packageQuantity > 0 && packagePrice > 0 && (
-                      <div className="bg-brand-orange/20 border-2 border-brand-orange rounded-lg p-3">
-                        <p className="text-xs font-mono font-bold text-muted-foreground mb-1">Harga Per Unit (Otomatis)</p>
-                        <p className="text-2xl font-mono font-black text-brand-black">
-                          Rp {calculatedUnitCost.toLocaleString('id-ID')}
-                        </p>
-                        <p className="text-xs font-mono text-muted-foreground mt-1">
-                          = Rp {packagePrice.toLocaleString('id-ID')} ÷ {packageQuantity} pcs
-                        </p>
-                      </div>
-                    )}
+                    <FormItem>
+                      <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Isi Paket</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="24"
+                          value={packageQuantity || ''}
+                          onChange={(e) => setPackageQuantity(Math.max(1, parseInt(e.target.value) || 0))}
+                          className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
+                        />
+                      </FormControl>
+                    </FormItem>
                   </div>
-                )}
-              </div>
-            )}
+
+                  {/* Auto-calculated Unit Cost Display */}
+                  {packageQuantity > 0 && packagePrice > 0 && (
+                    <div className="bg-brand-orange/20 border-2 border-brand-orange rounded-lg p-3">
+                      <p className="text-xs font-mono font-bold text-muted-foreground mb-1">Harga Per Unit (Otomatis)</p>
+                      <p className="text-2xl font-mono font-black text-brand-black">
+                        Rp {calculatedUnitCost.toLocaleString('id-ID')}
+                      </p>
+                      <p className="text-xs font-mono text-muted-foreground mt-1">
+                        = Rp {packagePrice.toLocaleString('id-ID')} ÷ {packageQuantity} pcs
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
+
 
           {/* Right Column */}
           <div className="space-y-6">
@@ -436,6 +453,6 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           {isSubmitting ? "Menyimpan..." : isEditing ? "Simpan Perubahan" : "Tambah Produk Baru"}
         </Button>
       </form>
-    </Form>
+    </Form >
   );
 }

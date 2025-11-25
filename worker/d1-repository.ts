@@ -168,6 +168,51 @@ export class D1Repository {
         await this.db.batch(statements);
     }
 
+    async adjustStock(productId: string, newTotal: number, unitCost: number): Promise<void> {
+        const product = await this.getProduct(productId);
+        if (!product) throw new Error('Product not found');
+
+        const currentStock = product.totalStock || 0;
+        const delta = newTotal - currentStock;
+
+        if (delta === 0) return;
+
+        if (delta > 0) {
+            // Add stock (Adjustment In)
+            await this.addStock(productId, delta, unitCost);
+        } else {
+            // Reduce stock (Adjustment Out)
+            const quantityToReduce = Math.abs(delta);
+
+            // Get FIFO batches
+            const stocks = await this.getStockDetails(productId);
+            const batches = stocks.filter(s => s.quantity > 0).sort((a, b) => a.createdAt - b.createdAt);
+
+            let remaining = quantityToReduce;
+            const statements: any[] = [];
+
+            for (const batch of batches) {
+                if (remaining === 0) break;
+
+                const consume = Math.min(batch.quantity, remaining);
+                remaining -= consume;
+
+                const newQty = batch.quantity - consume;
+                if (newQty === 0) {
+                    statements.push(this.db.prepare('DELETE FROM stock_details WHERE id = ?').bind(batch.id));
+                } else {
+                    statements.push(this.db.prepare('UPDATE stock_details SET quantity = ? WHERE id = ?').bind(newQty, batch.id));
+                }
+            }
+
+            // Update product total
+            // We set it directly to newTotal to ensure consistency even if batches were slightly off
+            statements.push(this.db.prepare('UPDATE products SET totalStock = ? WHERE id = ?').bind(newTotal, productId));
+
+            await this.db.batch(statements);
+        }
+    }
+
     // ==================== SALES ====================
 
     async getSales(): Promise<Sale[]> {

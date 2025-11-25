@@ -153,6 +153,27 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     }
   });
 
+  app.post('/api/products/:id/adjust-stock', async (c) => {
+    const { id } = c.req.param();
+    const { quantity, unitCost } = await c.req.json();
+
+    if (quantity === undefined || quantity < 0) {
+      return bad(c, 'Quantity must be non-negative');
+    }
+
+    if (unitCost !== undefined && unitCost < 0) {
+      return bad(c, 'Unit cost must be non-negative');
+    }
+
+    const repo = new D1Repository(c.env.DB);
+    try {
+      await repo.adjustStock(id, quantity, unitCost || 0);
+      return ok(c, { success: true });
+    } catch (error: any) {
+      return bad(c, error.message);
+    }
+  });
+
   // ==================== SALES ====================
 
   app.get('/api/sales', async (c) => {
@@ -253,7 +274,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         // Buat stock detail baru untuk item yang dikembalikan
         // Gunakan special purchaseId untuk tracking (tetap perlu karena foreign key)
         const returnPurchaseId = `return-${sale.id}-${item.productId}`;
-        
+
         // Buat hidden purchase record (tidak akan muncul di daftar karena filter di getPurchases)
         const returnPurchase: Purchase = {
           id: returnPurchaseId,

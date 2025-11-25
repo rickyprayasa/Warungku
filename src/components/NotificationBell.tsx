@@ -131,7 +131,7 @@ export function NotificationBell() {
                                             <p className="text-sm font-bold text-yellow-600 font-mono">Stok Menipis!</p>
                                             <p className="text-sm font-bold text-brand-black">{product.name}</p>
                                             <p className="text-xs text-muted-foreground font-mono">
-                                                Stok: {product.totalStock} • Min: {product.minStockLevel || 10}
+                                                Stok: {product.totalStock} • Min: {product.minStockLevel}
                                             </p>
                                         </div>
                                         <button

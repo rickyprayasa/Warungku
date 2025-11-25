@@ -85,8 +85,8 @@ export function FloatingNotification() {
                         )}
                     </button>
                 </PopoverTrigger>
-                <PopoverContent 
-                    className="w-80 p-0 rounded-none border-4 border-brand-black bg-brand-white shadow-hard-lg mr-4" 
+                <PopoverContent
+                    className="w-80 p-0 rounded-none border-4 border-brand-black bg-brand-white shadow-hard-lg mr-4"
                     align="end"
                     sideOffset={8}
                 >
@@ -152,7 +152,7 @@ export function FloatingNotification() {
                                                 <p className="text-xs font-bold text-yellow-600 font-mono uppercase tracking-wider">Stok Menipis!</p>
                                                 <p className="text-sm font-bold text-brand-black mt-1">{product.name}</p>
                                                 <p className="text-xs text-muted-foreground font-mono mt-1">
-                                                    Stok: {product.totalStock} • Min: {product.minStockLevel || 10}
+                                                    Stok: {product.totalStock} • Min: {product.minStockLevel}
                                                 </p>
                                             </div>
                                             <button
