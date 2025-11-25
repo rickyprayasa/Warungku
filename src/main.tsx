@@ -20,18 +20,17 @@ const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m
 const OpnamePage = lazy(() => import('@/pages/OpnamePage').then(m => ({ default: m.OpnamePage })));
 const ProtectedRoute = lazy(() => import('@/components/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
 
-// Neo-brutalism style loading animation
+// Loading animation
 const PageLoader = () => {
   return (
     <div className="fixed inset-0 bg-white flex flex-col items-center justify-center overflow-hidden">
-      {/* Neo-brutalism loading squares */}
+      {/* Loading animation */}
       <div className="relative" style={{ animation: 'bounce 1.2s ease-in-out infinite' }}>
         <div style={{
           width: '80px',
           height: '80px',
           backgroundColor: '#F38020',
           border: '4px solid #1A1A1A',
-          boxShadow: '8px 8px 0px #1A1A1A',
           position: 'relative',
           animation: 'rotate 3s linear infinite'
         }}>
@@ -49,7 +48,7 @@ const PageLoader = () => {
         </div>
       </div>
 
-      {/* Loading text with neo-brutalism style */}
+      {/* Loading text */}
       <div style={{
         marginTop: '40px',
         fontFamily: 'monospace',
@@ -59,7 +58,6 @@ const PageLoader = () => {
         backgroundColor: '#F38020',
         padding: '12px 24px',
         border: '3px solid #1A1A1A',
-        boxShadow: '4px 4px 0px #1A1A1A',
         textTransform: 'uppercase',
         letterSpacing: '2px',
         animation: 'pulse 1.5s ease-in-out infinite'

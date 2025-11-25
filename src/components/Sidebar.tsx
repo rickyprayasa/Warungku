@@ -53,7 +53,7 @@ export function Sidebar() {
                     <div className="flex flex-col items-center gap-4">
                         {/* RSQUARE Logo */}
                         <div className="relative">
-                            <div className="w-20 h-20 rounded-lg border-4 border-brand-black bg-white flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-2">
+                            <div className="w-20 h-20 flex items-center justify-center p-2">
                                 <img 
                                     src="/rsquare-logo.png" 
                                     alt="RSQUARE Logo" 
@@ -73,7 +73,7 @@ export function Sidebar() {
                     </div>
                 ) : (
                     <div className="flex justify-center">
-                        <div className="w-12 h-12 rounded-lg border-2 border-brand-black bg-white flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] p-1">
+                        <div className="w-12 h-12 flex items-center justify-center p-1">
                             <img 
                                 src="/rsquare-logo.png" 
                                 alt="RSQUARE Logo" 
