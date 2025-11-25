@@ -1,4 +1,4 @@
-import { Bell, X, PackageX, AlertTriangle } from 'lucide-react';
+import { Bell, X, PackageX, AlertTriangle, CheckCheck, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useWarungStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLowStockAlerts } from '@/hooks/useLowStockAlerts';
+import { toast } from 'sonner';
 
 export function NotificationBell() {
     const navigate = useNavigate();
@@ -69,6 +70,31 @@ export function NotificationBell() {
         }
     };
 
+    const markAllAsRead = () => {
+        const allIds = [
+            ...activeLowStock.map(p => `stock-${p.id}`),
+            ...activeOutOfStock.map(p => `stock-${p.id}`),
+            ...pendingRequests.map(r => `req-${r.id}`)
+        ];
+        const newDismissed = new Set([...dismissedNotifications, ...allIds]);
+        setDismissedNotifications(newDismissed);
+        localStorage.setItem('dismissedNotifications', JSON.stringify([...newDismissed]));
+        toast.success('Semua notifikasi ditandai sudah dibaca');
+    };
+
+    const deleteAllNotifications = () => {
+        const allIds = [
+            ...activeLowStock.map(p => `stock-${p.id}`),
+            ...activeOutOfStock.map(p => `stock-${p.id}`),
+            ...pendingRequests.map(r => `req-${r.id}`)
+        ];
+        const newDismissed = new Set([...dismissedNotifications, ...allIds]);
+        setDismissedNotifications(newDismissed);
+        localStorage.setItem('dismissedNotifications', JSON.stringify([...newDismissed]));
+        toast.success('Semua notifikasi berhasil dihapus');
+        setIsOpen(false);
+    };
+
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
@@ -83,7 +109,31 @@ export function NotificationBell() {
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0 rounded-none border-2 border-brand-black bg-brand-white shadow-hard" align="end">
                 <div className="p-4 border-b-2 border-brand-black bg-brand-orange/10">
-                    <h4 className="font-bold font-display text-lg">Notifikasi</h4>
+                    <div className="flex items-center justify-between">
+                        <h4 className="font-bold font-display text-lg">Notifikasi</h4>
+                        {totalNotifications > 0 && (
+                            <div className="flex gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={markAllAsRead}
+                                    className="h-7 w-7 rounded-none hover:bg-brand-orange/30"
+                                    title="Tandai semua sudah dibaca"
+                                >
+                                    <CheckCheck className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={deleteAllNotifications}
+                                    className="h-7 w-7 rounded-none hover:bg-red-500/20 text-red-600"
+                                    title="Hapus semua notifikasi"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <ScrollArea className="h-[300px]">
                     {totalNotifications === 0 ? (
