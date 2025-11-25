@@ -155,7 +155,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
   app.post('/api/products/:id/adjust-stock', async (c) => {
     const { id } = c.req.param();
-    const { quantity, unitCost } = await c.req.json();
+    const { quantity, unitCost, isFromProductForm } = await c.req.json();
 
     if (quantity === undefined || quantity < 0) {
       return bad(c, 'Quantity must be non-negative');
@@ -167,7 +167,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
     const repo = new D1Repository(c.env.DB);
     try {
-      await repo.adjustStock(id, quantity, unitCost || 0);
+      await repo.adjustStock(id, quantity, unitCost || 0, isFromProductForm || false);
       return ok(c, { success: true });
     } catch (error: any) {
       return bad(c, error.message);

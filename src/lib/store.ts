@@ -47,7 +47,7 @@ interface WarungActions {
   addJajananRequest: (requestData: JajananRequestFormValues) => Promise<JajananRequest>;
   updateJajananRequestStatus: (requestId: string, status: JajananRequest['status']) => Promise<JajananRequest>;
   createOpname: (payload: OpnamePayload) => Promise<void>;
-  adjustStock: (productId: string, quantity: number, unitCost: number) => Promise<void>;
+  adjustStock: (productId: string, quantity: number, unitCost: number, isFromProductForm?: boolean) => Promise<void>;
 }
 export const useWarungStore = create<WarungState & WarungActions>()(
   persist(
@@ -235,10 +235,10 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const sales = await api<Sale[]>('/api/sales');
         set({ products, sales });
       },
-      adjustStock: async (productId, quantity, unitCost) => {
+      adjustStock: async (productId, quantity, unitCost, isFromProductForm = false) => {
         await api(`/api/products/${productId}/adjust-stock`, {
           method: 'POST',
-          body: JSON.stringify({ quantity, unitCost })
+          body: JSON.stringify({ quantity, unitCost, isFromProductForm })
         });
         const products = await api<Product[]>('/api/products');
         set({ products });

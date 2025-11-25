@@ -171,7 +171,7 @@ export class D1Repository {
         await this.db.batch(statements);
     }
 
-    async adjustStock(productId: string, newTotal: number, unitCost: number): Promise<void> {
+    async adjustStock(productId: string, newTotal: number, unitCost: number, isFromProductForm: boolean = false): Promise<void> {
         const product = await this.getProduct(productId);
         if (!product) throw new Error('Product not found');
 
@@ -181,8 +181,8 @@ export class D1Repository {
         if (delta === 0) return;
 
         if (delta > 0) {
-            // Add stock (Adjustment In)
-            await this.addStock(productId, delta, unitCost);
+            // Add stock (Adjustment In) - mark as initial stock if from product form
+            await this.addStock(productId, delta, unitCost, isFromProductForm);
         } else {
             // Reduce stock (Adjustment Out)
             const quantityToReduce = Math.abs(delta);

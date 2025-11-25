@@ -99,7 +99,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
 
         // Handle Stock Update if changed
         if (initialStock !== (product.totalStock || 0)) {
-          await adjustStock(product.id, initialStock, calculatedUnitCost);
+          await adjustStock(product.id, initialStock, calculatedUnitCost, true);
         }
 
         toast.promise(promise, {
