@@ -56,12 +56,12 @@ export function FloatingClock() {
     const formatDate = (date: Date) => {
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-        
+
         const dayName = days[date.getDay()];
         const day = date.getDate();
         const month = months[date.getMonth()];
         const year = date.getFullYear();
-        
+
         return { dayName, day, month, year };
     };
 
@@ -72,11 +72,11 @@ export function FloatingClock() {
     const leftPosition = sidebarCollapsed ? 'left-[calc(5rem+1.5rem)]' : 'left-[calc(16rem+1.5rem)]';
 
     return (
-        <div className={`hidden md:block fixed top-6 z-[9999] ${leftPosition} pointer-events-auto select-none transition-all duration-300`}>
+        <div className={`hidden md:block fixed top-6 z-40 ${leftPosition} pointer-events-auto select-none transition-all duration-300`}>
             <div className="bg-brand-white border-4 border-brand-black rounded-none shadow-hard overflow-hidden">
                 {isCollapsed ? (
                     // Collapsed View - Compact horizontal layout
-                    <button 
+                    <button
                         onClick={toggleCollapse}
                         className="flex items-center gap-3 p-3 hover:bg-brand-orange/10 transition-colors"
                     >
