@@ -16,6 +16,7 @@ export function HomePage() {
   const fetchSales = useWarungStore((state) => state.fetchSales);
   const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
   const fetchSuppliers = useWarungStore((state) => state.fetchSuppliers);
+  const fetchStoreProfile = useWarungStore((state) => state.fetchStoreProfile);
 
   // Track sidebar collapse state for margin adjustment
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -41,6 +42,11 @@ export function HomePage() {
       clearInterval(interval);
     };
   }, []);
+
+  // Fetch store profile on mount (for all users, including non-authenticated)
+  useEffect(() => {
+    fetchStoreProfile();
+  }, [fetchStoreProfile]);
 
   // Check session validity and fetch data when authenticated
   useEffect(() => {

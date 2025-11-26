@@ -44,10 +44,11 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
             return;
         }
 
-        // Check file type
+        // Check file type for transparency support
         const isPng = file.type === 'image/png';
         const isGif = file.type === 'image/gif';
-        const hasTransparency = isPng || isGif;
+        const isWebp = file.type === 'image/webp';
+        const hasTransparency = isPng || isGif || isWebp;
 
         // Compress and resize image before storing
         const img = new Image();
@@ -56,7 +57,7 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
         reader.onload = (event) => {
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+                const ctx = canvas.getContext('2d', { alpha: true });
                 
                 // Max dimensions for logo
                 const maxWidth = 150;
@@ -74,17 +75,21 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
                 canvas.width = width;
                 canvas.height = height;
                 
-                // Clear canvas for transparency support
+                // Handle transparency properly
                 if (ctx) {
+                    // Clear canvas with transparent background
                     ctx.clearRect(0, 0, width, height);
+                    // Draw image preserving transparency
                     ctx.drawImage(img, 0, 0, width, height);
                 }
                 
-                // Use PNG for images with transparency, JPEG for others (smaller size)
+                // Always use PNG to preserve transparency
                 let compressedDataUrl: string;
                 if (hasTransparency) {
+                    // Use PNG to preserve alpha channel
                     compressedDataUrl = canvas.toDataURL('image/png');
                 } else {
+                    // JPEG for non-transparent images (smaller size)
                     compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 }
                 
