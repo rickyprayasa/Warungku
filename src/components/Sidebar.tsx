@@ -55,8 +55,11 @@ export function Sidebar() {
                         <div className="relative">
                             <div className="w-20 h-20 flex items-center justify-center p-2">
                                 <img 
-                                    src="/rsquare-logo.png" 
+                                    src="/rsquare-logo-80.png" 
+                                    srcSet="/rsquare-logo-80.png 1x, /rsquare-logo-160.png 2x"
                                     alt="RSQUARE Logo" 
+                                    width={80}
+                                    height={80}
                                     className="w-full h-full object-contain"
                                 />
                             </div>
@@ -75,8 +78,11 @@ export function Sidebar() {
                     <div className="flex justify-center">
                         <div className="w-12 h-12 flex items-center justify-center p-1">
                             <img 
-                                src="/rsquare-logo.png" 
+                                src="/rsquare-logo-48.png" 
+                                srcSet="/rsquare-logo-48.png 1x, /rsquare-logo-96.png 2x"
                                 alt="RSQUARE Logo" 
+                                width={48}
+                                height={48}
                                 className="w-full h-full object-contain"
                             />
                         </div>

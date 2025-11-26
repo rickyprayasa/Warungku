@@ -146,6 +146,7 @@ export function POSPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setViewMode('grid')}
+                    aria-label="Tampilan grid"
                     className={cn(
                       "rounded-none h-10 px-3 hover:bg-brand-orange/20",
                       viewMode === 'grid' ? "bg-brand-orange text-brand-black" : "text-muted-foreground"
@@ -158,6 +159,7 @@ export function POSPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setViewMode('list')}
+                    aria-label="Tampilan daftar"
                     className={cn(
                       "rounded-none h-10 px-3 hover:bg-brand-orange/20",
                       viewMode === 'list' ? "bg-brand-orange text-brand-black" : "text-muted-foreground"
@@ -267,6 +269,7 @@ export function POSPage() {
                   <Button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
+                    aria-label="Halaman sebelumnya"
                     className="rounded-none border-2 border-brand-black bg-brand-white text-brand-black hover:bg-brand-orange disabled:opacity-50 disabled:cursor-not-allowed h-10 w-10 p-0"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -312,6 +315,7 @@ export function POSPage() {
                   <Button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
+                    aria-label="Halaman selanjutnya"
                     className="rounded-none border-2 border-brand-black bg-brand-white text-brand-black hover:bg-brand-orange disabled:opacity-50 disabled:cursor-not-allowed h-10 w-10 p-0"
                   >
                     <ChevronRight className="w-5 h-5" />

@@ -28,11 +28,13 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Dialog>
       <DialogTrigger asChild disabled={!isActive}>
-        <motion.div
+        <motion.button
+          type="button"
           whileHover={isActive ? { y: -5 } : {}}
           transition={{ duration: 0.2 }}
+          aria-label={`Lihat detail ${product.name}`}
           className={cn(
-            "bg-brand-white border-2 border-brand-black rounded-none flex flex-col overflow-hidden transition-shadow duration-200 group relative",
+            "bg-brand-white border-2 border-brand-black rounded-none flex flex-col overflow-hidden transition-shadow duration-200 group relative text-left w-full",
             isActive ? "hover:shadow-hard cursor-pointer" : "grayscale opacity-60 cursor-not-allowed"
           )}>
 
@@ -83,7 +85,7 @@ export function ProductCard({ product }: ProductCardProps) {
               </p>
             )}
           </div>
-        </motion.div>
+        </motion.button>
       </DialogTrigger>
       {isActive ? (
         <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
