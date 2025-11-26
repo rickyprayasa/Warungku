@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Store, Save } from 'lucide-react';
+import { Store, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean }) {
@@ -12,9 +12,16 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const [isOpen, setIsOpen] = useState(false);
     const [formData, setFormData] = useState(storeProfile);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Sync formData when storeProfile changes (e.g., after fetch from server)
+    useEffect(() => {
+        setFormData(storeProfile);
+    }, [storeProfile]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSaving(true);
         try {
             await updateStoreProfile(formData);
             toast.success('Profil toko berhasil diperbarui');
@@ -22,6 +29,8 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
         } catch (error) {
             toast.error('Gagal menyimpan profil toko. Silakan coba lagi.');
             console.error('Failed to update store profile:', error);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -29,11 +38,16 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Check file size (max 2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error('Ukuran file terlalu besar. Maksimal 2MB.');
+        // Check file size (max 500KB for base64 storage)
+        if (file.size > 500 * 1024) {
+            toast.error('Ukuran file terlalu besar. Maksimal 500KB.');
             return;
         }
+
+        // Check file type
+        const isPng = file.type === 'image/png';
+        const isGif = file.type === 'image/gif';
+        const hasTransparency = isPng || isGif;
 
         // Compress and resize image before storing
         const img = new Image();
@@ -45,32 +59,42 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
                 const ctx = canvas.getContext('2d');
                 
                 // Max dimensions for logo
-                const maxWidth = 200;
-                const maxHeight = 200;
+                const maxWidth = 150;
+                const maxHeight = 150;
                 
                 let { width, height } = img;
                 
-                // Calculate new dimensions
-                if (width > height) {
-                    if (width > maxWidth) {
-                        height = (height * maxWidth) / width;
-                        width = maxWidth;
-                    }
-                } else {
-                    if (height > maxHeight) {
-                        width = (width * maxHeight) / height;
-                        height = maxHeight;
-                    }
+                // Calculate new dimensions maintaining aspect ratio
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
                 }
                 
                 canvas.width = width;
                 canvas.height = height;
                 
-                ctx?.drawImage(img, 0, 0, width, height);
+                // Clear canvas for transparency support
+                if (ctx) {
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+                }
                 
-                // Convert to compressed JPEG (quality 0.7)
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                setFormData({ ...formData, logoUrl: compressedDataUrl });
+                // Use PNG for images with transparency, JPEG for others (smaller size)
+                let compressedDataUrl: string;
+                if (hasTransparency) {
+                    compressedDataUrl = canvas.toDataURL('image/png');
+                } else {
+                    compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                }
+                
+                // Check final size (base64 is ~33% larger than binary)
+                const base64Size = compressedDataUrl.length * 0.75;
+                if (base64Size > 100 * 1024) {
+                    toast.warning('Logo dikompresi. Untuk hasil terbaik, gunakan gambar lebih kecil.');
+                }
+                
+                setFormData(prev => ({ ...prev, logoUrl: compressedDataUrl }));
             };
             img.src = event.target?.result as string;
         };
@@ -132,7 +156,7 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
                                     className="border-2 border-brand-black rounded-none font-mono cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-xs file:font-bold file:bg-brand-black file:text-brand-white hover:file:bg-brand-orange hover:file:text-brand-black transition-all"
                                 />
                                 <p className="text-[10px] text-muted-foreground font-mono mt-1">
-                                    Upload gambar logo (Max 2MB). Format: JPG, PNG.
+                                    Upload gambar logo (Max 500KB). Format: JPG, PNG, GIF.
                                 </p>
                             </div>
                         </div>
@@ -175,9 +199,22 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
                         />
                     </div>
 
-                    <Button type="submit" className="w-full bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-transparent hover:border-brand-black rounded-none font-mono font-bold uppercase transition-all">
-                        <Save className="w-4 h-4 mr-2" />
-                        Simpan Perubahan
+                    <Button 
+                        type="submit" 
+                        disabled={isSaving}
+                        className="w-full bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-transparent hover:border-brand-black rounded-none font-mono font-bold uppercase transition-all disabled:opacity-50"
+                    >
+                        {isSaving ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Menyimpan...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="w-4 h-4 mr-2" />
+                                Simpan Perubahan
+                            </>
+                        )}
                     </Button>
                 </form>
             </DialogContent>
