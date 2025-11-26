@@ -352,7 +352,16 @@ export class D1Repository {
         const { results } = await this.db
             .prepare(`
                 SELECT 
-                    p.*, 
+                    p.id,
+                    p.productId,
+                    p.productName,
+                    p.quantity,
+                    p.unitCost,
+                    p.packQuantity,
+                    p.unitsPerPack,
+                    p.supplierId,
+                    p.notes,
+                    p.createdAt,
                     (p.quantity * p.unitCost) as totalCost,
                     s.name as supplier
                 FROM purchases p

@@ -2,7 +2,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useWarungStore } from '@/lib/store';
 import { Button } from './ui/button';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { SettingsDialog } from './SettingsDialog';
@@ -54,10 +54,10 @@ export function Sidebar() {
                         {/* RSQUARE Logo */}
                         <div className="relative">
                             <div className="w-20 h-20 flex items-center justify-center p-2">
-                                <img 
-                                    src="/rsquare-logo-80.png" 
+                                <img
+                                    src="/rsquare-logo-80.png"
                                     srcSet="/rsquare-logo-80.png 1x, /rsquare-logo-160.png 2x"
-                                    alt="RSQUARE Logo" 
+                                    alt="RSQUARE Logo"
                                     width={80}
                                     height={80}
                                     className="w-full h-full object-contain"
@@ -77,10 +77,10 @@ export function Sidebar() {
                 ) : (
                     <div className="flex justify-center">
                         <div className="w-12 h-12 flex items-center justify-center p-1">
-                            <img 
-                                src="/rsquare-logo-48.png" 
+                            <img
+                                src="/rsquare-logo-48.png"
                                 srcSet="/rsquare-logo-48.png 1x, /rsquare-logo-96.png 2x"
-                                alt="RSQUARE Logo" 
+                                alt="RSQUARE Logo"
                                 width={48}
                                 height={48}
                                 className="w-full h-full object-contain"
@@ -123,6 +123,7 @@ export function Sidebar() {
                 )}
                 <NavItem to="/dashboard" tab="products" icon={Package} label="Produk & Stok" collapsed={collapsed} />
                 <NavItem to="/dashboard" tab="suppliers" icon={Truck} label="Pemasok" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="price-reference" icon={Tag} label="Referensi Harga" collapsed={collapsed} />
 
                 {/* TRANSAKSI */}
                 {!collapsed && (

@@ -29,8 +29,10 @@ interface WarungActions {
   fetchSuppliers: () => Promise<void>;
   fetchJajananRequests: () => Promise<void>;
   fetchStockDetails: (productId: string) => Promise<void>;
-  setInitialBalance: (balance: number) => void;
-  updateStoreProfile: (profile: WarungState['storeProfile']) => void;
+  fetchInitialBalance: () => Promise<void>;
+  fetchStoreProfile: () => Promise<void>;
+  setInitialBalance: (balance: number) => Promise<void>;
+  updateStoreProfile: (profile: WarungState['storeProfile']) => Promise<void>;
   login: () => void;
   logout: () => void;
   checkSession: () => boolean;
@@ -128,14 +130,59 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           set({ isLoading: false, error: errorMessage });
         }
       },
-      setInitialBalance: (balance) => set({ initialBalance: balance }),
-      updateStoreProfile: (profile) => set({ storeProfile: profile }),
+      fetchInitialBalance: async () => {
+        try {
+          const response = await api<{ key: string; value: string }>('/api/settings/initial_balance');
+          const balance = parseFloat(response.value) || 0;
+          set({ initialBalance: balance });
+        } catch (error) {
+          console.error('Failed to fetch initial balance:', error);
+          set({ initialBalance: 0 });
+        }
+      },
+      fetchStoreProfile: async () => {
+        try {
+          const response = await api<{ key: string; value: string }>('/api/settings/store_profile');
+          const profile = JSON.parse(response.value);
+          set({ storeProfile: profile });
+        } catch (error) {
+          console.error('Failed to fetch store profile:', error);
+          // Keep default profile
+        }
+      },
+      setInitialBalance: async (balance) => {
+        try {
+          await api('/api/settings/initial_balance', {
+            method: 'PUT',
+            body: JSON.stringify({ value: balance.toString() })
+          });
+          set({ initialBalance: balance });
+        } catch (error) {
+          console.error('Failed to save initial balance:', error);
+          throw error;
+        }
+      },
+      updateStoreProfile: async (profile) => {
+        try {
+          await api('/api/settings/store_profile', {
+            method: 'PUT',
+            body: JSON.stringify({ value: JSON.stringify(profile) })
+          });
+          set({ storeProfile: profile });
+        } catch (error) {
+          console.error('Failed to save store profile:', error);
+          throw error;
+        }
+      },
       login: () => {
         const SESSION_DURATION = 30 * 60 * 1000; // 30 minutes
         set({
           isAuthenticated: true,
           sessionExpiry: Date.now() + SESSION_DURATION
         });
+        // Fetch initial balance and store profile after login
+        useWarungStore.getState().fetchInitialBalance();
+        useWarungStore.getState().fetchStoreProfile();
       },
       logout: () => set({
         isAuthenticated: false,
@@ -248,9 +295,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       name: 'warung-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        initialBalance: state.initialBalance,
         isAuthenticated: state.isAuthenticated,
-        storeProfile: state.storeProfile,
       }),
     }
   )

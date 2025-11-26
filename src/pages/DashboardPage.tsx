@@ -10,7 +10,8 @@ import { SuppliersDashboard } from "@/components/SuppliersDashboard";
 import { JajananRequestsDashboard } from "@/components/JajananRequestsDashboard";
 import { OpnameDashboard } from "@/components/OpnameDashboard";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
-import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3 } from "lucide-react";
+import { PriceReferenceTab } from "@/components/PriceReferenceTab";
+import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 
 export function DashboardPage() {
@@ -53,6 +54,7 @@ export function DashboardPage() {
     { value: "sales", label: "Penjualan", icon: DollarSign, color: "blue" },
     { value: "purchases", label: "Pembelian", icon: ShoppingCart, color: "indigo" },
     { value: "suppliers", label: "Pemasok", icon: Truck, color: "cyan" },
+    { value: "price-reference", label: "Referensi Harga", icon: Tag, color: "yellow" },
     { value: "requests", label: "Request Masuk", icon: Inbox, color: "pink" },
     { value: "cashflow", label: "Arus Kas", icon: ArrowRightLeft, color: "violet" },
     { value: "finance", label: "Keuangan", icon: Banknote, color: "green" },
@@ -133,6 +135,13 @@ export function DashboardPage() {
         activeText: "text-white",
         border: "border-green-600"
       },
+      yellow: {
+        bg: "bg-yellow-50",
+        hover: "hover:bg-yellow-100 hover:border-yellow-500",
+        activeBg: "bg-yellow-500",
+        activeText: "text-white",
+        border: "border-yellow-600"
+      },
     };
 
     const colors = colorMap[tab.color];
@@ -167,6 +176,7 @@ export function DashboardPage() {
             <TabsContent value="sales" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SalesDashboard /></motion.div></TabsContent>
             <TabsContent value="purchases" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><PurchasesDashboard /></motion.div></TabsContent>
             <TabsContent value="suppliers" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SuppliersDashboard /></motion.div></TabsContent>
+            <TabsContent value="price-reference" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><PriceReferenceTab /></motion.div></TabsContent>
             <TabsContent value="requests" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><JajananRequestsDashboard /></motion.div></TabsContent>
             <TabsContent value="cashflow" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><CashFlowDashboard /></motion.div></TabsContent>
             <TabsContent value="finance" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><FinanceDashboard /></motion.div></TabsContent>

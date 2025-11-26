@@ -13,11 +13,16 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
     const [isOpen, setIsOpen] = useState(false);
     const [formData, setFormData] = useState(storeProfile);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        updateStoreProfile(formData);
-        toast.success('Profil toko berhasil diperbarui');
-        setIsOpen(false);
+        try {
+            await updateStoreProfile(formData);
+            toast.success('Profil toko berhasil diperbarui');
+            setIsOpen(false);
+        } catch (error) {
+            toast.error('Gagal menyimpan profil toko. Silakan coba lagi.');
+            console.error('Failed to update store profile:', error);
+        }
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

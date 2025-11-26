@@ -89,6 +89,7 @@ export const purchaseSchema = z.object({
   quantity: z.number().min(1, "Quantity must be at least 1."),
   unitCost: z.number().min(0, "Unit cost must be a positive number."),
   supplier: z.string().optional(),
+  supplierId: z.string().optional(),
   notes: z.string().optional(),
 });
 export type PurchaseFormValues = z.infer<typeof purchaseSchema>;

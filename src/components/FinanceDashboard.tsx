@@ -8,6 +8,7 @@ import { useShallow } from "zustand/react/shallow";
 import { FinancialChart } from "./FinancialChart";
 import { exportToCSV } from "@/lib/csv-export";
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 export function FinanceDashboard() {
   const { sales, initialBalance, setInitialBalance, purchases } = useWarungStore(
     useShallow((state) => ({
@@ -52,10 +53,18 @@ export function FinanceDashboard() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
   };
-  const handleSetBalance = () => {
+  const handleSetBalance = async () => {
     const newBalance = parseFloat(balanceInput);
     if (!isNaN(newBalance)) {
-      setInitialBalance(newBalance);
+      try {
+        await setInitialBalance(newBalance);
+        toast.success('Saldo awal berhasil diperbarui!');
+      } catch (error) {
+        toast.error('Gagal menyimpan saldo awal. Silakan coba lagi.');
+        console.error('Failed to set initial balance:', error);
+      }
+    } else {
+      toast.error('Masukkan jumlah yang valid');
     }
   };
   const handleExport = () => {

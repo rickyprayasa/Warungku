@@ -599,6 +599,56 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
   // ==================== SETTINGS ====================
 
+  // Get setting by key
+  app.get('/api/settings/:key', async (c) => {
+    const { key } = c.req.param();
+    const repo = new D1Repository(c.env.DB);
+
+    try {
+      const result = await c.env.DB
+        .prepare('SELECT value FROM settings WHERE key = ?')
+        .bind(key)
+        .first<{ value: string }>();
+
+      if (!result) {
+        // Return default value for initial_balance
+        if (key === 'initial_balance') {
+          return ok(c, { key, value: '0' });
+        }
+        return notFound(c, 'Setting not found');
+      }
+
+      return ok(c, { key, value: result.value });
+    } catch (error: any) {
+      console.error('Error fetching setting:', error);
+      return bad(c, 'Failed to fetch setting');
+    }
+  });
+
+  // Update or create setting
+  app.put('/api/settings/:key', async (c) => {
+    const { key } = c.req.param();
+    const { value } = await c.req.json<{ value: string }>();
+
+    if (value === undefined) {
+      return bad(c, 'Value is required');
+    }
+
+    try {
+      const now = Date.now();
+
+      await c.env.DB
+        .prepare('INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, ?)')
+        .bind(key, value, now)
+        .run();
+
+      return ok(c, { key, value, updated_at: now });
+    } catch (error: any) {
+      console.error('Error updating setting:', error);
+      return bad(c, 'Failed to update setting');
+    }
+  });
+
   app.post('/api/reset-all-data', async (c) => {
     try {
       const repo = new D1Repository(c.env.DB);
