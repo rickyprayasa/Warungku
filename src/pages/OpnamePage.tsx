@@ -271,6 +271,18 @@ export function OpnamePage() {
                 </AlertDescription>
             </Alert>
 
+            {/* Reminder for manual sales in Retail mode */}
+            {opnameMode === 'retail' && (
+                <Alert className="border-2 border-orange-500 bg-orange-50">
+                    <AlertTriangle className="w-4 h-4 text-orange-600" />
+                    <AlertDescription className="font-mono text-sm text-orange-800">
+                        <strong>Penting:</strong> Jika ada penjualan manual (cash langsung tanpa keranjang/QRIS), 
+                        pastikan sudah dicatat melalui tombol <strong>"Catat Penjualan Manual"</strong> di halaman Menu. 
+                        Selisih stok bisa terjadi jika ada penjualan yang belum tercatat.
+                    </AlertDescription>
+                </Alert>
+            )}
+
             {/* DISPLAY MODE - Cash Reconciliation */}
             {opnameMode === 'display' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

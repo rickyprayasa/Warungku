@@ -65,6 +65,9 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
     ? Math.round(packagePrice / packageQuantity)
     : initialCost;
 
+  // Qty per unit for package selling
+  const [qtyPerUnit, setQtyPerUnit] = useState(product?.qtyPerUnit || 1);
+
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -73,6 +76,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
       category: product?.category || '',
       imageUrl: product?.imageUrl || '',
       minStockLevel: product?.minStockLevel || 10,
+      qtyPerUnit: product?.qtyPerUnit || 1,
     },
   });
   const isSubmitting = form.formState.isSubmitting;
@@ -85,7 +89,8 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
         description,
         isPromo,
         promoPrice: isPromo ? promoPrice : 0,
-        isActive
+        isActive,
+        qtyPerUnit: qtyPerUnit || 1,
       };
 
       if (isEditing && product) {
@@ -445,6 +450,38 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Package/Bundle Section */}
+            <div className="border-2 border-brand-black rounded-lg p-4 bg-blue-50 space-y-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base font-bold font-display uppercase">Paket / Bundle</FormLabel>
+                <FormDescription className="font-mono text-xs">
+                  Jumlah stok yang dikurangi per 1 unit terjual
+                </FormDescription>
+              </div>
+
+              <div className="space-y-2">
+                <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Qty per Unit</FormLabel>
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="1"
+                  value={qtyPerUnit}
+                  onChange={(e) => setQtyPerUnit(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="rounded-lg border-2 border-brand-black bg-white font-bold font-mono"
+                />
+                {qtyPerUnit > 1 && (
+                  <p className="text-xs font-mono text-blue-600 font-bold">
+                    1 unit terjual = {qtyPerUnit} pcs dikurangi dari stok
+                  </p>
+                )}
+                {qtyPerUnit === 1 && (
+                  <p className="text-xs font-mono text-muted-foreground">
+                    Default: 1 unit = 1 pcs (produk satuan)
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

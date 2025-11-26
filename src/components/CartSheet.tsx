@@ -85,7 +85,7 @@ export function CartSheet() {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="flex gap-3 p-3 bg-white border-2 border-brand-black"
+                      className="relative flex gap-3 p-3 bg-white border-2 border-brand-black group"
                     >
                       {/* Product Image */}
                       <div className="w-16 h-16 flex-shrink-0 border-2 border-brand-black overflow-hidden">
@@ -97,7 +97,7 @@ export function CartSheet() {
                       </div>
 
                       {/* Product Info */}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 pr-8">
                         <h4 className="font-bold text-sm truncate">{item.product.name}</h4>
                         <p className="font-mono text-xs text-muted-foreground">
                           {formatCurrency(price)} /pcs
@@ -107,17 +107,19 @@ export function CartSheet() {
                         </p>
                       </div>
 
-                      {/* Quantity Controls */}
-                      <div className="flex flex-col items-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFromCart(item.product.id)}
-                          className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                        <div className="flex items-center border-2 border-brand-black">
+                      {/* Delete Button - Absolute Top Right */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFromCart(item.product.id)}
+                        className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+
+                      {/* Quantity Controls - Bottom Right */}
+                      <div className="flex items-end self-end">
+                        <div className="flex items-center border-2 border-brand-black bg-white">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -148,13 +150,14 @@ export function CartSheet() {
         </ScrollArea>
 
         {/* Footer */}
+        {/* Footer */}
         {items.length > 0 && (
-          <SheetFooter className="p-4 border-t-4 border-brand-black bg-gray-50 flex-col gap-3">
+          <div className="p-4 border-t-4 border-brand-black bg-gray-50 flex flex-col gap-3">
             {/* Clear Cart */}
             <Button
               variant="ghost"
               onClick={clearCart}
-              className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 font-mono text-sm"
+              className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 font-mono text-sm h-auto py-2"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Kosongkan Keranjang
@@ -178,7 +181,7 @@ export function CartSheet() {
               <CreditCard className="w-5 h-5 mr-2" />
               Bayar dengan QRIS
             </Button>
-          </SheetFooter>
+          </div>
         )}
       </SheetContent>
     </Sheet>

@@ -31,9 +31,13 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
     }).format(value);
   };
 
+  const qtyPerUnit = product.qtyPerUnit || 1;
+  
   const handleAddToCart = () => {
-    if (quantity > availableStock) {
-      toast.error(`Stok tidak mencukupi. Tersedia: ${availableStock}`);
+    // Check if stock is enough (considering qtyPerUnit)
+    const stockNeeded = quantity * qtyPerUnit;
+    if (stockNeeded > availableStock) {
+      toast.error(`Stok tidak mencukupi. Tersedia: ${availableStock} pcs (${Math.floor(availableStock / qtyPerUnit)} unit)`);
       return;
     }
     addToCart(product, quantity);
@@ -48,7 +52,8 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
 
   const price = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
   const subtotal = price * quantity;
-  const maxQuantity = Math.max(1, availableStock);
+  // Max quantity based on available stock / qtyPerUnit
+  const maxQuantity = Math.max(1, Math.floor(availableStock / qtyPerUnit));
 
   return (
     <div>
@@ -58,8 +63,17 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
       <div className="p-6">
         <p className="text-sm font-mono uppercase text-muted-foreground">{product.category}</p>
         <h2 className="text-3xl font-display font-bold text-brand-black my-1">{product.name}</h2>
+        
+        {/* Package info */}
+        {product.qtyPerUnit && product.qtyPerUnit > 1 && (
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg px-3 py-2 mt-2">
+            <p className="text-sm font-mono text-blue-700">
+              📦 <strong>Paket {product.qtyPerUnit} pcs</strong> - Stok berkurang {product.qtyPerUnit} pcs per pembelian
+            </p>
+          </div>
+        )}
 
-        {product.isPromo && product.promoPrice ? (
+        {product.isPromo && product.promoPrice !== undefined && product.promoPrice > 0 ? (
           <div className="my-4">
             <div className="flex items-center gap-2">
               <span className="text-lg font-mono text-muted-foreground line-through decoration-2 decoration-red-500">

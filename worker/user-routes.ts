@@ -194,11 +194,18 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       const saleItemsWithCost = await Promise.all(items.map(async (item) => {
         const { productId, quantity, price } = item;
 
+        // Get product to check qtyPerUnit
+        const product = await repo.getProduct(productId);
+        const qtyPerUnit = product?.qtyPerUnit || 1;
+        
+        // Actual stock to deduct = quantity sold * qtyPerUnit
+        const stockToDeduct = quantity * qtyPerUnit;
+
         // Get FIFO batches
         const stocks = await repo.getStockDetails(productId);
         const batches = stocks.filter(s => s.quantity > 0).sort((a, b) => a.createdAt - b.createdAt);
 
-        let remaining = quantity;
+        let remaining = stockToDeduct;
         let totalCost = 0;
 
         for (const batch of batches) {
@@ -218,15 +225,17 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         }
 
         if (remaining > 0) {
-          throw new Error(`Insufficient stock for product ${productId}`);
+          throw new Error(`Insufficient stock for product ${productId}. Need ${stockToDeduct}, available ${stockToDeduct - remaining}`);
         }
 
         // Prepare product update (don't execute yet)
+        // Use stockToDeduct (quantity * qtyPerUnit) for actual stock reduction
         productUpdates.push({
           productId,
-          quantityReduction: quantity
+          quantityReduction: stockToDeduct
         });
 
+        // Average cost per unit sold (not per pcs)
         const avgCost = totalCost / quantity;
         return { ...item, cost: avgCost };
       }));

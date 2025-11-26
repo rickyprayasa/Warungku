@@ -29,7 +29,7 @@ const MobileProductRow = ({ product }: { product: Product }) => {
           <TableCell className="w-[60px] p-2 relative">
             <div className="relative w-12 h-12">
               <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover border-2 border-brand-black" />
-              {product.isPromo ? (
+              {product.isPromo && product.promoPrice !== undefined && product.promoPrice > 0 ? (
                 <div className="absolute -top-2 -left-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rotate-[-10deg] z-10">
                   PROMO
                 </div>
@@ -41,10 +41,10 @@ const MobileProductRow = ({ product }: { product: Product }) => {
             <p className="font-mono text-xs text-muted-foreground">{product.category}</p>
           </TableCell>
           <TableCell className="font-mono text-right p-2">
-            {product.isPromo ? (
+            {product.isPromo && product.promoPrice !== undefined && product.promoPrice > 0 ? (
               <div className="flex flex-col items-end">
                 <span className="text-[10px] text-muted-foreground line-through decoration-red-500 decoration-2">{formatCurrency(product.price)}</span>
-                <span className="font-bold text-brand-orange">{formatCurrency(product.promoPrice || product.price)}</span>
+                <span className="font-bold text-brand-orange">{formatCurrency(product.promoPrice)}</span>
               </div>
             ) : (
               <span className="font-bold text-brand-orange">{formatCurrency(product.price)}</span>

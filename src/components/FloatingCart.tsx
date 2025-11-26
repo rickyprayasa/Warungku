@@ -9,7 +9,7 @@ export function FloatingCart() {
   const storeProfile = useWarungStore((state) => state.storeProfile);
   const itemCount = getItemCount();
   const total = getTotal();
-  
+
   const isCartEnabled = storeProfile.cartEnabled ?? false;
 
   const formatCurrency = (value: number) =>
@@ -31,22 +31,20 @@ export function FloatingCart() {
       >
         <Button
           onClick={openCart}
-          className="w-full md:w-auto h-14 bg-brand-orange text-brand-black border-4 border-brand-black rounded-none font-bold text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-between gap-4 px-4"
+          aria-label={`Keranjang (${itemCount} item, ${formatCurrency(total)})`}
+          className="w-14 h-14 bg-brand-orange text-brand-black border-4 border-brand-black rounded-full font-bold shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all flex items-center justify-center p-0"
         >
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <ShoppingCart className="w-6 h-6" />
-              <span className="absolute -top-2 -right-2 bg-brand-black text-brand-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+          <div className="relative flex items-center justify-center">
+            <ShoppingCart className="w-7 h-7" />
+            {itemCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-brand-black text-brand-white text-xs font-bold min-w-5 h-5 px-1 rounded-full flex items-center justify-center border-2 border-brand-white">
                 {itemCount}
               </span>
-            </div>
-            <span className="hidden md:inline font-mono uppercase">Keranjang</span>
-          </div>
-          <div className="font-display text-lg">
-            {formatCurrency(total)}
+            )}
           </div>
         </Button>
       </motion.div>
+
     </AnimatePresence>
   );
 }

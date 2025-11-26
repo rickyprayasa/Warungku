@@ -38,7 +38,6 @@ export function ProductCard({ product }: ProductCardProps) {
             isActive ? "hover:shadow-hard cursor-pointer" : "grayscale opacity-60 cursor-not-allowed"
           )}>
 
-
           {/* Inactive Overlay - Just grayscale, no text */}
           {!isActive ? (
             <div className="absolute inset-0 bg-white/30 z-20 pointer-events-none" />
@@ -52,8 +51,8 @@ export function ProductCard({ product }: ProductCardProps) {
                 STOK HABIS
               </Badge>
             )}
-            {/* Promo Badge */}
-            {product.isPromo && isActive && !isOutOfStock && (
+            {/* Promo Badge - Use explicit boolean check to avoid rendering '0' */}
+            {!!product.isPromo && product.promoPrice !== undefined && product.promoPrice > 0 && isActive && !isOutOfStock && (
               <Badge className="bg-red-500 text-white border-2 border-brand-black rounded-none font-mono font-bold shadow-hard">
                 🏷️ PROMO
               </Badge>
@@ -74,10 +73,16 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="flex-1">
               <p className="text-xs font-mono uppercase text-muted-foreground">{product.category}</p>
               <h3 className="font-bold text-lg text-brand-black leading-tight">{product.name}</h3>
+              {/* Package info - Use explicit boolean check */}
+              {!!product.qtyPerUnit && product.qtyPerUnit > 1 && (
+                <p className="text-xs font-mono text-blue-600 mt-0.5">
+                  📦 {product.qtyPerUnit} pcs/paket
+                </p>
+              )}
             </div>
 
             {/* Price Display */}
-            {product.isPromo && product.promoPrice && isActive ? (
+            {!!product.isPromo && product.promoPrice && product.promoPrice > 0 && isActive ? (
               <div className="mt-2">
                 <p className="font-mono text-sm text-muted-foreground line-through">
                   {formatCurrency(product.price)}

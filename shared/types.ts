@@ -17,6 +17,7 @@ export interface Product {
   isActive?: boolean;
   totalStock?: number; // Total available stock across all batches
   minStockLevel?: number; // Minimum stock level for low stock alerts (default: 10)
+  qtyPerUnit?: number; // Qty of stock to deduct per unit sold (default: 1, e.g. 3 for "3pcs package")
   createdAt: number;
 }
 // Zod schema for product validation
@@ -31,6 +32,7 @@ export const productSchema = z.object({
   promoPrice: z.number().min(0).optional(),
   isActive: z.boolean().optional(),
   minStockLevel: z.number().min(0, "Minimum stock level tidak boleh negatif").optional(),
+  qtyPerUnit: z.number().min(1, "Qty per unit minimal 1").optional(),
 });
 export type ProductFormValues = z.infer<typeof productSchema>;
 // Types for Sales
