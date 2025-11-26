@@ -19,11 +19,28 @@ import { toast } from 'sonner';
 export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
+    const [opnameMode, setOpnameMode] = useState(() => localStorage.getItem('opnameMode') || 'retail');
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const clearCart = useCartStore((state) => state.clearCart);
     
     const isCartEnabled = storeProfile.cartEnabled ?? false;
+    
+    const handleModeChange = (newMode: string) => {
+        localStorage.setItem('opnameMode', newMode);
+        setOpnameMode(newMode);
+        
+        // Dispatch custom event for other components to listen
+        window.dispatchEvent(new CustomEvent('opnameMode-changed'));
+        
+        // If switching to display mode, disable cart
+        if (newMode === 'display' && isCartEnabled) {
+            handleToggleCart(false);
+            toast.success('Mode Display dipilih. Keranjang belanja dinonaktifkan otomatis.');
+        } else {
+            toast.success(`Mode diubah ke: ${newMode === 'retail' ? 'Retail (Rekon Stok)' : newMode === 'display' ? 'Display (Rekon Kas)' : 'Spot Check'}`);
+        }
+    };
     
     const handleToggleCart = async (enabled: boolean) => {
         try {
@@ -220,26 +237,16 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                 Pilih Mode Penjualan
                             </label>
                             <select
-                                value={localStorage.getItem('opnameMode') || 'retail'}
-                                onChange={(e) => {
-                                    localStorage.setItem('opnameMode', e.target.value);
-                                    // If switching to display mode, disable cart
-                                    if (e.target.value === 'display' && isCartEnabled) {
-                                        handleToggleCart(false);
-                                        toast.success('Mode Display dipilih. Keranjang belanja dinonaktifkan otomatis.');
-                                    } else {
-                                        toast.success(`Mode diubah ke: ${e.target.value === 'retail' ? 'Retail' : e.target.value === 'display' ? 'Display' : 'Spot Check'}`);
-                                    }
-                                }}
+                                value={opnameMode}
+                                onChange={(e) => handleModeChange(e.target.value)}
                                 className="w-full border-2 border-brand-black p-2 font-mono rounded-none"
                             >
-                                <option value="retail">Retail - Stok dikurangi saat penjualan</option>
-                                <option value="display">Display - Stok dikurangi di awal (dipajang)</option>
-                                <option value="spot-check">Spot Check - Sampling random</option>
+                                <option value="retail">Retail - Stok dikurangi saat penjualan → Rekon Stok</option>
+                                <option value="display">Display - Stok dikurangi di awal → Rekon Kas</option>
                             </select>
                         </div>
 
-                        {localStorage.getItem('opnameMode') === 'display' && (
+                        {opnameMode === 'display' && (
                             <Alert className="border-2 border-purple-500 bg-purple-50">
                                 <AlertDescription className="text-xs font-mono text-purple-800">
                                     <strong>Mode Display Aktif:</strong> Stok sudah dikurangi saat dipajang. 
@@ -249,7 +256,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                             </Alert>
                         )}
 
-                        {localStorage.getItem('opnameMode') === 'retail' && (
+                        {opnameMode === 'retail' && (
                             <Alert className="border-2 border-blue-500 bg-blue-100">
                                 <AlertDescription className="text-xs font-mono text-blue-800">
                                     <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan.
@@ -260,7 +267,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                     </div>
 
                     {/* Cart & QRIS Settings - Only show if NOT in display mode */}
-                    {localStorage.getItem('opnameMode') !== 'display' && (
+                    {opnameMode !== 'display' && (
                         <div className="border-2 border-brand-black p-4 space-y-3 bg-green-50">
                             <h3 className="font-mono font-bold flex items-center gap-2">
                                 <ShoppingCart className="w-4 h-4" />
@@ -311,7 +318,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                     )}
 
                     {/* Display mode cart disabled notice */}
-                    {localStorage.getItem('opnameMode') === 'display' && (
+                    {opnameMode === 'display' && (
                         <div className="border-2 border-gray-300 p-4 space-y-3 bg-gray-50">
                             <h3 className="font-mono font-bold flex items-center gap-2 text-gray-500">
                                 <ShoppingCart className="w-4 h-4" />

@@ -144,7 +144,14 @@ export function Sidebar() {
                 )}
                 <NavItem to="/dashboard" tab="cashflow" icon={ArrowRightLeft} label="Arus Kas" collapsed={collapsed} />
                 <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" collapsed={collapsed} />
-                <NavItem to="/dashboard" tab="opname" icon={ClipboardCheck} label="Rekon Kas" collapsed={collapsed} />
+
+                {/* REKONSILIASI - Separate category */}
+                {!collapsed && (
+                    <div className="pt-4 pb-2 px-4">
+                        <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Rekonsiliasi</p>
+                    </div>
+                )}
+                <RekonNavItem collapsed={collapsed} />
 
             </nav>
 
@@ -281,6 +288,71 @@ function NavItem({ to, icon: Icon, label, tab, collapsed }: { to: string; icon: 
             )}
         >
             <Icon className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && label}
+        </NavLink>
+    );
+
+    if (collapsed) {
+        return (
+            <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        {content}
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-mono">
+                        {label}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    }
+
+    return content;
+}
+
+// Dynamic Rekon NavItem that updates based on opnameMode
+function RekonNavItem({ collapsed }: { collapsed: boolean }) {
+    const location = useLocation();
+    const [opnameMode, setOpnameMode] = useState(() => localStorage.getItem('opnameMode') || 'retail');
+
+    // Listen for localStorage changes (from SettingsDialog)
+    useEffect(() => {
+        const handleStorageChange = () => {
+            setOpnameMode(localStorage.getItem('opnameMode') || 'retail');
+        };
+
+        // Custom event listener for same-tab updates
+        window.addEventListener('opnameMode-changed', handleStorageChange);
+        // Storage event for cross-tab updates
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('opnameMode-changed', handleStorageChange);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
+    const isActive = () => {
+        const searchParams = new URLSearchParams(location.search);
+        return location.pathname === '/dashboard' && searchParams.get('tab') === 'opname';
+    };
+
+    const active = isActive();
+    const label = opnameMode === 'display' ? 'Rekon Kas' : 'Rekon Stok';
+
+    const content = (
+        <NavLink
+            to="/dashboard?tab=opname"
+            preventScrollReset
+            className={cn(
+                'flex items-center gap-3 font-mono uppercase font-bold text-sm px-4 py-3 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10',
+                active
+                    ? 'border-brand-orange bg-brand-orange/20 text-brand-black'
+                    : 'text-muted-foreground hover:text-brand-black',
+                collapsed && 'justify-center'
+            )}
+        >
+            <ClipboardCheck className="w-5 h-5 flex-shrink-0" />
             {!collapsed && label}
         </NavLink>
     );

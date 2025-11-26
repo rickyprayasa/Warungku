@@ -3,7 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const tabs = [
+const getRekonLabel = () => {
+    const mode = localStorage.getItem('opnameMode') || 'retail';
+    return mode === 'display' ? 'Rekon Kas' : 'Rekon Stok';
+};
+
+const getTabs = () => [
     {
         value: "pos",
         label: "Kasir",
@@ -27,11 +32,11 @@ const tabs = [
     },
     {
         value: "opname",
-        label: "Rekon",
+        label: getRekonLabel(),
         icon: ClipboardCheck,
         path: "/dashboard?tab=opname",
         submenu: [
-            { label: "Buka Rekon", action: "open-opname", path: "/dashboard?tab=opname" },
+            { label: `Buka ${getRekonLabel()}`, action: "open-opname", path: "/dashboard?tab=opname" },
             { label: "Riwayat Kas", action: "cashflow", path: "/dashboard?tab=cashflow" },
         ]
     },
@@ -62,9 +67,22 @@ export function MobileBottomNav() {
     const [showMore, setShowMore] = useState(false);
     const [activeTab, setActiveTab] = useState("pos");
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+    const [tabs, setTabs] = useState(getTabs());
 
-    // Long press detection removed
-
+    // Listen for mode changes
+    useEffect(() => {
+        const handleModeChange = () => {
+            setTabs(getTabs());
+        };
+        
+        window.addEventListener('opnameMode-changed', handleModeChange);
+        window.addEventListener('storage', handleModeChange);
+        
+        return () => {
+            window.removeEventListener('opnameMode-changed', handleModeChange);
+            window.removeEventListener('storage', handleModeChange);
+        };
+    }, []);
 
     useEffect(() => {
         const path = location.pathname;
