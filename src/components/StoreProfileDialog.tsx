@@ -27,13 +27,55 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData({ ...formData, logoUrl: reader.result as string });
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        // Check file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('Ukuran file terlalu besar. Maksimal 2MB.');
+            return;
         }
+
+        // Compress and resize image before storing
+        const img = new Image();
+        const reader = new FileReader();
+        
+        reader.onload = (event) => {
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Max dimensions for logo
+                const maxWidth = 200;
+                const maxHeight = 200;
+                
+                let { width, height } = img;
+                
+                // Calculate new dimensions
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = (height * maxWidth) / width;
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = (width * maxHeight) / height;
+                        height = maxHeight;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                ctx?.drawImage(img, 0, 0, width, height);
+                
+                // Convert to compressed JPEG (quality 0.7)
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                setFormData({ ...formData, logoUrl: compressedDataUrl });
+            };
+            img.src = event.target?.result as string;
+        };
+        
+        reader.readAsDataURL(file);
     };
 
     return (
