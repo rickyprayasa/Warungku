@@ -18,6 +18,7 @@ const POSPage = lazy(() => import('@/pages/POSPage').then(m => ({ default: m.POS
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
 const OpnamePage = lazy(() => import('@/pages/OpnamePage').then(m => ({ default: m.OpnamePage })));
+const CheckoutPage = lazy(() => import('@/pages/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
 const ProtectedRoute = lazy(() => import('@/components/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
 
 // Loading animation
@@ -134,6 +135,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <LoginPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "checkout",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CheckoutPage />
           </Suspense>
         ),
       },

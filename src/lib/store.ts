@@ -16,6 +16,7 @@ interface WarungState {
     address: string;
     phone: string;
     logoUrl?: string;
+    qrisCode?: string;
   };
   isLoading: boolean;
   error: string | null;

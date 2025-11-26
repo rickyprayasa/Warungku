@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import type { Product } from '@shared/types';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, PackagePlus } from 'lucide-react';
+import { MessageSquare, PackagePlus, ShoppingCart, Minus, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { CustomerFeedbackDialog } from './CustomerFeedbackDialog';
+import { useCartStore } from '@/lib/cart-store';
+import { toast } from 'sonner';
 
 interface ProductDetailDialogProps {
   product: Product;
@@ -11,6 +13,9 @@ interface ProductDetailDialogProps {
 
 export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
   const [feedbackType, setFeedbackType] = useState<'stock_request' | 'feedback' | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const addToCart = useCartStore((state) => state.addToCart);
+  const openCart = useCartStore((state) => state.openCart);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -19,6 +24,20 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
       minimumFractionDigits: 0,
     }).format(value);
   };
+
+  const handleAddToCart = () => {
+    addToCart(product, quantity);
+    toast.success(`${product.name} ditambahkan ke keranjang`, {
+      action: {
+        label: 'Lihat Keranjang',
+        onClick: () => openCart(),
+      },
+    });
+    setQuantity(1);
+  };
+
+  const price = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
+  const subtotal = price * quantity;
 
   return (
     <div>
@@ -54,16 +73,55 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
           </div>
         )}
 
+        {/* Add to Cart Section */}
+        <div className="border-2 border-brand-black p-4 mb-4 bg-brand-orange/10">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-mono text-sm font-bold">Jumlah:</span>
+            <div className="flex items-center border-2 border-brand-black bg-white">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="h-8 w-8 rounded-none hover:bg-brand-orange/20"
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+              <span className="w-12 text-center font-mono font-bold">{quantity}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setQuantity(quantity + 1)}
+                className="h-8 w-8 rounded-none hover:bg-brand-orange/20"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-mono text-sm">Subtotal:</span>
+            <span className="font-display font-bold text-lg text-brand-orange">
+              {formatCurrency(subtotal)}
+            </span>
+          </div>
+          <Button
+            onClick={handleAddToCart}
+            className="w-full h-12 bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            Tambah ke Keranjang
+          </Button>
+        </div>
+
         {/* Customer Actions */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2">
           <Dialog open={feedbackType === 'stock_request'} onOpenChange={(open) => !open && setFeedbackType(null)}>
             <DialogTrigger asChild>
               <Button
                 onClick={() => setFeedbackType('stock_request')}
                 variant="outline"
-                className="flex-1 border-2 border-brand-black rounded-none font-mono font-bold hover:bg-brand-orange hover:text-brand-black"
+                className="flex-1 border-2 border-brand-black rounded-none font-mono font-bold text-xs hover:bg-brand-orange hover:text-brand-black"
               >
-                <PackagePlus className="w-4 h-4 mr-2" />
+                <PackagePlus className="w-4 h-4 mr-1" />
                 Request Stok
               </Button>
             </DialogTrigger>
@@ -81,10 +139,10 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
               <Button
                 onClick={() => setFeedbackType('feedback')}
                 variant="outline"
-                className="flex-1 border-2 border-brand-black rounded-none font-mono font-bold hover:bg-brand-orange hover:text-brand-black"
+                className="flex-1 border-2 border-brand-black rounded-none font-mono font-bold text-xs hover:bg-brand-orange hover:text-brand-black"
               >
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Kirim Feedback
+                <MessageSquare className="w-4 h-4 mr-1" />
+                Feedback
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
@@ -96,10 +154,6 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
             </DialogContent>
           </Dialog>
         </div>
-
-        <p className="text-xs text-muted-foreground font-mono mt-4 text-center">
-          💬 Ada pertanyaan? Kirim feedback kepada kami!
-        </p>
       </div>
     </div>
   );

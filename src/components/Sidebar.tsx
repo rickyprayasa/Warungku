@@ -2,9 +2,10 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useWarungStore } from '@/lib/store';
 import { Button } from './ui/button';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
+import { QRISSetupDialog } from './QRISSetupDialog';
 import { SettingsDialog } from './SettingsDialog';
 import { useState, useEffect } from 'react';
 import {
@@ -153,6 +154,8 @@ export function Sidebar() {
                     <>
                         <StoreProfileDialog />
 
+                        <QRISSetupDialog />
+
                         <SettingsDialog
                             trigger={
                                 <Button
@@ -195,6 +198,23 @@ export function Sidebar() {
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent side="right">Profil Toko</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <QRISSetupDialog
+                                        trigger={
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                                            >
+                                                <QrCode className="w-4 h-4" />
+                                            </Button>
+                                        }
+                                    />
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Setup QRIS</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>

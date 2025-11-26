@@ -7,6 +7,8 @@ import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { FloatingNotification } from '@/components/FloatingNotification';
 import { FloatingClock } from '@/components/FloatingClock';
+import { CartSheet } from '@/components/CartSheet';
+import { FloatingCart } from '@/components/FloatingCart';
 import { useWarungStore } from '@/lib/store';
 
 export function HomePage() {
@@ -84,6 +86,8 @@ export function HomePage() {
       {/* Floating Components - Outside main content flow */}
       <FloatingClock />
       <FloatingNotification />
+      <FloatingCart />
+      <CartSheet />
 
       <div className={`flex flex-col min-h-screen min-w-0 transition-all duration-300 overflow-x-hidden ${isAuthenticated ? (sidebarCollapsed ? 'md:ml-20' : 'md:ml-64') : ''}`}>
         {/* Header shows on mobile always, and on desktop ONLY if not authenticated */}
