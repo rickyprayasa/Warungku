@@ -1,12 +1,16 @@
 import { useCartStore } from '@/lib/cart-store';
+import { useWarungStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function FloatingCart() {
   const { openCart, getItemCount, getTotal } = useCartStore();
+  const storeProfile = useWarungStore((state) => state.storeProfile);
   const itemCount = getItemCount();
   const total = getTotal();
+  
+  const isCartEnabled = storeProfile.cartEnabled ?? false;
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('id-ID', {
@@ -15,7 +19,7 @@ export function FloatingCart() {
       minimumFractionDigits: 0,
     }).format(value);
 
-  if (itemCount === 0) return null;
+  if (!isCartEnabled || itemCount === 0) return null;
 
   return (
     <AnimatePresence>

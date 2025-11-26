@@ -9,13 +9,36 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Settings, Trash2, Database, Download, Upload, Info, AlertTriangle, Package } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Settings, Trash2, Database, Download, Info, AlertTriangle, Package, ShoppingCart } from 'lucide-react';
 import { useWarungStore } from '@/lib/store';
+import { useCartStore } from '@/lib/cart-store';
 import { toast } from 'sonner';
 
 export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
+    const storeProfile = useWarungStore((state) => state.storeProfile);
+    const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
+    const clearCart = useCartStore((state) => state.clearCart);
+    
+    const isCartEnabled = storeProfile.cartEnabled ?? false;
+    
+    const handleToggleCart = async (enabled: boolean) => {
+        try {
+            await updateStoreProfile({
+                ...storeProfile,
+                cartEnabled: enabled,
+            });
+            if (!enabled) {
+                clearCart(); // Clear cart when disabled
+            }
+            toast.success(enabled ? 'Fitur keranjang diaktifkan' : 'Fitur keranjang dinonaktifkan');
+        } catch (error) {
+            toast.error('Gagal mengubah pengaturan');
+        }
+    };
 
     const handleResetData = async () => {
         const confirmed = window.confirm(
@@ -185,35 +208,122 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    {/* Opname Configuration Section */}
+                    {/* Opname Configuration Section - Move to top for clarity */}
                     <div className="border-2 border-brand-black p-4 space-y-3 bg-blue-50">
                         <h3 className="font-mono font-bold flex items-center gap-2">
                             <Package className="w-4 h-4" />
-                            Konfigurasi Opname
+                            Mode Penjualan
                         </h3>
 
                         <div>
                             <label className="text-sm font-mono font-bold mb-2 block">
-                                Mode Opname Default
+                                Pilih Mode Penjualan
                             </label>
                             <select
                                 value={localStorage.getItem('opnameMode') || 'retail'}
                                 onChange={(e) => {
                                     localStorage.setItem('opnameMode', e.target.value);
-                                    toast.success(`Mode opname diubah ke: ${e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1)}`);
+                                    // If switching to display mode, disable cart
+                                    if (e.target.value === 'display' && isCartEnabled) {
+                                        handleToggleCart(false);
+                                        toast.success('Mode Display dipilih. Keranjang belanja dinonaktifkan otomatis.');
+                                    } else {
+                                        toast.success(`Mode diubah ke: ${e.target.value === 'retail' ? 'Retail' : e.target.value === 'display' ? 'Display' : 'Spot Check'}`);
+                                    }
                                 }}
                                 className="w-full border-2 border-brand-black p-2 font-mono rounded-none"
                             >
-                                <option value="retail">Retail (Hitung semua produk)</option>
-                                <option value="display">Display (Produk display saja)</option>
-                                <option value="spot-check">Spot Check (Sampling random)</option>
+                                <option value="retail">Retail - Stok dikurangi saat penjualan</option>
+                                <option value="display">Display - Stok dikurangi di awal (dipajang)</option>
+                                <option value="spot-check">Spot Check - Sampling random</option>
                             </select>
-                            <p className="text-xs text-muted-foreground font-mono mt-1">
-                                Mode ini menentukan cara default opname stok
-                            </p>
                         </div>
+
+                        {localStorage.getItem('opnameMode') === 'display' && (
+                            <Alert className="border-2 border-purple-500 bg-purple-50">
+                                <AlertDescription className="text-xs font-mono text-purple-800">
+                                    <strong>Mode Display Aktif:</strong> Stok sudah dikurangi saat dipajang. 
+                                    Profit dihitung dari rekonsiliasi kas harian. 
+                                    Fitur keranjang TIDAK tersedia di mode ini.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {localStorage.getItem('opnameMode') === 'retail' && (
+                            <Alert className="border-2 border-blue-500 bg-blue-100">
+                                <AlertDescription className="text-xs font-mono text-blue-800">
+                                    <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan.
+                                    Cocok untuk warung dengan kasir atau self-checkout via QRIS.
+                                </AlertDescription>
+                            </Alert>
+                        )}
                     </div>
 
+                    {/* Cart & QRIS Settings - Only show if NOT in display mode */}
+                    {localStorage.getItem('opnameMode') !== 'display' && (
+                        <div className="border-2 border-brand-black p-4 space-y-3 bg-green-50">
+                            <h3 className="font-mono font-bold flex items-center gap-2">
+                                <ShoppingCart className="w-4 h-4" />
+                                Fitur Keranjang & Self-Checkout
+                            </h3>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="cart-toggle" className="font-mono font-bold text-sm">
+                                        Aktifkan Keranjang Belanja
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground font-mono">
+                                        Pengunjung dapat self-checkout via QRIS
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="cart-toggle"
+                                    checked={isCartEnabled}
+                                    onCheckedChange={handleToggleCart}
+                                />
+                            </div>
+
+                            {isCartEnabled && !storeProfile.qrisCode && (
+                                <Alert className="border-2 border-yellow-500 bg-yellow-50">
+                                    <AlertDescription className="text-xs font-mono text-yellow-800">
+                                        ⚠️ QRIS belum di-setup. Pengunjung tidak akan bisa checkout.
+                                        Setup QRIS di menu "Setup QRIS" di sidebar.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {isCartEnabled && storeProfile.qrisCode && (
+                                <Alert className="border-2 border-green-500 bg-green-100">
+                                    <AlertDescription className="text-xs font-mono text-green-800">
+                                        ✓ Keranjang aktif dan QRIS sudah di-setup. Pengunjung dapat berbelanja.
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            <Alert className="border-2 border-orange-500 bg-orange-50">
+                                <AlertDescription className="text-xs font-mono text-orange-800">
+                                    <strong>Penting:</strong> Pembayaran QRIS tidak bisa diverifikasi otomatis. 
+                                    Pengunjung perlu konfirmasi manual setelah membayar. 
+                                    Pastikan cek mutasi rekening secara berkala.
+                                </AlertDescription>
+                            </Alert>
+                        </div>
+                    )}
+
+                    {/* Display mode cart disabled notice */}
+                    {localStorage.getItem('opnameMode') === 'display' && (
+                        <div className="border-2 border-gray-300 p-4 space-y-3 bg-gray-50">
+                            <h3 className="font-mono font-bold flex items-center gap-2 text-gray-500">
+                                <ShoppingCart className="w-4 h-4" />
+                                Fitur Keranjang (Tidak Tersedia)
+                            </h3>
+                            <p className="text-xs text-muted-foreground font-mono">
+                                Fitur keranjang tidak tersedia di Mode Display karena stok sudah dikurangi saat dipajang.
+                                Gunakan Mode Retail jika ingin mengaktifkan fitur self-checkout.
+                            </p>
+                        </div>
+                    )}
+                    
                     {/* Data Management Section */}
                     <div className="border-2 border-brand-black p-4 space-y-3">
                         <h3 className="font-mono font-bold flex items-center gap-2">

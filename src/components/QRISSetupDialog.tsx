@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { QrCode, Save, Loader2, Upload, Camera, CheckCircle, AlertCircle } from 'lucide-react';
+import { QrCode, Save, Loader2, Upload, CheckCircle, AlertCircle, Download, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateQRIS, getMerchantName, parseQRISInfo } from '@/lib/qris';
 import jsQR from 'jsqr';
+import { QRCodeSVG } from 'qrcode.react';
+import { QRISDownloadButton } from './QRISDownload';
 
 interface QRISSetupDialogProps {
   trigger?: React.ReactNode;
@@ -275,6 +277,55 @@ export function QRISSetupDialog({ trigger }: QRISSetupDialogProps) {
               </>
             )}
           </Button>
+
+          {/* Preview & Download Section - Show when QRIS is valid and saved */}
+          {storeProfile.qrisCode && validation?.valid && qrisString === storeProfile.qrisCode && (
+            <div className="mt-6 pt-4 border-t-2 border-dashed border-gray-300">
+              <h3 className="font-mono font-bold text-sm uppercase mb-3 flex items-center gap-2">
+                <Printer className="w-4 h-4" />
+                Preview & Cetak QRIS
+              </h3>
+              
+              {/* Preview */}
+              <div className="bg-gray-50 border-2 border-brand-black p-4 mb-3">
+                <div className="flex flex-col items-center">
+                  {storeProfile.logoUrl ? (
+                    <img
+                      src={storeProfile.logoUrl}
+                      alt={storeProfile.name}
+                      className="h-10 w-auto mb-2 object-contain"
+                    />
+                  ) : (
+                    <p className="font-bold text-lg mb-2">{storeProfile.name}</p>
+                  )}
+                  <div className="border-2 border-brand-black p-2 bg-white">
+                    <QRCodeSVG
+                      value={storeProfile.qrisCode}
+                      size={120}
+                      level="M"
+                      includeMargin={false}
+                    />
+                  </div>
+                  <p className="font-mono text-xs text-muted-foreground mt-2">
+                    QRIS Static - Scan untuk membayar
+                  </p>
+                </div>
+              </div>
+
+              {/* Download Button */}
+              <QRISDownloadButton
+                qrisString={storeProfile.qrisCode}
+                merchantName={storeProfile.name}
+                merchantLogo={storeProfile.logoUrl}
+                fileName={`qris-${storeProfile.name.replace(/\s+/g, '-').toLowerCase()}`}
+                variant="outline"
+              />
+
+              <p className="font-mono text-[10px] text-muted-foreground mt-2 text-center">
+                Download dan cetak untuk ditempel di kasir
+              </p>
+            </div>
+          )}
         </form>
       </DialogContent>
     </Dialog>

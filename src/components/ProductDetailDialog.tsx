@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import type { Product } from '@shared/types';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, PackagePlus, ShoppingCart, Minus, Plus } from 'lucide-react';
+import { MessageSquare, PackagePlus, ShoppingCart, Minus, Plus, AlertCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { CustomerFeedbackDialog } from './CustomerFeedbackDialog';
 import { useCartStore } from '@/lib/cart-store';
+import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
 
 interface ProductDetailDialogProps {
@@ -16,6 +17,11 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
   const [quantity, setQuantity] = useState(1);
   const addToCart = useCartStore((state) => state.addToCart);
   const openCart = useCartStore((state) => state.openCart);
+  const storeProfile = useWarungStore((state) => state.storeProfile);
+  
+  const isCartEnabled = storeProfile.cartEnabled ?? false;
+  const availableStock = product.totalStock ?? 0;
+  const isOutOfStock = availableStock <= 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -26,6 +32,10 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
   };
 
   const handleAddToCart = () => {
+    if (quantity > availableStock) {
+      toast.error(`Stok tidak mencukupi. Tersedia: ${availableStock}`);
+      return;
+    }
     addToCart(product, quantity);
     toast.success(`${product.name} ditambahkan ke keranjang`, {
       action: {
@@ -38,6 +48,7 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
 
   const price = product.isPromo && product.promoPrice ? product.promoPrice : product.price;
   const subtotal = price * quantity;
+  const maxQuantity = Math.max(1, availableStock);
 
   return (
     <div>
@@ -73,44 +84,58 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
           </div>
         )}
 
-        {/* Add to Cart Section */}
-        <div className="border-2 border-brand-black p-4 mb-4 bg-brand-orange/10">
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-mono text-sm font-bold">Jumlah:</span>
-            <div className="flex items-center border-2 border-brand-black bg-white">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="h-8 w-8 rounded-none hover:bg-brand-orange/20"
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <span className="w-12 text-center font-mono font-bold">{quantity}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setQuantity(quantity + 1)}
-                className="h-8 w-8 rounded-none hover:bg-brand-orange/20"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
+        {/* Add to Cart Section - Only show if cart is enabled */}
+        {isCartEnabled && (
+          <div className="border-2 border-brand-black p-4 mb-4 bg-brand-orange/10">
+            {isOutOfStock ? (
+              <div className="flex items-center justify-center gap-2 py-4">
+                <AlertCircle className="w-5 h-5 text-gray-500" />
+                <span className="font-mono text-gray-500 font-bold">Stok Habis</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-mono text-sm font-bold">Jumlah:</span>
+                  <div className="flex items-center border-2 border-brand-black bg-white">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="h-8 w-8 rounded-none hover:bg-brand-orange/20"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <span className="w-12 text-center font-mono font-bold">{quantity}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
+                      className="h-8 w-8 rounded-none hover:bg-brand-orange/20"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-sm">Subtotal:</span>
+                  <span className="font-display font-bold text-lg text-brand-orange">
+                    {formatCurrency(subtotal)}
+                  </span>
+                </div>
+                <p className="font-mono text-[10px] text-muted-foreground mb-3">
+                  Stok tersedia: {availableStock}
+                </p>
+                <Button
+                  onClick={handleAddToCart}
+                  className="w-full h-12 bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+                >
+                  <ShoppingCart className="w-5 h-5 mr-2" />
+                  Tambah ke Keranjang
+                </Button>
+              </>
+            )}
           </div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-mono text-sm">Subtotal:</span>
-            <span className="font-display font-bold text-lg text-brand-orange">
-              {formatCurrency(subtotal)}
-            </span>
-          </div>
-          <Button
-            onClick={handleAddToCart}
-            className="w-full h-12 bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
-          >
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            Tambah ke Keranjang
-          </Button>
-        </div>
+        )}
 
         {/* Customer Actions */}
         <div className="flex gap-2">

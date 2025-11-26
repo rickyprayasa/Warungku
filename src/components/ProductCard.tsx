@@ -8,7 +8,6 @@ import {
 import { ProductDetailDialog } from './ProductDetailDialog';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { Package } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
@@ -24,6 +23,7 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   const isActive = product.isActive ?? true;
+  const isOutOfStock = (product.totalStock ?? 0) <= 0;
 
   return (
     <Dialog>
@@ -44,14 +44,21 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="absolute inset-0 bg-white/30 z-20 pointer-events-none" />
           ) : null}
 
-          {/* Promo Badge */}
-          {product.isPromo && isActive ? (
-            <div className="absolute top-2 right-2 z-10">
+          {/* Badges */}
+          <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+            {/* Out of Stock Badge */}
+            {isOutOfStock && isActive && (
+              <Badge className="bg-gray-800 text-white border-2 border-brand-black rounded-none font-mono font-bold text-[10px] shadow-hard">
+                STOK HABIS
+              </Badge>
+            )}
+            {/* Promo Badge */}
+            {product.isPromo && isActive && !isOutOfStock && (
               <Badge className="bg-red-500 text-white border-2 border-brand-black rounded-none font-mono font-bold shadow-hard">
                 🏷️ PROMO
               </Badge>
-            </div>
-          ) : null}
+            )}
+          </div>
 
           <div className="aspect-square w-full overflow-hidden border-b-2 border-brand-black">
             <img

@@ -17,6 +17,7 @@ interface WarungState {
     phone: string;
     logoUrl?: string;
     qrisCode?: string;
+    cartEnabled?: boolean;
   };
   isLoading: boolean;
   error: string | null;

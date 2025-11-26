@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '@/lib/cart-store';
 import { useWarungStore } from '@/lib/store';
+import type { SaleFormValues } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { QRCodeSVG } from 'qrcode.react';
 import { convertToDynamicQRIS, getMerchantName, validateQRIS, formatQRISAmount } from '@/lib/qris';
-import { ArrowLeft, Clock, CheckCircle, AlertCircle, Copy, ShoppingCart, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, AlertCircle, Copy, ShoppingCart, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { QRISDownloadButton } from '@/components/QRISDownload';
 
 const PAYMENT_TIMEOUT = 15 * 60; // 15 minutes in seconds
 
@@ -15,9 +17,11 @@ export function CheckoutPage() {
   const navigate = useNavigate();
   const { items, getTotal, clearCart } = useCartStore();
   const storeProfile = useWarungStore((state) => state.storeProfile);
+  const addSale = useWarungStore((state) => state.addSale);
   const [timeLeft, setTimeLeft] = useState(PAYMENT_TIMEOUT);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'expired'>('pending');
   const [dynamicQRIS, setDynamicQRIS] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const total = getTotal();
   const hasQRIS = storeProfile.qrisCode && validateQRIS(storeProfile.qrisCode).valid;
@@ -72,10 +76,54 @@ export function CheckoutPage() {
     }
   };
 
-  const handleConfirmPayment = () => {
-    setPaymentStatus('success');
-    toast.success('Pembayaran dikonfirmasi!');
-    // In real scenario, this would be verified by checking bank/e-wallet
+  const handleConfirmPayment = async () => {
+    if (isProcessing) return;
+    
+    // Double confirmation to prevent accidental confirmation
+    const confirmed = window.confirm(
+      `KONFIRMASI PEMBAYARAN\n\n` +
+      `Total: ${formatCurrency(total)}\n\n` +
+      `Apakah Anda SUDAH MEMBAYAR via QRIS?\n\n` +
+      `Klik OK hanya jika pembayaran sudah berhasil di aplikasi e-wallet/mobile banking Anda.`
+    );
+    
+    if (!confirmed) return;
+    
+    // Second confirmation
+    const doubleConfirm = window.confirm(
+      `KONFIRMASI TERAKHIR\n\n` +
+      `Dengan mengklik OK, Anda menyatakan bahwa:\n` +
+      `1. Pembayaran sebesar ${formatCurrency(total)} SUDAH BERHASIL\n` +
+      `2. Anda sudah melihat notifikasi sukses di aplikasi pembayaran\n\n` +
+      `Lanjutkan?`
+    );
+    
+    if (!doubleConfirm) return;
+    
+    setIsProcessing(true);
+    try {
+      // Create sale to reduce stock
+      const saleData: SaleFormValues = {
+        items: items.map((item) => ({
+          productId: item.product.id,
+          productName: item.product.name,
+          quantity: item.quantity,
+          price: item.product.isPromo && item.product.promoPrice 
+            ? item.product.promoPrice 
+            : item.product.price,
+        })),
+        notes: 'Pembayaran via QRIS (Self-checkout)',
+      };
+
+      await addSale(saleData);
+      setPaymentStatus('success');
+      toast.success('Pembayaran dikonfirmasi! Stok telah dikurangi.');
+    } catch (error) {
+      console.error('Failed to process payment:', error);
+      toast.error('Gagal memproses pembayaran. Silakan coba lagi.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleBackToMenu = () => {
@@ -280,15 +328,28 @@ export function CheckoutPage() {
               </p>
             </div>
 
-            {/* Copy Button */}
-            <Button
-              variant="ghost"
-              onClick={handleCopyQRIS}
-              className="mt-2 font-mono text-xs"
-            >
-              <Copy className="w-3 h-3 mr-1" />
-              Salin QRIS
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-2 mt-3">
+              <Button
+                variant="ghost"
+                onClick={handleCopyQRIS}
+                className="font-mono text-xs"
+              >
+                <Copy className="w-3 h-3 mr-1" />
+                Salin
+              </Button>
+              {dynamicQRIS && (
+                <QRISDownloadButton
+                  qrisString={dynamicQRIS}
+                  merchantName={storeProfile.name}
+                  merchantLogo={storeProfile.logoUrl}
+                  amount={total}
+                  showAmount={true}
+                  fileName={`pembayaran-${storeProfile.name.replace(/\s+/g, '-').toLowerCase()}`}
+                  variant="ghost"
+                />
+              )}
+            </div>
           </div>
         </div>
 
@@ -338,10 +399,20 @@ export function CheckoutPage() {
         {/* Confirm Button */}
         <Button
           onClick={handleConfirmPayment}
-          className="w-full h-14 bg-brand-black text-brand-white border-2 border-brand-black rounded-none font-bold uppercase text-base hover:bg-brand-orange hover:text-brand-black transition-all"
+          disabled={isProcessing}
+          className="w-full h-14 bg-brand-black text-brand-white border-2 border-brand-black rounded-none font-bold uppercase text-base hover:bg-brand-orange hover:text-brand-black transition-all disabled:opacity-50"
         >
-          <CheckCircle className="w-5 h-5 mr-2" />
-          Konfirmasi Pembayaran
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Memproses...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Konfirmasi Pembayaran
+            </>
+          )}
         </Button>
 
         <p className="text-center font-mono text-xs text-muted-foreground mt-4">
