@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { ok, bad, notFound } from './core-utils';
 import { D1Repository } from './d1-repository';
-import type { Product, Sale, SaleFormValues, Purchase, Supplier, JajananRequest, StockDetail, OpnamePayload } from "@shared/types";
+import type { Product, Sale, SaleFormValues, Purchase, Supplier, JajananRequest, StockDetail, OpnamePayload, Reconciliation, ReconciliationPayload, ReconciliationStockItem } from "@shared/types";
 
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
@@ -666,6 +666,192 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     } catch (error) {
       console.error('Reset error:', error);
       return bad(c, 'Failed to reset data');
+    }
+  });
+
+  // ==================== RECONCILIATION (TERPADU) ====================
+
+  // Get all reconciliations
+  app.get('/api/reconciliations', async (c) => {
+    const repo = new D1Repository(c.env.DB);
+    try {
+      const reconciliations = await repo.getReconciliations();
+      return ok(c, reconciliations);
+    } catch (error: any) {
+      console.error('Error fetching reconciliations:', error);
+      return bad(c, 'Failed to fetch reconciliations');
+    }
+  });
+
+  // Get single reconciliation
+  app.get('/api/reconciliations/:id', async (c) => {
+    const { id } = c.req.param();
+    const repo = new D1Repository(c.env.DB);
+    try {
+      const reconciliation = await repo.getReconciliation(id);
+      if (!reconciliation) return notFound(c, 'Reconciliation not found');
+      return ok(c, reconciliation);
+    } catch (error: any) {
+      console.error('Error fetching reconciliation:', error);
+      return bad(c, 'Failed to fetch reconciliation');
+    }
+  });
+
+  // Create reconciliation (terpadu)
+  app.post('/api/reconciliations', async (c) => {
+    try {
+      const payload = await c.req.json<ReconciliationPayload>();
+      const repo = new D1Repository(c.env.DB);
+      
+      // Get all products for reference
+      const products = await repo.getProducts();
+      const productMap = new Map(products.map(p => [p.id, p]));
+      
+      // Calculate current stock for each product
+      const stockPromises = products.map(async (p) => {
+        const stocks = await repo.getStockDetails(p.id);
+        const totalStock = stocks.reduce((sum, s) => sum + s.quantity, 0);
+        return { productId: p.id, totalStock };
+      });
+      const stockData = await Promise.all(stockPromises);
+      const stockMap = new Map(stockData.map(s => [s.productId, s.totalStock]));
+
+      // Get expected cash (from system - we use 0 as baseline for self-service)
+      // In self-service mode, all QRIS payments go to bank, so expected cash drawer = 0
+      const expectedCash = 0;
+
+      // Process stock items
+      const stockItems: ReconciliationStockItem[] = [];
+      let totalStockValue = 0;
+      let totalStockCost = 0;
+
+      for (const item of payload.stockItems) {
+        const product = productMap.get(item.productId);
+        if (!product) continue;
+
+        const systemStock = stockMap.get(item.productId) || 0;
+        const physicalStock = item.physicalStock;
+        const difference = physicalStock - systemStock; // negative = sold/missing
+
+        if (difference !== 0) {
+          // Get average cost from stock details
+          const stocks = await repo.getStockDetails(item.productId);
+          const totalQty = stocks.reduce((sum, s) => sum + s.quantity, 0);
+          const totalCostValue = stocks.reduce((sum, s) => sum + (s.quantity * s.unitCost), 0);
+          const avgCost = totalQty > 0 ? totalCostValue / totalQty : product.cost || (product.price * 0.7);
+
+          const itemValue = Math.abs(difference) * product.price;
+          const itemCost = Math.abs(difference) * avgCost;
+
+          stockItems.push({
+            productId: item.productId,
+            productName: product.name,
+            systemStock,
+            physicalStock,
+            difference,
+            unitPrice: product.price,
+            unitCost: avgCost,
+            totalValue: itemValue
+          });
+
+          // Only count items where stock decreased (sold)
+          if (difference < 0) {
+            totalStockValue += itemValue;
+            totalStockCost += itemCost;
+          }
+        }
+      }
+
+      const cashDifference = payload.actualCash - expectedCash;
+      const unidentifiedAmount = cashDifference - totalStockValue;
+
+      // Generate sales for items with negative difference (sold)
+      const generatedSaleIds: string[] = [];
+      const soldItems = stockItems.filter(item => item.difference < 0);
+
+      if (soldItems.length > 0) {
+        // Create a single sale with all sold items
+        const saleItems = soldItems.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: Math.abs(item.difference),
+          price: item.unitPrice,
+          cost: item.unitCost
+        }));
+
+        const total = saleItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+        const totalCost = saleItems.reduce((sum, i) => sum + (i.cost * i.quantity), 0);
+        const profit = total - totalCost;
+
+        const sale: Sale = {
+          id: crypto.randomUUID(),
+          items: saleItems,
+          total,
+          profit,
+          saleType: 'retail', // Mark as cash reconciliation sale
+          notes: `[REKON] Penjualan cash dari rekonsiliasi terpadu`,
+          createdAt: Date.now()
+        };
+
+        // Update stock for each sold item
+        for (const item of soldItems) {
+          const product = productMap.get(item.productId);
+          if (!product) continue;
+
+          // Adjust stock to physical count
+          await repo.adjustStock(item.productId, item.physicalStock, item.unitCost, false);
+        }
+
+        // Save the sale (without deducting stock again since we already adjusted)
+        await repo.createSale(sale);
+        generatedSaleIds.push(sale.id);
+      }
+
+      // Handle items with positive difference (stock gained - rare case)
+      const gainedItems = stockItems.filter(item => item.difference > 0);
+      for (const item of gainedItems) {
+        // Just adjust stock to physical count
+        await repo.adjustStock(item.productId, item.physicalStock, item.unitCost, false);
+      }
+
+      // Create reconciliation record
+      const today = new Date().toISOString().split('T')[0];
+      const reconciliation: Reconciliation = {
+        id: crypto.randomUUID(),
+        date: today,
+        expectedCash,
+        actualCash: payload.actualCash,
+        cashDifference,
+        stockItems,
+        totalStockValue,
+        totalStockCost,
+        unidentifiedAmount,
+        generatedSaleIds,
+        notes: payload.notes,
+        createdAt: Date.now(),
+        status: Math.abs(unidentifiedAmount) > 1000 ? 'has_discrepancy' : 'completed'
+      };
+
+      await repo.createReconciliation(reconciliation);
+
+      return ok(c, reconciliation);
+    } catch (error: any) {
+      console.error('Failed to create reconciliation:', error);
+      return bad(c, error.message || 'Failed to create reconciliation');
+    }
+  });
+
+  // Delete reconciliation
+  app.delete('/api/reconciliations/:id', async (c) => {
+    const { id } = c.req.param();
+    const repo = new D1Repository(c.env.DB);
+    try {
+      const deleted = await repo.deleteReconciliation(id);
+      if (!deleted) return notFound(c, 'Reconciliation not found');
+      return ok(c, { id });
+    } catch (error: any) {
+      console.error('Error deleting reconciliation:', error);
+      return bad(c, 'Failed to delete reconciliation');
     }
   });
 }

@@ -38,7 +38,12 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
             handleToggleCart(false);
             toast.success('Mode Display dipilih. Keranjang belanja dinonaktifkan otomatis.');
         } else {
-            toast.success(`Mode diubah ke: ${newMode === 'retail' ? 'Retail (Rekon Stok)' : newMode === 'display' ? 'Display (Rekon Kas)' : 'Spot Check'}`);
+            const modeLabels: Record<string, string> = {
+                retail: 'Retail (Rekon Stok)',
+                display: 'Display (Rekon Kas)',
+                terpadu: 'Terpadu (Rekon Kas + Stok)'
+            };
+            toast.success(`Mode diubah ke: ${modeLabels[newMode] || newMode}`);
         }
     };
     
@@ -243,6 +248,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                             >
                                 <option value="retail">Retail - Stok dikurangi saat penjualan → Rekon Stok</option>
                                 <option value="display">Display - Stok dikurangi di awal → Rekon Kas</option>
+                                <option value="terpadu">Terpadu - Self-service → Rekon Kas + Stok sekaligus</option>
                             </select>
                         </div>
 
@@ -261,6 +267,16 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                 <AlertDescription className="text-xs font-mono text-blue-800">
                                     <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan.
                                     Cocok untuk warung dengan kasir atau self-checkout via QRIS.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {opnameMode === 'terpadu' && (
+                            <Alert className="border-2 border-green-500 bg-green-50">
+                                <AlertDescription className="text-xs font-mono text-green-800">
+                                    <strong>Mode Terpadu Aktif:</strong> Cocok untuk warung self-service. 
+                                    Rekonsiliasi kas dan stok dilakukan sekaligus. Selisih stok otomatis 
+                                    di-generate sebagai penjualan cash.
                                 </AlertDescription>
                             </Alert>
                         )}

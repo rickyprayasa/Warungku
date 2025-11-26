@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Store, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean }) {
+export function StoreProfileDialog({ iconOnly = false, compact = false }: { iconOnly?: boolean; compact?: boolean }) {
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const [isOpen, setIsOpen] = useState(false);
@@ -112,14 +112,16 @@ export function StoreProfileDialog({ iconOnly = false }: { iconOnly?: boolean })
             <DialogTrigger asChild>
                 <Button
                     variant="ghost"
-                    size={iconOnly ? "icon" : "default"}
+                    size={iconOnly || compact ? "sm" : "default"}
                     className={iconOnly
                         ? "hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                        : "w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                        : compact
+                            ? "flex-1 justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                            : "w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
                     }
                 >
-                    <Store className="w-4 h-4" style={iconOnly ? {} : { marginRight: '0.5rem' }} />
-                    {!iconOnly && "Profil Toko"}
+                    <Store className="w-4 h-4" style={(iconOnly || compact) ? {} : { marginRight: '0.5rem' }} />
+                    {!iconOnly && !compact && "Profil Toko"}
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">

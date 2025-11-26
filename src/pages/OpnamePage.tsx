@@ -7,9 +7,10 @@ import { Save, Wallet, TrendingUp, TrendingDown, DollarSign, Plus, Calendar, His
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ReconciliationTerpadu } from '@/components/ReconciliationTerpadu';
 import type { CashEntry, Product } from '@shared/types';
 
-type OpnameMode = 'display' | 'retail' | 'spot-check';
+type OpnameMode = 'display' | 'retail' | 'terpadu';
 
 export function OpnamePage() {
     const sales = useWarungStore((state) => state.sales);
@@ -235,6 +236,11 @@ export function OpnamePage() {
             setIsSubmitting(false);
         }
     };
+
+    // Show Terpadu mode
+    if (opnameMode === 'terpadu') {
+        return <ReconciliationTerpadu />;
+    }
 
     return (
         <div className="space-y-6">

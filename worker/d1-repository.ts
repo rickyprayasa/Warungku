@@ -1,7 +1,7 @@
 // D1 Repository for Warungku
 // Handles all database operations with Cloudflare D1
 
-import type { Product, Sale, Purchase, Supplier, StockDetail, JajananRequest, OpnamePayload } from '@shared/types';
+import type { Product, Sale, Purchase, Supplier, StockDetail, JajananRequest, OpnamePayload, Reconciliation } from '@shared/types';
 
 export class D1Repository {
     constructor(private db: D1Database) { }
@@ -679,5 +679,73 @@ export class D1Repository {
         }
 
         await this.db.batch(batch);
+    }
+
+    // ==================== RECONCILIATIONS ====================
+
+    async getReconciliations(): Promise<Reconciliation[]> {
+        const { results } = await this.db
+            .prepare('SELECT * FROM reconciliations ORDER BY createdAt DESC')
+            .all<any>();
+        
+        if (!results) return [];
+        
+        return results.map(r => ({
+            ...r,
+            stockItems: JSON.parse(r.stockItems || '[]'),
+            generatedSaleIds: JSON.parse(r.generatedSaleIds || '[]')
+        }));
+    }
+
+    async getReconciliation(id: string): Promise<Reconciliation | null> {
+        const result = await this.db
+            .prepare('SELECT * FROM reconciliations WHERE id = ?')
+            .bind(id)
+            .first<any>();
+        
+        if (!result) return null;
+        
+        return {
+            ...result,
+            stockItems: JSON.parse(result.stockItems || '[]'),
+            generatedSaleIds: JSON.parse(result.generatedSaleIds || '[]')
+        };
+    }
+
+    async createReconciliation(reconciliation: Reconciliation): Promise<Reconciliation> {
+        await this.db
+            .prepare(`
+                INSERT INTO reconciliations (
+                    id, date, expectedCash, actualCash, cashDifference,
+                    stockItems, totalStockValue, totalStockCost, unidentifiedAmount,
+                    generatedSaleIds, notes, createdAt, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `)
+            .bind(
+                reconciliation.id,
+                reconciliation.date,
+                reconciliation.expectedCash,
+                reconciliation.actualCash,
+                reconciliation.cashDifference,
+                JSON.stringify(reconciliation.stockItems),
+                reconciliation.totalStockValue,
+                reconciliation.totalStockCost,
+                reconciliation.unidentifiedAmount,
+                JSON.stringify(reconciliation.generatedSaleIds),
+                reconciliation.notes || '',
+                reconciliation.createdAt,
+                reconciliation.status
+            )
+            .run();
+        
+        return reconciliation;
+    }
+
+    async deleteReconciliation(id: string): Promise<boolean> {
+        const result = await this.db
+            .prepare('DELETE FROM reconciliations WHERE id = ?')
+            .bind(id)
+            .run();
+        return (result.meta.changes || 0) > 0;
     }
 }

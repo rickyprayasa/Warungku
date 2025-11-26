@@ -13,9 +13,10 @@ import { QRISDownloadButton } from './QRISDownload';
 
 interface QRISSetupDialogProps {
   trigger?: React.ReactNode;
+  compact?: boolean;
 }
 
-export function QRISSetupDialog({ trigger }: QRISSetupDialogProps) {
+export function QRISSetupDialog({ trigger, compact = false }: QRISSetupDialogProps) {
   const storeProfile = useWarungStore((state) => state.storeProfile);
   const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
   const [isOpen, setIsOpen] = useState(false);
@@ -138,10 +139,14 @@ export function QRISSetupDialog({ trigger }: QRISSetupDialogProps) {
         {trigger || (
           <Button
             variant="ghost"
-            className="w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+            size={compact ? "sm" : "default"}
+            className={compact
+              ? "flex-1 justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+              : "w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+            }
           >
-            <QrCode className="w-4 h-4 mr-2" />
-            Setup QRIS
+            <QrCode className={compact ? "w-4 h-4" : "w-4 h-4 mr-2"} />
+            {!compact && "Setup QRIS"}
           </Button>
         )}
       </DialogTrigger>

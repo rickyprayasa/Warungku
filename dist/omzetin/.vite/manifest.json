@@ -26,7 +26,7 @@
     "isDynamicEntry": true
   },
   "virtual:cloudflare/worker-entry": {
-    "file": "assets/index-C3WcRZsZ.js",
+    "file": "assets/index-BiYvZSl_.js",
     "name": "index",
     "src": "virtual:cloudflare/worker-entry",
     "isEntry": true,

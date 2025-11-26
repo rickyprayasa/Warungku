@@ -176,3 +176,58 @@ export const cashEntrySchema = z.object({
 });
 
 export type CashEntryFormValues = z.infer<typeof cashEntrySchema>;
+
+// Types for Reconciliation (Terpadu)
+export interface ReconciliationStockItem {
+  productId: string;
+  productName: string;
+  systemStock: number;
+  physicalStock: number;
+  difference: number;      // physicalStock - systemStock (negative = sold/missing)
+  unitPrice: number;       // Selling price per unit
+  unitCost: number;        // Cost price per unit (for profit calculation)
+  totalValue: number;      // |difference| × unitPrice
+}
+
+export interface Reconciliation {
+  id: string;
+  date: string;                         // YYYY-MM-DD
+  
+  // Cash reconciliation
+  expectedCash: number;                 // Cash from system (non-cash payments tracked)
+  actualCash: number;                   // Physical cash in drawer
+  cashDifference: number;               // actualCash - expectedCash
+  
+  // Stock reconciliation
+  stockItems: ReconciliationStockItem[];
+  totalStockValue: number;              // Sum of sold items value
+  totalStockCost: number;               // Sum of sold items cost
+  
+  // Results
+  unidentifiedAmount: number;           // Cash diff - stock value (unexplained)
+  generatedSaleIds: string[];           // IDs of auto-generated cash sales
+  
+  notes?: string;
+  createdAt: number;
+  status: 'completed' | 'has_discrepancy';
+}
+
+export interface ReconciliationPayload {
+  actualCash: number;
+  stockItems: {
+    productId: string;
+    physicalStock: number;
+  }[];
+  notes?: string;
+}
+
+export const reconciliationPayloadSchema = z.object({
+  actualCash: z.number().min(0, "Jumlah kas tidak boleh negatif."),
+  stockItems: z.array(z.object({
+    productId: z.string().min(1, "Product ID is required."),
+    physicalStock: z.number().min(0, "Stock cannot be negative."),
+  })),
+  notes: z.string().optional(),
+});
+
+export type ReconciliationPayloadFormValues = z.infer<typeof reconciliationPayloadSchema>;

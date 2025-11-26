@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload } from '@shared/types';
+import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload, Reconciliation, ReconciliationPayload } from '@shared/types';
 import { api } from './api-client';
 import { persist, createJSONStorage } from 'zustand/middleware'
 interface WarungState {
@@ -10,6 +10,7 @@ interface WarungState {
   suppliers: Supplier[];
   jajananRequests: JajananRequest[];
   stockDetails: StockDetail[];
+  reconciliations: Reconciliation[];
   initialBalance: number;
   storeProfile: {
     name: string;
@@ -52,6 +53,8 @@ interface WarungActions {
   updateJajananRequestStatus: (requestId: string, status: JajananRequest['status']) => Promise<JajananRequest>;
   createOpname: (payload: OpnamePayload) => Promise<void>;
   adjustStock: (productId: string, quantity: number, unitCost: number, isFromProductForm?: boolean) => Promise<void>;
+  fetchReconciliations: () => Promise<void>;
+  createReconciliation: (payload: ReconciliationPayload) => Promise<Reconciliation>;
 }
 export const useWarungStore = create<WarungState & WarungActions>()(
   persist(
@@ -62,6 +65,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       suppliers: [],
       jajananRequests: [],
       stockDetails: [],
+      reconciliations: [],
       initialBalance: 0,
       storeProfile: {
         name: 'Warungku',
@@ -291,6 +295,28 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         });
         const products = await api<Product[]>('/api/products');
         set({ products });
+      },
+      fetchReconciliations: async () => {
+        try {
+          set({ isLoading: true, error: null });
+          const reconciliations = await api<Reconciliation[]>('/api/reconciliations');
+          set({ reconciliations, isLoading: false });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reconciliations';
+          set({ isLoading: false, error: errorMessage });
+        }
+      },
+      createReconciliation: async (payload) => {
+        const newRecon = await api<Reconciliation>('/api/reconciliations', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        set((state) => { state.reconciliations.unshift(newRecon); });
+        // Refresh products and sales
+        const products = await api<Product[]>('/api/products');
+        const sales = await api<Sale[]>('/api/sales');
+        set({ products, sales });
+        return newRecon;
       },
     })),
     {

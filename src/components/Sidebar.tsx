@@ -48,36 +48,33 @@ export function Sidebar() {
         )}>
             <div className={cn(
                 "border-b-4 border-brand-black bg-brand-orange/10 relative overflow-visible",
-                collapsed ? "p-4" : "p-6"
+                collapsed ? "p-4" : "p-4"
             )}>
                 {!collapsed ? (
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex items-center gap-3">
                         {/* RSQUARE Logo */}
-                        <div className="relative">
-                            <div className="w-20 h-20 flex items-center justify-center p-2">
-                                <img
-                                    src="/rsquare-logo-80.png"
-                                    srcSet="/rsquare-logo-80.png 1x, /rsquare-logo-160.png 2x"
-                                    alt="RSQUARE Logo"
-                                    width={80}
-                                    height={80}
-                                    className="w-full h-full object-contain"
-                                />
-                            </div>
+                        <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
+                            <img
+                                src="/rsquare-logo-48.png"
+                                srcSet="/rsquare-logo-48.png 1x, /rsquare-logo-96.png 2x"
+                                alt="RSQUARE Logo"
+                                width={48}
+                                height={48}
+                                className="w-full h-full object-contain"
+                            />
                         </div>
-
-                        <div className="text-center">
-                            <h2 className="font-display font-black text-xl text-brand-black uppercase leading-tight">
+                        <div className="min-w-0">
+                            <h2 className="font-display font-black text-base text-brand-black uppercase leading-tight truncate">
                                 {storeProfile.name}
                             </h2>
-                            <p className="font-mono text-xs text-muted-foreground mt-1">
+                            <p className="font-mono text-[11px] text-muted-foreground truncate">
                                 {storeProfile.address || 'Alamat belum diatur'}
                             </p>
                         </div>
                     </div>
                 ) : (
                     <div className="flex justify-center">
-                        <div className="w-12 h-12 flex items-center justify-center p-1">
+                        <div className="w-12 h-12 flex items-center justify-center">
                             <img
                                 src="/rsquare-logo-48.png"
                                 srcSet="/rsquare-logo-48.png 1x, /rsquare-logo-96.png 2x"
@@ -89,8 +86,6 @@ export function Sidebar() {
                         </div>
                     </div>
                 )}
-
-                {/* Toggle Button - moved outside overflow-hidden boundary */}
             </div>
 
             {/* Toggle Button positioned relative to sidebar */}
@@ -105,11 +100,11 @@ export function Sidebar() {
             </button>
 
             {/* Navigation */}
-            <nav className="flex-1 py-6 space-y-1 overflow-y-auto">
+            <nav className="flex-1 py-3 overflow-y-auto">
 
                 {/* UTAMA */}
                 {!collapsed && (
-                    <div className="pt-2 pb-2 px-4">
+                    <div className="pt-2 pb-1 px-4">
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Utama</p>
                     </div>
                 )}
@@ -118,80 +113,100 @@ export function Sidebar() {
 
                 {/* INVENTARIS */}
                 {!collapsed && (
-                    <div className="pt-4 pb-2 px-4">
+                    <div className="pt-3 pb-1 px-4">
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Inventaris</p>
                     </div>
                 )}
-                <NavItem to="/dashboard" tab="products" icon={Package} label="Produk & Stok" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="products" icon={Package} label="Produk" collapsed={collapsed} />
                 <NavItem to="/dashboard" tab="suppliers" icon={Truck} label="Pemasok" collapsed={collapsed} />
-                <NavItem to="/dashboard" tab="price-reference" icon={Tag} label="Referensi Harga" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="price-reference" icon={Tag} label="Ref. Harga" collapsed={collapsed} />
 
                 {/* TRANSAKSI */}
                 {!collapsed && (
-                    <div className="pt-4 pb-2 px-4">
+                    <div className="pt-3 pb-1 px-4">
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Transaksi</p>
                     </div>
                 )}
                 <NavItem to="/dashboard" tab="sales" icon={DollarSign} label="Penjualan" collapsed={collapsed} />
                 <NavItem to="/dashboard" tab="purchases" icon={ShoppingCart} label="Pembelian" collapsed={collapsed} />
-                <NavItem to="/dashboard" tab="requests" icon={Inbox} label="Request Masuk" collapsed={collapsed} />
+                <NavItem to="/dashboard" tab="requests" icon={Inbox} label="Request" collapsed={collapsed} />
 
-                {/* KEUANGAN */}
+                {/* KEUANGAN & REKON */}
                 {!collapsed && (
-                    <div className="pt-4 pb-2 px-4">
+                    <div className="pt-3 pb-1 px-4">
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Keuangan</p>
                     </div>
                 )}
                 <NavItem to="/dashboard" tab="cashflow" icon={ArrowRightLeft} label="Arus Kas" collapsed={collapsed} />
                 <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" collapsed={collapsed} />
-
-                {/* REKONSILIASI - Separate category */}
-                {!collapsed && (
-                    <div className="pt-4 pb-2 px-4">
-                        <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Rekonsiliasi</p>
-                    </div>
-                )}
                 <RekonNavItem collapsed={collapsed} />
 
             </nav>
 
             {/* Footer Actions */}
-            <div className="p-4 border-t-4 border-brand-black bg-gray-50 space-y-2">
+            <div className="p-3 border-t-4 border-brand-black bg-gray-50 space-y-2">
                 {!collapsed ? (
                     <>
-                        <StoreProfileDialog />
+                        <TooltipProvider delayDuration={500}>
+                            <div className="flex gap-1">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex-1">
+                                            <StoreProfileDialog compact />
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="font-mono">Profil Toko</TooltipContent>
+                                </Tooltip>
 
-                        <QRISSetupDialog />
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex-1">
+                                            <QRISSetupDialog compact />
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="font-mono">Setup QRIS</TooltipContent>
+                                </Tooltip>
 
-                        <SettingsDialog
-                            trigger={
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                                >
-                                    <Settings className="w-4 h-4 mr-2" />
-                                    Pengaturan
-                                </Button>
-                            }
-                        />
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex-1">
+                                            <SettingsDialog
+                                                trigger={
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="w-full justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                                                    >
+                                                        <Settings className="w-4 h-4" />
+                                                    </Button>
+                                                }
+                                            />
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="font-mono">Pengaturan</TooltipContent>
+                                </Tooltip>
 
-                        <Button
-                            onClick={handleLogout}
-                            variant="ghost"
-                            className="w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-destructive/10 hover:text-destructive rounded-none transition-colors text-muted-foreground"
-                        >
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Keluar
-                        </Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            onClick={handleLogout}
+                                            variant="ghost"
+                                            size="sm"
+                                            className="flex-1 justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-destructive/10 hover:text-destructive rounded-none transition-colors text-muted-foreground"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="font-mono">Keluar</TooltipContent>
+                                </Tooltip>
+                            </div>
+                        </TooltipProvider>
 
                         {/* Watermark */}
-                        <div className="pt-4 mt-2 border-t border-gray-200 text-center">
+                        <div className="pt-2 text-center">
                             <p className="font-mono text-[10px] text-muted-foreground">
-                                Powered by <span className="font-bold text-brand-black">RSQUARE</span>
+                                <span className="font-bold text-brand-black">RSQUARE</span> | <a href="https://www.rsquareidea.my.id" target="_blank" rel="noopener noreferrer" className="text-brand-orange hover:underline">rsquareidea.my.id</a>
                             </p>
-                            <a href="https://www.rsquareidea.my.id" target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-brand-orange hover:underline">
-                                www.rsquareidea.my.id
-                            </a>
                         </div>
                     </>
                 ) : (
@@ -280,14 +295,14 @@ function NavItem({ to, icon: Icon, label, tab, collapsed }: { to: string; icon: 
             to={tab ? `${to}?tab=${tab}` : to}
             preventScrollReset
             className={cn(
-                'flex items-center gap-3 font-mono uppercase font-bold text-sm px-4 py-3 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10',
+                'flex items-center gap-3 font-mono uppercase font-bold text-xs px-4 py-2.5 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10',
                 active
                     ? 'border-brand-orange bg-brand-orange/20 text-brand-black'
                     : 'text-muted-foreground hover:text-brand-black',
                 collapsed && 'justify-center'
             )}
         >
-            <Icon className="w-5 h-5 flex-shrink-0" />
+            <Icon className="w-4 h-4 flex-shrink-0" />
             {!collapsed && label}
         </NavLink>
     );
@@ -338,21 +353,21 @@ function RekonNavItem({ collapsed }: { collapsed: boolean }) {
     };
 
     const active = isActive();
-    const label = opnameMode === 'display' ? 'Rekon Kas' : 'Rekon Stok';
+    const label = opnameMode === 'display' ? 'Rekon Kas' : opnameMode === 'terpadu' ? 'Rekonsiliasi' : 'Rekon Stok';
 
     const content = (
         <NavLink
             to="/dashboard?tab=opname"
             preventScrollReset
             className={cn(
-                'flex items-center gap-3 font-mono uppercase font-bold text-sm px-4 py-3 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10',
+                'flex items-center gap-3 font-mono uppercase font-bold text-xs px-4 py-2.5 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10',
                 active
                     ? 'border-brand-orange bg-brand-orange/20 text-brand-black'
                     : 'text-muted-foreground hover:text-brand-black',
                 collapsed && 'justify-center'
             )}
         >
-            <ClipboardCheck className="w-5 h-5 flex-shrink-0" />
+            <ClipboardCheck className="w-4 h-4 flex-shrink-0" />
             {!collapsed && label}
         </NavLink>
     );
