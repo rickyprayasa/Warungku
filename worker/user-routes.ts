@@ -111,17 +111,34 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
 
   app.put('/api/products/:id', async (c) => {
-    const { id } = c.req.param();
-    const updates = (await c.req.json()) as Partial<Product>;
-    const repo = new D1Repository(c.env.DB);
+    try {
+      const { id } = c.req.param();
+      const updates = (await c.req.json()) as Partial<Product>;
+      const repo = new D1Repository(c.env.DB);
 
-    const product = await repo.getProduct(id);
-    if (!product) return notFound(c, 'Product not found.');
+      const product = await repo.getProduct(id);
+      if (!product) return notFound(c, 'Product not found.');
 
-    await repo.updateProduct(id, updates);
+      // Log image size if updating image
+      if (updates.imageUrl) {
+        const imageSizeKB = Math.round(updates.imageUrl.length / 1024);
+        console.log(`[UPDATE PRODUCT] Image size: ${imageSizeKB}KB`);
 
-    const updated = await repo.getProduct(id);
-    return ok(c, updated);
+        // Check if image is too large (>1MB base64)
+        if (updates.imageUrl.length > 1024 * 1024) {
+          console.error(`[UPDATE PRODUCT] Image too large: ${imageSizeKB}KB`);
+          return bad(c, `Ukuran foto terlalu besar (${imageSizeKB}KB). Maksimal 1MB.`);
+        }
+      }
+
+      await repo.updateProduct(id, updates);
+
+      const updated = await repo.getProduct(id);
+      return ok(c, updated);
+    } catch (error: any) {
+      console.error('[UPDATE PRODUCT ERROR]', error);
+      return bad(c, error.message || 'Failed to update product');
+    }
   });
 
   app.delete('/api/products/:id', async (c) => {
@@ -199,7 +216,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         // Get product to check qtyPerUnit
         const product = await repo.getProduct(productId);
         const qtyPerUnit = product?.qtyPerUnit || 1;
-        
+
         // Actual stock to deduct = quantity sold * qtyPerUnit
         const stockToDeduct = quantity * qtyPerUnit;
 
@@ -710,11 +727,11 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     try {
       const payload = await c.req.json<ReconciliationPayload>();
       const repo = new D1Repository(c.env.DB);
-      
+
       // Get all products for reference
       const products = await repo.getProducts();
       const productMap = new Map(products.map(p => [p.id, p]));
-      
+
       // Calculate current stock for each product
       const stockPromises = products.map(async (p) => {
         const stocks = await repo.getStockDetails(p.id);

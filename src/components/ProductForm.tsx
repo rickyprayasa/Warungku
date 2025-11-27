@@ -95,10 +95,19 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
 
       if (isEditing && product) {
         // Include cost in update
-        const updateData = {
+        const updateData: any = {
           ...productData,
           cost: calculatedUnitCost
         };
+
+        // Only include imageUrl if it has changed to avoid sending large base64 unnecessarily
+        if (values.imageUrl === product.imageUrl) {
+          delete updateData.imageUrl;
+          console.log('[ProductForm] Image unchanged, not sending imageUrl');
+        } else if (values.imageUrl) {
+          const imageSizeKB = Math.round(values.imageUrl.length / 1024);
+          console.log(`[ProductForm] Sending updated image: ${imageSizeKB}KB`);
+        }
 
         // Show loading toast
         const toastId = toast.loading('Menyimpan...');
