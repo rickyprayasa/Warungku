@@ -1,4 +1,4 @@
-import { Bell, X, PackageX, AlertTriangle } from 'lucide-react';
+import { Bell, X, PackageX, AlertTriangle, CheckCheck, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useWarungStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLowStockAlerts } from '@/hooks/useLowStockAlerts';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function FloatingNotification() {
     const navigate = useNavigate();
@@ -70,6 +71,31 @@ export function FloatingNotification() {
         }
     };
 
+    const markAllAsRead = () => {
+        const allIds = [
+            ...activeLowStock.map(p => `stock-${p.id}`),
+            ...activeOutOfStock.map(p => `stock-${p.id}`),
+            ...pendingRequests.map(r => `req-${r.id}`)
+        ];
+        const newDismissed = new Set([...dismissedNotifications, ...allIds]);
+        setDismissedNotifications(newDismissed);
+        localStorage.setItem('dismissedNotifications', JSON.stringify([...newDismissed]));
+        toast.success('Semua notifikasi ditandai sudah dibaca');
+    };
+
+    const deleteAllNotifications = () => {
+        const allIds = [
+            ...activeLowStock.map(p => `stock-${p.id}`),
+            ...activeOutOfStock.map(p => `stock-${p.id}`),
+            ...pendingRequests.map(r => `req-${r.id}`)
+        ];
+        const newDismissed = new Set([...dismissedNotifications, ...allIds]);
+        setDismissedNotifications(newDismissed);
+        localStorage.setItem('dismissedNotifications', JSON.stringify([...newDismissed]));
+        toast.success('Semua notifikasi berhasil dihapus');
+        setIsOpen(false);
+    };
+
     return (
         <div className="hidden md:block fixed top-6 right-6 z-[9999] pointer-events-auto">
             <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -90,11 +116,35 @@ export function FloatingNotification() {
                     align="end"
                     sideOffset={8}
                 >
-                    <div className="p-4 border-b-4 border-brand-black bg-brand-orange">
-                        <h4 className="font-display font-black text-xl text-brand-black uppercase">Notifikasi</h4>
-                        <p className="font-mono text-xs text-brand-black/70 mt-1">
-                            {totalNotifications > 0 ? `${totalNotifications} notifikasi baru` : 'Tidak ada notifikasi'}
-                        </p>
+                    <div className="p-4 border-b-4 border-brand-black bg-brand-orange flex items-start justify-between">
+                        <div>
+                            <h4 className="font-display font-black text-xl text-brand-black uppercase">Notifikasi</h4>
+                            <p className="font-mono text-xs text-brand-black/70 mt-1">
+                                {totalNotifications > 0 ? `${totalNotifications} notifikasi baru` : 'Tidak ada notifikasi'}
+                            </p>
+                        </div>
+                        {totalNotifications > 0 && (
+                            <div className="flex gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={markAllAsRead}
+                                    className="h-8 w-8 rounded-none hover:bg-brand-black/10 text-brand-black border-2 border-transparent hover:border-brand-black transition-all"
+                                    title="Tandai semua sudah dibaca"
+                                >
+                                    <CheckCheck className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={deleteAllNotifications}
+                                    className="h-8 w-8 rounded-none hover:bg-red-500/20 text-red-600 border-2 border-transparent hover:border-red-600 transition-all"
+                                    title="Hapus semua notifikasi"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )}
                     </div>
                     <ScrollArea className="h-[400px]">
                         {totalNotifications === 0 ? (
