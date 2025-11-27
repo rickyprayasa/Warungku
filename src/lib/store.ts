@@ -1,9 +1,18 @@
+// Re-export from new Supabase-based store
+export { useWarungStore } from './store-supabase';
+
+/* 
+ * Legacy store code below - kept for reference
+ * The app now uses store-supabase.ts which connects directly to Supabase
+ */
+
+/*
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload, Reconciliation, ReconciliationPayload } from '@shared/types';
 import { api } from './api-client';
 import { persist, createJSONStorage } from 'zustand/middleware'
-interface WarungState {
+interface WarungState_Legacy {
   products: Product[];
   sales: Sale[];
   purchases: Purchase[];
@@ -328,3 +337,4 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     }
   )
 );
+*/

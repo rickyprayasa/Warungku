@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Clock, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
-import { useWarungStore } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function FloatingClock() {
-    const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
+    const { isAuthenticated } = useAuth();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const stored = localStorage.getItem('clock-collapsed');

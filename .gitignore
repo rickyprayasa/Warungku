@@ -3,3 +3,16 @@
 .bootstrap-complete
 node_modules
 CREDENTIALS.md
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Supabase
+.supabase
+
+# Build outputs
+dist/
+.wrangler/

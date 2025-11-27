@@ -10,12 +10,17 @@ import { FloatingClock } from '@/components/FloatingClock';
 import { CartSheet } from '@/components/CartSheet';
 import { FloatingCart } from '@/components/FloatingCart';
 import { useWarungStore } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
+
+// Default store ID for public access (omzetin store)
+const DEFAULT_STORE_ID = '6c65a321-3576-4a38-a834-19afa1c4d83e';
 
 export function HomePage() {
-  const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
-  const checkSession = useWarungStore((state) => state.checkSession);
+  const { isAuthenticated, store, loading: authLoading } = useAuth();
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const fetchStoreProfile = useWarungStore((state) => state.fetchStoreProfile);
+  const setCurrentStoreId = useWarungStore((state) => state.setCurrentStoreId);
+  const currentStoreId = useWarungStore((state) => state.currentStoreId);
 
   // Track sidebar collapse state for margin adjustment
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -30,10 +35,7 @@ export function HomePage() {
       setSidebarCollapsed(stored === 'true');
     };
 
-    // Listen for storage events
     window.addEventListener('storage', handleStorageChange);
-
-    // Also check periodically (for same-window changes)
     const interval = setInterval(handleStorageChange, 100);
 
     return () => {
@@ -42,17 +44,26 @@ export function HomePage() {
     };
   }, []);
 
-  // Fetch store profile and products on mount (for all users, including non-authenticated)
-  // Products are fetched immediately to ensure fast loading for visitors
+  // Set store ID based on auth state
   useEffect(() => {
-    fetchStoreProfile();
-    fetchProducts(); // Fetch products immediately for visitors
-  }, [fetchStoreProfile, fetchProducts]);
+    if (authLoading) return;
+    
+    if (isAuthenticated && store) {
+      // Authenticated user - use their store
+      setCurrentStoreId(store.id);
+    } else if (!currentStoreId) {
+      // Public visitor - use default store for product viewing
+      setCurrentStoreId(DEFAULT_STORE_ID);
+    }
+  }, [isAuthenticated, store, authLoading, currentStoreId, setCurrentStoreId]);
 
-  // Check session validity for authenticated users
+  // Fetch data when store ID is set
   useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+    if (currentStoreId) {
+      fetchStoreProfile();
+      fetchProducts();
+    }
+  }, [currentStoreId, fetchStoreProfile, fetchProducts]);
 
   return (
     <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden">

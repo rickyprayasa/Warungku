@@ -1,6 +1,7 @@
 import { Bell, X, PackageX, AlertTriangle, CheckCheck, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useWarungStore } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ export function FloatingNotification() {
     const requests = useWarungStore((state) => state.jajananRequests);
     const fetchRequests = useWarungStore((state) => state.fetchJajananRequests);
     const { lowStockProducts, outOfStockProducts, hasCritical } = useLowStockAlerts();
-    const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
+    const { isAuthenticated } = useAuth();
 
     const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
     const [isOpen, setIsOpen] = useState(false);

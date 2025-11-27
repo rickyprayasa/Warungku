@@ -1,6 +1,6 @@
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useWarungStore } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from './ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { LogOut, Menu, X } from 'lucide-react';
@@ -11,12 +11,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationBell } from './NotificationBell';
 
 export function AppHeader() {
-  const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
-  const logout = useWarungStore((state) => state.logout);
+  const { isAuthenticated, signOut } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/login');
   };
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>

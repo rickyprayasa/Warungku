@@ -1,20 +1,29 @@
-import { useWarungStore } from '@/lib/store';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { KeyRound, Loader2 } from 'lucide-react';
-import { useState } from 'react';
-import { api } from '@/lib/api-client';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useWarungStore } from '@/lib/store';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const login = useWarungStore((state) => state.login);
+  const { signIn, isAuthenticated, store } = useAuth();
+  const setCurrentStoreId = useWarungStore((state) => state.setCurrentStoreId);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && store) {
+      setCurrentStoreId(store.id);
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, store, navigate, setCurrentStoreId]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,13 +31,11 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      await api('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
-
-      login(); // Set authenticated state in store
-      navigate('/dashboard');
+      const result = await signIn(email, password);
+      if (result.error) {
+        setError(result.error);
+      }
+      // Navigation will happen via useEffect when isAuthenticated changes
     } catch (err: any) {
       setError(err.message || 'Email atau password salah');
     } finally {

@@ -6,10 +6,10 @@ import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
   RouterProvider,
-  ScrollRestoration,
 } from "react-router-dom";
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
+import { AuthProvider } from '@/contexts/AuthContext';
 import '@/index.css'
 
 // Lazy load all page components for code splitting
@@ -153,7 +153,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

@@ -1,6 +1,7 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useWarungStore } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from './ui/button';
 import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
@@ -16,8 +17,7 @@ import {
 } from "@/components/ui/tooltip";
 
 export function Sidebar() {
-    const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
-    const logout = useWarungStore((state) => state.logout);
+    const { isAuthenticated, signOut } = useAuth();
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const navigate = useNavigate();
     const location = useLocation();
@@ -34,8 +34,8 @@ export function Sidebar() {
 
     const toggleCollapsed = () => setCollapsed(!collapsed);
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await signOut();
         navigate('/login');
     };
 
