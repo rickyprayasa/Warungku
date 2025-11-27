@@ -69,7 +69,13 @@ export function OrderSummary() {
                   <img src={item.product.imageUrl} alt={item.product.name} className="w-16 h-16 object-cover border-2 border-brand-black" />
                   <div className="flex-1">
                     <p className="font-bold text-brand-black leading-tight">{item.product.name}</p>
-                    <p className="text-sm font-mono text-muted-foreground">{formatCurrency(item.product.price)}</p>
+                    <p className="text-sm font-mono text-muted-foreground">
+                      {formatCurrency(item.product.price)}
+                      {item.product.qtyPerUnit && item.product.qtyPerUnit > 1 
+                        ? ` / ${item.product.qtyPerUnit} pcs`
+                        : ''
+                      }
+                    </p>
                     <div className="flex items-center mt-2">
                       <Input
                         type="number"

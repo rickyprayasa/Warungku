@@ -100,7 +100,11 @@ export function CartSheet() {
                       <div className="flex-1 min-w-0 pr-8">
                         <h4 className="font-bold text-sm truncate">{item.product.name}</h4>
                         <p className="font-mono text-xs text-muted-foreground">
-                          {formatCurrency(price)} /pcs
+                          {formatCurrency(price)}
+                          {item.product.qtyPerUnit && item.product.qtyPerUnit > 1 
+                            ? ` / ${item.product.qtyPerUnit} pcs`
+                            : ' /pcs'
+                          }
                         </p>
                         <p className="font-mono text-sm font-bold text-brand-orange mt-1">
                           {formatCurrency(subtotal)}

@@ -364,6 +364,7 @@ export function CheckoutPage() {
                 item.product.isPromo && item.product.promoPrice
                   ? item.product.promoPrice
                   : item.product.price;
+              const qtyPerUnit = item.product.qtyPerUnit || 1;
               return (
                 <div
                   key={item.product.id}
@@ -373,6 +374,7 @@ export function CheckoutPage() {
                     <span className="font-mono text-sm">{item.product.name}</span>
                     <span className="font-mono text-xs text-muted-foreground ml-2">
                       x{item.quantity}
+                      {qtyPerUnit > 1 && ` (${item.quantity * qtyPerUnit} pcs)`}
                     </span>
                   </div>
                   <span className="font-mono text-sm font-bold">

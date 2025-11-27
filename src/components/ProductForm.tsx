@@ -100,19 +100,24 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           cost: calculatedUnitCost
         };
 
-        const promise = updateProduct(product.id, updateData);
+        // Show loading toast
+        const toastId = toast.loading('Menyimpan...');
 
-        // Handle Stock Update if changed
-        if (initialStock !== (product.totalStock || 0)) {
-          await adjustStock(product.id, initialStock, calculatedUnitCost, true);
+        try {
+          // First, update the product
+          await updateProduct(product.id, updateData);
+
+          // Then, handle Stock Update if changed
+          if (initialStock !== (product.totalStock || 0)) {
+            await adjustStock(product.id, initialStock, calculatedUnitCost, true);
+          }
+
+          toast.success('Produk berhasil diupdate!', { id: toastId });
+        } catch (updateError) {
+          console.error('Update error:', updateError);
+          toast.error('Gagal update produk.', { id: toastId });
+          throw updateError;
         }
-
-        toast.promise(promise, {
-          loading: 'Menyimpan...',
-          success: 'Produk berhasil diupdate!',
-          error: 'Gagal update produk.',
-        });
-        await promise;
       } else {
         // Create Product
         const newProduct = await addProduct(productData);
