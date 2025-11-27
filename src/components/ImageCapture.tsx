@@ -105,7 +105,8 @@ export function ProductImageCapture({ currentImage, onCapture, open, onOpenChang
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 ctx.drawImage(videoRef.current, 0, 0);
-                const dataUrl = canvas.toDataURL('image/jpeg');
+                // Compress image with 0.7 quality to reduce size
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 setImageSrc(dataUrl);
                 // Reset zoom and crop for captured photo
                 setZoom(objectFit === 'contain' ? 0.8 : 1);
@@ -151,8 +152,20 @@ export function ProductImageCapture({ currentImage, onCapture, open, onOpenChang
 
         if (!ctx) return null;
 
-        canvas.width = pixelCrop.width;
-        canvas.height = pixelCrop.height;
+        // Calculate resize dimensions (max 800x600 to reduce file size)
+        const maxWidth = 800;
+        const maxHeight = 600;
+        let targetWidth = pixelCrop.width;
+        let targetHeight = pixelCrop.height;
+
+        if (targetWidth > maxWidth || targetHeight > maxHeight) {
+            const ratio = Math.min(maxWidth / targetWidth, maxHeight / targetHeight);
+            targetWidth = Math.round(targetWidth * ratio);
+            targetHeight = Math.round(targetHeight * ratio);
+        }
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
 
         ctx.drawImage(
             image,
@@ -162,11 +175,12 @@ export function ProductImageCapture({ currentImage, onCapture, open, onOpenChang
             pixelCrop.height,
             0,
             0,
-            pixelCrop.width,
-            pixelCrop.height
+            targetWidth,
+            targetHeight
         );
 
-        return canvas.toDataURL('image/jpeg');
+        // Compress with 0.7 quality to significantly reduce file size
+        return canvas.toDataURL('image/jpeg', 0.7);
     };
 
     const handleSave = async () => {
