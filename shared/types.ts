@@ -15,6 +15,7 @@ export interface Product {
   isPromo?: boolean; // Is this product on promo
   promoPrice?: number; // Promo price (if on promo)
   isActive?: boolean;
+  isBestSeller?: boolean; // Manual toggle for "Best Seller" badge
   totalStock?: number; // Total available stock across all batches
   minStockLevel?: number; // Minimum stock level for low stock alerts (default: 10)
   qtyPerUnit?: number; // Qty of stock to deduct per unit sold (default: 1, e.g. 3 for "3pcs package")
@@ -31,6 +32,7 @@ export const productSchema = z.object({
   isPromo: z.boolean().optional(),
   promoPrice: z.number().min(0).optional(),
   isActive: z.boolean().optional(),
+  isBestSeller: z.boolean().optional(),
   minStockLevel: z.number().min(0, "Minimum stock level tidak boleh negatif").optional(),
   qtyPerUnit: z.number().min(1, "Qty per unit minimal 1").optional(),
 });
@@ -192,21 +194,21 @@ export interface ReconciliationStockItem {
 export interface Reconciliation {
   id: string;
   date: string;                         // YYYY-MM-DD
-  
+
   // Cash reconciliation
   expectedCash: number;                 // Cash from system (non-cash payments tracked)
   actualCash: number;                   // Physical cash in drawer
   cashDifference: number;               // actualCash - expectedCash
-  
+
   // Stock reconciliation
   stockItems: ReconciliationStockItem[];
   totalStockValue: number;              // Sum of sold items value
   totalStockCost: number;               // Sum of sold items cost
-  
+
   // Results
   unidentifiedAmount: number;           // Cash diff - stock value (unexplained)
   generatedSaleIds: string[];           // IDs of auto-generated cash sales
-  
+
   notes?: string;
   createdAt: number;
   status: 'completed' | 'has_discrepancy';

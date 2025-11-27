@@ -24,6 +24,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const isActive = product.isActive ?? true;
   const isOutOfStock = (product.totalStock ?? 0) <= 0;
+  
+  // Check if product is new (created within last 24 hours)
+  const isNewProduct = product.createdAt && (Date.now() - product.createdAt) < 24 * 60 * 60 * 1000;
 
   return (
     <Dialog>
@@ -45,6 +48,18 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Badges */}
           <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+            {/* Best Seller Badge */}
+            {product.isBestSeller && isActive && (
+              <Badge className="bg-yellow-500 text-brand-black border-2 border-brand-black rounded-none font-mono font-bold text-[10px] shadow-hard">
+                🔥 TERLARIS
+              </Badge>
+            )}
+            {/* New Product Badge */}
+            {isNewProduct && isActive && (
+              <Badge className="bg-green-500 text-white border-2 border-brand-black rounded-none font-mono font-bold text-[10px] shadow-hard">
+                ✨ BARU
+              </Badge>
+            )}
             {/* Out of Stock Badge */}
             {isOutOfStock && isActive && (
               <Badge className="bg-gray-800 text-white border-2 border-brand-black rounded-none font-mono font-bold text-[10px] shadow-hard">

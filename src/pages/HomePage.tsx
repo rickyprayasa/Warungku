@@ -15,9 +15,6 @@ export function HomePage() {
   const isAuthenticated = useWarungStore((state) => state.isAuthenticated);
   const checkSession = useWarungStore((state) => state.checkSession);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
-  const fetchSales = useWarungStore((state) => state.fetchSales);
-  const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
-  const fetchSuppliers = useWarungStore((state) => state.fetchSuppliers);
   const fetchStoreProfile = useWarungStore((state) => state.fetchStoreProfile);
 
   // Track sidebar collapse state for margin adjustment
@@ -57,26 +54,16 @@ export function HomePage() {
 
     if (isSessionValid && isAuthenticated) {
       // Load critical data immediately (fast initial render)
-      const loadCriticalData = async () => {
-        await Promise.all([
-          fetchProducts(),
-          fetchSales(),
-        ]);
-      };
-
-      // Defer heavy data loading (prevent blocking)
-      const loadDeferredData = async () => {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await Promise.all([
-          fetchPurchases(),
-          fetchSuppliers(),
-        ]);
-      };
-
-      loadCriticalData();
-      loadDeferredData();
+      // We only fetch products globally because they are needed for:
+      // 1. POS Page (Index)
+      // 2. Notifications (Low Stock)
+      // 3. Product Management (Dashboard default)
+      //
+      // Sales, Purchases, and Suppliers are fetched lazily by their respective components
+      // to avoid downloading large datasets on initial load.
+      fetchProducts();
     }
-  }, [isAuthenticated, checkSession, fetchProducts, fetchSales, fetchPurchases, fetchSuppliers]);
+  }, [isAuthenticated, checkSession, fetchProducts]);
 
   return (
     <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden">
