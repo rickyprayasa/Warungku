@@ -73,12 +73,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="flex-1">
               <p className="text-xs font-mono uppercase text-muted-foreground">{product.category}</p>
               <h3 className="font-bold text-lg text-brand-black leading-tight">{product.name}</h3>
-              {/* Package info - Use explicit boolean check */}
-              {!!product.qtyPerUnit && product.qtyPerUnit > 1 && (
-                <p className="text-xs font-mono text-blue-600 mt-0.5">
-                  📦 {product.qtyPerUnit} pcs/paket
-                </p>
-              )}
+
             </div>
 
             {/* Price Display */}

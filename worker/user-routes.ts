@@ -101,6 +101,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       promoPrice: body.promoPrice || 0,
       isActive: body.isActive !== undefined ? body.isActive : true,
       totalStock: 0,
+      minStockLevel: body.minStockLevel || 10,
+      qtyPerUnit: body.qtyPerUnit || 1,
       createdAt: Date.now()
     };
 
@@ -280,6 +282,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
           continue;
         }
 
+        // Calculate actual stock to return (considering qtyPerUnit for bundle products)
+        const qtyPerUnit = product.qtyPerUnit || 1;
+        const stockToReturn = item.quantity * qtyPerUnit;
+        // Cost per pcs (item.cost is cost per unit sold, so divide by qtyPerUnit)
+        const costPerPcs = item.cost / qtyPerUnit;
+
         // Buat stock detail baru untuk item yang dikembalikan
         // Gunakan special purchaseId untuk tracking (tetap perlu karena foreign key)
         const returnPurchaseId = `return-${sale.id}-${item.productId}`;
@@ -289,9 +297,9 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
           id: returnPurchaseId,
           productId: item.productId,
           productName: item.productName,
-          quantity: item.quantity,
-          unitCost: item.cost,
-          totalCost: item.quantity * item.cost,
+          quantity: stockToReturn,
+          unitCost: costPerPcs,
+          totalCost: stockToReturn * costPerPcs,
           supplierId: 'stock-return', // Special flag untuk filter
           notes: `[SYSTEM] Stok dikembalikan otomatis dari penghapusan transaksi penjualan`,
           createdAt: Date.now()
@@ -302,8 +310,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const stockDetail: StockDetail = {
           id: crypto.randomUUID(),
           productId: item.productId,
-          quantity: item.quantity,
-          unitCost: item.cost,
+          quantity: stockToReturn,
+          unitCost: costPerPcs,
           purchaseId: returnPurchaseId,
           createdAt: Date.now()
         };
@@ -311,7 +319,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
         // Update product totalStock
         await repo.updateProduct(item.productId, {
-          totalStock: (product.totalStock || 0) + item.quantity
+          totalStock: (product.totalStock || 0) + stockToReturn
         });
       }
 

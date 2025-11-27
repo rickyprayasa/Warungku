@@ -64,14 +64,7 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
         <p className="text-sm font-mono uppercase text-muted-foreground">{product.category}</p>
         <h2 className="text-3xl font-display font-bold text-brand-black my-1">{product.name}</h2>
         
-        {/* Package info */}
-        {product.qtyPerUnit && product.qtyPerUnit > 1 && (
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg px-3 py-2 mt-2">
-            <p className="text-sm font-mono text-blue-700">
-              📦 <strong>Paket {product.qtyPerUnit} pcs</strong> - Stok berkurang {product.qtyPerUnit} pcs per pembelian
-            </p>
-          </div>
-        )}
+
 
         {product.isPromo && product.promoPrice !== undefined && product.promoPrice > 0 ? (
           <div className="my-4">

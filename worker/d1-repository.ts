@@ -25,8 +25,8 @@ export class D1Repository {
     async createProduct(product: Product): Promise<Product> {
         await this.db
             .prepare(`
-        INSERT INTO products (id, name, price, cost, imageUrl, category, description, isPromo, promoPrice, isActive, totalStock, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO products (id, name, price, cost, imageUrl, category, description, isPromo, promoPrice, isActive, totalStock, minStockLevel, qtyPerUnit, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
             .bind(
                 product.id,
@@ -40,6 +40,8 @@ export class D1Repository {
                 product.promoPrice || 0,
                 product.isActive !== undefined ? (product.isActive ? 1 : 0) : 1,
                 product.totalStock || 0,
+                product.minStockLevel || 10,
+                product.qtyPerUnit || 1,
                 product.createdAt
             )
             .run();
@@ -89,6 +91,14 @@ export class D1Repository {
         if (updates.isActive !== undefined) {
             fields.push('isActive = ?');
             values.push(updates.isActive ? 1 : 0);
+        }
+        if (updates.minStockLevel !== undefined) {
+            fields.push('minStockLevel = ?');
+            values.push(updates.minStockLevel);
+        }
+        if (updates.qtyPerUnit !== undefined) {
+            fields.push('qtyPerUnit = ?');
+            values.push(updates.qtyPerUnit);
         }
 
         if (fields.length === 0) return;
