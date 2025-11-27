@@ -188,6 +188,35 @@ export function ProductImageCapture({ currentImage, onCapture, open, onOpenChang
         return result;
     };
 
+    const compressFullImage = async (imageSrc: string) => {
+        const image = await createImage(imageSrc);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+
+        // Resize to max 800x800 to ensure size < 1MB
+        const maxWidth = 800;
+        const maxHeight = 800;
+        let width = image.width;
+        let height = image.height;
+
+        if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(image, 0, 0, width, height);
+
+        // Compress with 0.7 quality
+        const result = canvas.toDataURL('image/jpeg', 0.7);
+        const sizeKB = Math.round(result.length / 1024);
+        console.log(`[ImageCapture] Full image compressed: ${sizeKB}KB (${width}x${height})`);
+        return result;
+    };
+
     const handleSave = async () => {
         try {
             if (!imageSrc) {
@@ -195,19 +224,21 @@ export function ProductImageCapture({ currentImage, onCapture, open, onOpenChang
                 return;
             }
 
-            // If no crop area (shouldn't happen but just in case), use the whole image
-            if (!croppedAreaPixels) {
-                console.warn("No croppedAreaPixels, using full image");
-                onCapture(imageSrc);
-                onOpenChange(false);
-                setImageSrc(null);
-                stopCamera();
-                return;
+            let finalImage = null;
+
+            // If croppedAreaPixels is available, use it
+            if (croppedAreaPixels) {
+                finalImage = await getCroppedImg(imageSrc, croppedAreaPixels);
             }
 
-            const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
-            if (croppedImage) {
-                onCapture(croppedImage);
+            // Fallback: Compress full image if cropping failed or not available
+            if (!finalImage) {
+                console.warn("Using full image compression fallback");
+                finalImage = await compressFullImage(imageSrc);
+            }
+
+            if (finalImage) {
+                onCapture(finalImage);
                 onOpenChange(false);
                 setImageSrc(null);
                 stopCamera();

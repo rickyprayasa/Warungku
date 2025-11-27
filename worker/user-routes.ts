@@ -124,10 +124,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const imageSizeKB = Math.round(updates.imageUrl.length / 1024);
         console.log(`[UPDATE PRODUCT] Image size: ${imageSizeKB}KB`);
 
-        // Check if image is too large (>1MB base64)
-        if (updates.imageUrl.length > 1024 * 1024) {
+        // Check if image is too large (>3MB base64)
+        if (updates.imageUrl.length > 3 * 1024 * 1024) {
           console.error(`[UPDATE PRODUCT] Image too large: ${imageSizeKB}KB`);
-          return bad(c, `Ukuran foto terlalu besar (${imageSizeKB}KB). Maksimal 1MB.`);
+          return bad(c, `Ukuran foto terlalu besar (${imageSizeKB}KB). Maksimal 3MB.`);
         }
       }
 
