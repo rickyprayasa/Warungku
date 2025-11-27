@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { ProductCard } from '@/components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,7 +62,6 @@ const MobileProductRow = ({ product }: { product: Product }) => {
 };
 
 export function POSPage() {
-  const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const products = useWarungStore((state) => state.products);
   const isLoading = useWarungStore((state) => state.isLoading);
   const error = useWarungStore((state) => state.error);
@@ -74,9 +73,7 @@ export function POSPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  // Products are already fetched in HomePage, no need to fetch again
 
   const categories = useMemo(() => {
     const allCategories = products.map((p) => p.category);

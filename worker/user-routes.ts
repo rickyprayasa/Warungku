@@ -65,19 +65,28 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
 
 
   app.get('/api/products', async (c) => {
-    const repo = new D1Repository(c.env.DB);
-    const products = await repo.getProducts();
+    // Optimized: Single query with aggregated stock using LEFT JOIN
+    const { results } = await c.env.DB
+      .prepare(`
+        SELECT 
+          p.*,
+          COALESCE(SUM(sd.quantity), 0) as calculatedStock
+        FROM products p
+        LEFT JOIN stock_details sd ON p.id = sd.productId
+        GROUP BY p.id
+        ORDER BY p.name
+      `)
+      .all<any>();
 
-    // Calculate totalStock from stock_details
-    const productsWithStock = await Promise.all(
-      products.map(async (p) => {
-        const stocks = await repo.getStockDetails(p.id);
-        const totalStock = stocks.reduce((sum, s) => sum + s.quantity, 0);
-        return { ...p, totalStock };
-      })
-    );
+    const products = (results || []).map((p: any) => ({
+      ...p,
+      totalStock: p.calculatedStock || 0,
+      isPromo: p.isPromo === 1,
+      isActive: p.isActive === 1,
+      isBestSeller: p.isBestSeller === 1,
+    }));
 
-    return ok(c, productsWithStock);
+    return ok(c, products);
   });
 
   app.post('/api/products', async (c) => {

@@ -42,28 +42,17 @@ export function HomePage() {
     };
   }, []);
 
-  // Fetch store profile on mount (for all users, including non-authenticated)
+  // Fetch store profile and products on mount (for all users, including non-authenticated)
+  // Products are fetched immediately to ensure fast loading for visitors
   useEffect(() => {
     fetchStoreProfile();
-  }, [fetchStoreProfile]);
+    fetchProducts(); // Fetch products immediately for visitors
+  }, [fetchStoreProfile, fetchProducts]);
 
-  // Check session validity and fetch data when authenticated
+  // Check session validity for authenticated users
   useEffect(() => {
-    // Validate session on mount
-    const isSessionValid = checkSession();
-
-    if (isSessionValid && isAuthenticated) {
-      // Load critical data immediately (fast initial render)
-      // We only fetch products globally because they are needed for:
-      // 1. POS Page (Index)
-      // 2. Notifications (Low Stock)
-      // 3. Product Management (Dashboard default)
-      //
-      // Sales, Purchases, and Suppliers are fetched lazily by their respective components
-      // to avoid downloading large datasets on initial load.
-      fetchProducts();
-    }
-  }, [isAuthenticated, checkSession, fetchProducts]);
+    checkSession();
+  }, [checkSession]);
 
   return (
     <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden">
