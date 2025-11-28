@@ -328,24 +328,7 @@ function NavItem({ to, icon: Icon, label, tab, collapsed }: { to: string; icon: 
 // Dynamic Rekon NavItem that updates based on opnameMode
 function RekonNavItem({ collapsed }: { collapsed: boolean }) {
     const location = useLocation();
-    const [opnameMode, setOpnameMode] = useState(() => localStorage.getItem('opnameMode') || 'retail');
-
-    // Listen for localStorage changes (from SettingsDialog)
-    useEffect(() => {
-        const handleStorageChange = () => {
-            setOpnameMode(localStorage.getItem('opnameMode') || 'retail');
-        };
-
-        // Custom event listener for same-tab updates
-        window.addEventListener('opnameMode-changed', handleStorageChange);
-        // Storage event for cross-tab updates
-        window.addEventListener('storage', handleStorageChange);
-
-        return () => {
-            window.removeEventListener('opnameMode-changed', handleStorageChange);
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, []);
+    const opnameMode = useWarungStore((state) => state.opnameMode);
 
     const isActive = () => {
         const searchParams = new URLSearchParams(location.search);

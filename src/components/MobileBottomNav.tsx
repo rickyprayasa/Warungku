@@ -2,55 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const getRekonLabel = () => {
-    const mode = localStorage.getItem('opnameMode') || 'retail';
-    return mode === 'display' ? 'Rekon Kas' : 'Rekon Stok';
-};
-
-const getTabs = () => [
-    {
-        value: "pos",
-        label: "Kasir",
-        icon: Store,
-        path: "/",
-        submenu: [
-            { label: "Buka Kasir", action: "open-pos", path: "/" },
-            { label: "Lihat Riwayat", action: "view-sales-history", path: "/dashboard?tab=sales" },
-        ]
-    },
-    {
-        value: "products",
-        label: "Produk",
-        icon: Package,
-        path: "/dashboard?tab=products",
-        submenu: [
-            { label: "Tambah Produk", action: "add-product", path: "/dashboard?tab=products" },
-            { label: "Lihat Semua", action: "view-all-products", path: "/dashboard?tab=products" },
-            { label: "Pembelian", action: "purchases", path: "/dashboard?tab=purchases" },
-        ]
-    },
-    {
-        value: "opname",
-        label: getRekonLabel(),
-        icon: ClipboardCheck,
-        path: "/dashboard?tab=opname",
-        submenu: [
-            { label: `Buka ${getRekonLabel()}`, action: "open-opname", path: "/dashboard?tab=opname" },
-            { label: "Riwayat Kas", action: "cashflow", path: "/dashboard?tab=cashflow" },
-        ]
-    },
-    {
-        value: "sales",
-        label: "Jual",
-        icon: DollarSign,
-        path: "/dashboard?tab=sales",
-        submenu: [
-            { label: "Lihat Penjualan", action: "view-sales", path: "/dashboard?tab=sales" },
-            { label: "Laporan", action: "report", path: "/dashboard?tab=finance" },
-        ]
-    },
-];
+import { useWarungStore } from '@/lib/store';
 
 const moreTabs = [
     { value: "purchases", label: "Beli", icon: ShoppingCart, path: "/dashboard?tab=purchases" },
@@ -64,25 +16,67 @@ const moreTabs = [
 export function MobileBottomNav() {
     const navigate = useNavigate();
     const location = useLocation();
+    const opnameMode = useWarungStore((state) => state.opnameMode);
     const [showMore, setShowMore] = useState(false);
     const [activeTab, setActiveTab] = useState("pos");
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+
+    // Helper function to get rekon label based on current mode
+    const getRekonLabel = () => {
+        return opnameMode === 'display' ? 'Rekon Kas' : opnameMode === 'terpadu' ? 'Rekonsiliasi' : 'Rekon Stok';
+    };
+
+    // Generate tabs with current mode
+    const getTabs = () => [
+        {
+            value: "pos",
+            label: "Kasir",
+            icon: Store,
+            path: "/",
+            submenu: [
+                { label: "Buka Kasir", action: "open-pos", path: "/" },
+                { label: "Lihat Riwayat", action: "view-sales-history", path: "/dashboard?tab=sales" },
+            ]
+        },
+        {
+            value: "products",
+            label: "Produk",
+            icon: Package,
+            path: "/dashboard?tab=products",
+            submenu: [
+                { label: "Tambah Produk", action: "add-product", path: "/dashboard?tab=products" },
+                { label: "Lihat Semua", action: "view-all-products", path: "/dashboard?tab=products" },
+                { label: "Pembelian", action: "purchases", path: "/dashboard?tab=purchases" },
+            ]
+        },
+        {
+            value: "opname",
+            label: getRekonLabel(),
+            icon: ClipboardCheck,
+            path: "/dashboard?tab=opname",
+            submenu: [
+                { label: `Buka ${getRekonLabel()}`, action: "open-opname", path: "/dashboard?tab=opname" },
+                { label: "Riwayat Kas", action: "cashflow", path: "/dashboard?tab=cashflow" },
+            ]
+        },
+        {
+            value: "sales",
+            label: "Jual",
+            icon: DollarSign,
+            path: "/dashboard?tab=sales",
+            submenu: [
+                { label: "Lihat Penjualan", action: "view-sales", path: "/dashboard?tab=sales" },
+                { label: "Laporan", action: "report", path: "/dashboard?tab=finance" },
+            ]
+        },
+    ];
+
     const [tabs, setTabs] = useState(getTabs());
 
-    // Listen for mode changes
+    // Update tabs when mode changes
     useEffect(() => {
-        const handleModeChange = () => {
-            setTabs(getTabs());
-        };
-        
-        window.addEventListener('opnameMode-changed', handleModeChange);
-        window.addEventListener('storage', handleModeChange);
-        
-        return () => {
-            window.removeEventListener('opnameMode-changed', handleModeChange);
-            window.removeEventListener('storage', handleModeChange);
-        };
-    }, []);
+        setTabs(getTabs());
+    }, [opnameMode]);
 
     useEffect(() => {
         const path = location.pathname;

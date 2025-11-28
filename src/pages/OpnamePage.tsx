@@ -23,7 +23,7 @@ export function OpnamePage() {
 
     const [actualCash, setActualCash] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [opnameMode, setOpnameMode] = useState<OpnameMode>('retail');
+    const opnameMode = useWarungStore((state) => state.opnameMode);
 
     // Cash Entry state (for Display mode)
     const [dailyCashAmount, setDailyCashAmount] = useState<string>('');
@@ -39,28 +39,6 @@ export function OpnamePage() {
         fetchPurchases();
         fetchProducts();
         loadCashEntries();
-        
-        // Load mode from localStorage
-        const savedMode = localStorage.getItem('opnameMode') as OpnameMode;
-        if (savedMode) {
-            setOpnameMode(savedMode);
-        }
-        
-        // Listen for mode changes from SettingsDialog
-        const handleModeChange = () => {
-            const newMode = localStorage.getItem('opnameMode') as OpnameMode;
-            if (newMode) {
-                setOpnameMode(newMode);
-            }
-        };
-        
-        window.addEventListener('opnameMode-changed', handleModeChange);
-        window.addEventListener('storage', handleModeChange);
-        
-        return () => {
-            window.removeEventListener('opnameMode-changed', handleModeChange);
-            window.removeEventListener('storage', handleModeChange);
-        };
     }, [fetchSales, fetchPurchases, fetchProducts]);
 
     const loadCashEntries = () => {
@@ -124,7 +102,7 @@ export function OpnamePage() {
     };
 
     // Stock opname helpers
-    const filteredProducts = products.filter(p => 
+    const filteredProducts = products.filter(p =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -250,7 +228,7 @@ export function OpnamePage() {
                     {opnameMode === 'display' ? 'Rekonsiliasi Kas' : 'Rekonsiliasi Stok'}
                 </h3>
                 <p className="text-muted-foreground font-mono text-sm">
-                    {opnameMode === 'display' 
+                    {opnameMode === 'display'
                         ? 'Hitung uang di laci dan cocokkan dengan sistem.'
                         : 'Hitung stok fisik dan cocokkan dengan sistem.'}
                 </p>
@@ -264,13 +242,13 @@ export function OpnamePage() {
                 <AlertDescription className="font-mono text-sm">
                     {opnameMode === 'display' ? (
                         <>
-                            <strong>Mode Display:</strong> Stok sudah dikurangi di awal saat dipajang. 
-                            Profit dihitung dari selisih uang kas. 
+                            <strong>Mode Display:</strong> Stok sudah dikurangi di awal saat dipajang.
+                            Profit dihitung dari selisih uang kas.
                             Masukkan total uang hasil penjualan hari ini.
                         </>
                     ) : (
                         <>
-                            <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan. 
+                            <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan.
                             Lakukan penghitungan stok fisik dan bandingkan dengan sistem.
                         </>
                     )}
@@ -282,8 +260,8 @@ export function OpnamePage() {
                 <Alert className="border-2 border-orange-500 bg-orange-50">
                     <AlertTriangle className="w-4 h-4 text-orange-600" />
                     <AlertDescription className="font-mono text-sm text-orange-800">
-                        <strong>Penting:</strong> Jika ada penjualan manual (cash langsung tanpa keranjang/QRIS), 
-                        pastikan sudah dicatat melalui tombol <strong>"Catat Penjualan Manual"</strong> di halaman Menu. 
+                        <strong>Penting:</strong> Jika ada penjualan manual (cash langsung tanpa keranjang/QRIS),
+                        pastikan sudah dicatat melalui tombol <strong>"Catat Penjualan Manual"</strong> di halaman Menu.
                         Selisih stok bisa terjadi jika ada penjualan yang belum tercatat.
                     </AlertDescription>
                 </Alert>
@@ -544,15 +522,15 @@ export function OpnamePage() {
                                 {filteredProducts.map((product) => {
                                     const diff = getStockDifference(product);
                                     const hasDiff = diff !== null && diff !== 0;
-                                    
+
                                     return (
-                                        <div 
-                                            key={product.id} 
+                                        <div
+                                            key={product.id}
                                             className={cn(
                                                 "flex items-center gap-4 p-3 border-2 border-brand-black",
-                                                hasDiff 
-                                                    ? diff! > 0 
-                                                        ? "bg-green-50 border-green-500" 
+                                                hasDiff
+                                                    ? diff! > 0
+                                                        ? "bg-green-50 border-green-500"
                                                         : "bg-red-50 border-red-500"
                                                     : stockCounts[product.id] !== undefined
                                                         ? "bg-blue-50"
@@ -581,9 +559,9 @@ export function OpnamePage() {
                                                     placeholder="Fisik"
                                                     className={cn(
                                                         "border-2 rounded-none font-mono text-center h-10",
-                                                        hasDiff 
-                                                            ? diff! > 0 
-                                                                ? "border-green-500" 
+                                                        hasDiff
+                                                            ? diff! > 0
+                                                                ? "border-green-500"
                                                                 : "border-red-500"
                                                             : "border-brand-black"
                                                     )}
