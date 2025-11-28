@@ -21,9 +21,10 @@ interface WarungState {
     qrisCode?: string;
     cartEnabled?: boolean;
   };
+  opnameMode: 'retail' | 'display' | 'terpadu';
   isLoading: boolean;
   error: string | null;
-  
+
   // Store context for multi-tenant
   currentStoreId: string | null;
   setCurrentStoreId: (storeId: string | null) => void;
@@ -38,8 +39,10 @@ interface WarungActions {
   fetchStockDetails: (productId: string) => Promise<void>;
   fetchInitialBalance: () => Promise<void>;
   fetchStoreProfile: () => Promise<void>;
+  fetchOpnameMode: () => Promise<void>;
   setInitialBalance: (balance: number) => Promise<void>;
   updateStoreProfile: (profile: WarungState['storeProfile']) => Promise<void>;
+  updateOpnameMode: (mode: 'retail' | 'display' | 'terpadu') => Promise<void>;
   addProduct: (productData: ProductFormValues) => Promise<Product>;
   updateProduct: (productId: string, productData: ProductFormValues) => Promise<Product>;
   deleteProduct: (productId: string) => Promise<void>;
@@ -186,6 +189,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         address: '',
         phone: '',
       },
+      opnameMode: 'retail',
       isLoading: false,
       error: null,
       currentStoreId: null,
@@ -226,7 +230,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         try {
           set({ isLoading: true, error: null });
-          
+
           // Fetch sales
           const { data: salesData, error: salesError } = await supabase
             .from('sales')
@@ -239,18 +243,18 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           // Fetch sale items for all sales
           const saleIds = (salesData || []).map(s => s.id);
           let itemsData: any[] = [];
-          
+
           if (saleIds.length > 0) {
             const { data, error: itemsError } = await supabase
               .from('sale_items')
               .select('*')
               .in('sale_id', saleIds);
-            
+
             if (itemsError) throw itemsError;
             itemsData = data || [];
           }
 
-          const sales = (salesData || []).map(sale => 
+          const sales = (salesData || []).map(sale =>
             toSale(sale, itemsData.filter(item => item.sale_id === sale.id))
           );
 
@@ -381,7 +385,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .single();
 
           if (error) throw error;
-          
+
           if (store) {
             set({
               storeProfile: {
@@ -396,6 +400,27 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           }
         } catch (error) {
           console.error('Failed to fetch store profile:', error);
+        }
+      },
+
+      fetchOpnameMode: async () => {
+        const storeId = get().currentStoreId;
+        if (!storeId) return;
+
+        try {
+          const { data, error } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('store_id', storeId)
+            .eq('key', 'opname_mode')
+            .single();
+
+          if (error && error.code !== 'PGRST116') throw error;
+          const mode = (data?.value as 'retail' | 'display' | 'terpadu') || 'retail';
+          set({ opnameMode: mode });
+        } catch (error) {
+          console.error('Failed to fetch opname mode:', error);
+          set({ opnameMode: 'retail' });
         }
       },
 
@@ -441,6 +466,30 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           set({ storeProfile: profile });
         } catch (error) {
           console.error('Failed to save store profile:', error);
+          throw error;
+        }
+      },
+
+      updateOpnameMode: async (mode) => {
+        const storeId = get().currentStoreId;
+        if (!storeId) throw new Error('No store selected');
+
+        try {
+          const { error } = await supabase
+            .from('settings')
+            .upsert({
+              store_id: storeId,
+              key: 'opname_mode',
+              value: mode,
+            }, { onConflict: 'store_id,key' });
+
+          if (error) throw error;
+          set({ opnameMode: mode });
+
+          // Dispatch event for other components
+          window.dispatchEvent(new CustomEvent('opnameMode-changed'));
+        } catch (error) {
+          console.error('Failed to save opname mode:', error);
           throw error;
         }
       },
@@ -574,7 +623,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         const newSale = toSale(saleRow, items.map(i => ({ ...i, sale_id: saleRow.id })));
         set((state) => { state.sales.unshift(newSale); });
-        
+
         // Refresh products
         await get().fetchProducts();
         return newSale;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -19,34 +19,43 @@ import { toast } from 'sonner';
 export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
-    const [opnameMode, setOpnameMode] = useState(() => localStorage.getItem('opnameMode') || 'retail');
     const storeProfile = useWarungStore((state) => state.storeProfile);
+    const opnameMode = useWarungStore((state) => state.opnameMode);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
+    const updateOpnameMode = useWarungStore((state) => state.updateOpnameMode);
+    const fetchOpnameMode = useWarungStore((state) => state.fetchOpnameMode);
     const clearCart = useCartStore((state) => state.clearCart);
-    
+
     const isCartEnabled = storeProfile.cartEnabled ?? false;
-    
-    const handleModeChange = (newMode: string) => {
-        localStorage.setItem('opnameMode', newMode);
-        setOpnameMode(newMode);
-        
-        // Dispatch custom event for other components to listen
-        window.dispatchEvent(new CustomEvent('opnameMode-changed'));
-        
-        // If switching to display mode, disable cart
-        if (newMode === 'display' && isCartEnabled) {
-            handleToggleCart(false);
-            toast.success('Mode Display dipilih. Keranjang belanja dinonaktifkan otomatis.');
-        } else {
-            const modeLabels: Record<string, string> = {
-                retail: 'Retail (Rekon Stok)',
-                display: 'Display (Rekon Kas)',
-                terpadu: 'Terpadu (Rekon Kas + Stok)'
-            };
-            toast.success(`Mode diubah ke: ${modeLabels[newMode] || newMode}`);
+
+    // Load opname mode on mount
+    useEffect(() => {
+        if (isOpen) {
+            fetchOpnameMode();
+        }
+    }, [isOpen, fetchOpnameMode]);
+
+    const handleModeChange = async (newMode: string) => {
+        try {
+            await updateOpnameMode(newMode as 'retail' | 'display' | 'terpadu');
+
+            // If switching to display mode, disable cart
+            if (newMode === 'display' && isCartEnabled) {
+                handleToggleCart(false);
+                toast.success('Mode Display dipilih. Keranjang belanja dinonaktifkan otomatis.');
+            } else {
+                const modeLabels: Record<string, string> = {
+                    retail: 'Retail (Rekon Stok)',
+                    display: 'Display (Rekon Kas)',
+                    terpadu: 'Terpadu (Rekon Kas + Stok)'
+                };
+                toast.success(`Mode diubah ke: ${modeLabels[newMode] || newMode}`);
+            }
+        } catch (error) {
+            toast.error('Gagal menyimpan pengaturan mode');
         }
     };
-    
+
     const handleToggleCart = async (enabled: boolean) => {
         try {
             await updateStoreProfile({
@@ -255,8 +264,8 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         {opnameMode === 'display' && (
                             <Alert className="border-2 border-purple-500 bg-purple-50">
                                 <AlertDescription className="text-xs font-mono text-purple-800">
-                                    <strong>Mode Display Aktif:</strong> Stok sudah dikurangi saat dipajang. 
-                                    Profit dihitung dari rekonsiliasi kas harian. 
+                                    <strong>Mode Display Aktif:</strong> Stok sudah dikurangi saat dipajang.
+                                    Profit dihitung dari rekonsiliasi kas harian.
                                     Fitur keranjang TIDAK tersedia di mode ini.
                                 </AlertDescription>
                             </Alert>
@@ -274,8 +283,8 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         {opnameMode === 'terpadu' && (
                             <Alert className="border-2 border-green-500 bg-green-50">
                                 <AlertDescription className="text-xs font-mono text-green-800">
-                                    <strong>Mode Terpadu Aktif:</strong> Cocok untuk warung self-service. 
-                                    Rekonsiliasi kas dan stok dilakukan sekaligus. Selisih stok otomatis 
+                                    <strong>Mode Terpadu Aktif:</strong> Cocok untuk warung self-service.
+                                    Rekonsiliasi kas dan stok dilakukan sekaligus. Selisih stok otomatis
                                     di-generate sebagai penjualan cash.
                                 </AlertDescription>
                             </Alert>
@@ -325,8 +334,8 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
 
                             <Alert className="border-2 border-orange-500 bg-orange-50">
                                 <AlertDescription className="text-xs font-mono text-orange-800">
-                                    <strong>Penting:</strong> Pembayaran QRIS tidak bisa diverifikasi otomatis. 
-                                    Pengunjung perlu konfirmasi manual setelah membayar. 
+                                    <strong>Penting:</strong> Pembayaran QRIS tidak bisa diverifikasi otomatis.
+                                    Pengunjung perlu konfirmasi manual setelah membayar.
                                     Pastikan cek mutasi rekening secara berkala.
                                 </AlertDescription>
                             </Alert>
@@ -346,7 +355,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                             </p>
                         </div>
                     )}
-                    
+
                     {/* Data Management Section */}
                     <div className="border-2 border-brand-black p-4 space-y-3">
                         <h3 className="font-mono font-bold flex items-center gap-2">

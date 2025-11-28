@@ -11,6 +11,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, loading, store } = useAuth();
   const fetchInitialBalance = useWarungStore((state) => state.fetchInitialBalance);
   const fetchStoreProfile = useWarungStore((state) => state.fetchStoreProfile);
+  const fetchOpnameMode = useWarungStore((state) => state.fetchOpnameMode);
   const setCurrentStoreId = useWarungStore((state) => state.setCurrentStoreId);
   const location = useLocation();
   const hasFetched = useRef(false);
@@ -22,8 +23,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       setCurrentStoreId(store.id);
       fetchInitialBalance();
       fetchStoreProfile();
+      fetchOpnameMode();
     }
-  }, [isAuthenticated, store, setCurrentStoreId, fetchInitialBalance, fetchStoreProfile]);
+  }, [isAuthenticated, store, setCurrentStoreId, fetchInitialBalance, fetchStoreProfile, fetchOpnameMode]);
 
   // Show loading while checking auth
   if (loading) {

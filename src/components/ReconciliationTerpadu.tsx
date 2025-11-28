@@ -28,10 +28,56 @@ export function ReconciliationTerpadu() {
     const [showHistory, setShowHistory] = useState(false);
     const [selectedRecon, setSelectedRecon] = useState<Reconciliation | null>(null);
 
+    // Date filter states
+    const [dateFilter, setDateFilter] = useState<'today' | '7days' | '30days' | 'all' | 'custom'>('all');
+    const [customStartDate, setCustomStartDate] = useState<string>('');
+    const [customEndDate, setCustomEndDate] = useState<string>('');
+
     useEffect(() => {
         fetchProducts();
         fetchReconciliations();
     }, [fetchProducts, fetchReconciliations]);
+
+    // Filter reconciliations by date
+    const getFilteredReconciliations = () => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        return reconciliations.filter(recon => {
+            const reconDate = new Date(recon.createdAt);
+            const reconDay = new Date(reconDate.getFullYear(), reconDate.getMonth(), reconDate.getDate());
+
+            switch (dateFilter) {
+                case 'today':
+                    return reconDay.getTime() === today.getTime();
+                case '7days':
+                    const sevenDaysAgo = new Date(today);
+                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                    return reconDay >= sevenDaysAgo;
+                case '30days':
+                    const thirtyDaysAgo = new Date(today);
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    return reconDay >= thirtyDaysAgo;
+                case 'custom':
+                    if (!customStartDate && !customEndDate) return true;
+                    const start = customStartDate ? new Date(customStartDate) : null;
+                    const end = customEndDate ? new Date(customEndDate) : null;
+                    if (start && end) {
+                        return reconDay >= start && reconDay <= end;
+                    } else if (start) {
+                        return reconDay >= start;
+                    } else if (end) {
+                        return reconDay <= end;
+                    }
+                    return true;
+                case 'all':
+                default:
+                    return true;
+            }
+        });
+    };
+
+    const filteredReconciliations = getFilteredReconciliations();
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -205,7 +251,7 @@ export function ReconciliationTerpadu() {
             <Alert className="border-2 border-green-500 bg-green-50">
                 <Banknote className="w-4 h-4 text-green-600" />
                 <AlertDescription className="font-mono text-sm text-green-800">
-                    <strong>Tips:</strong> Catat kas harian setiap hari untuk tracking pendapatan cash. 
+                    <strong>Tips:</strong> Catat kas harian setiap hari untuk tracking pendapatan cash.
                     Rekon stok bisa dilakukan mingguan/bulanan untuk menyesuaikan data penjualan.
                 </AlertDescription>
             </Alert>
@@ -218,81 +264,169 @@ export function ReconciliationTerpadu() {
                             <History className="w-5 h-5" />
                             Riwayat Rekonsiliasi
                         </CardTitle>
+                        <CardDescription className="font-mono text-xs">
+                            Filter riwayat berdasarkan tanggal
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {reconciliations.map((recon) => (
-                                <div
-                                    key={recon.id}
-                                    className={cn(
-                                        "flex justify-between items-center p-3 border-2",
-                                        recon.stockItems.length > 0 
-                                            ? "border-blue-500 bg-blue-50" 
-                                            : "border-green-500 bg-green-50"
-                                    )}
-                                >
-                                    <div>
-                                        <p className="font-mono font-bold">{formatDate(recon.createdAt)}</p>
-                                        <p className="text-xs text-muted-foreground font-mono">
-                                            {recon.stockItems.length > 0 ? (
-                                                <>Rekon Stok: {recon.stockItems.filter(i => i.difference < 0).length} terjual | </>
-                                            ) : null}
-                                            Kas: {formatCurrency(recon.actualCash)}
-                                        </p>
-                                    </div>
-                                    <Dialog>
-                                        <DialogTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setSelectedRecon(recon)}
-                                                className="border-2 border-brand-black rounded-none"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent className="max-w-lg rounded-none border-4 border-brand-black">
-                                            <DialogHeader>
-                                                <DialogTitle className="font-display">Detail Rekonsiliasi</DialogTitle>
-                                            </DialogHeader>
-                                            {selectedRecon && (
-                                                <div className="space-y-4 font-mono text-sm">
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <div>Tanggal:</div>
-                                                        <div className="font-bold">{formatDate(selectedRecon.createdAt)}</div>
-                                                        <div>Kas Dicatat:</div>
-                                                        <div className="font-bold text-green-600">{formatCurrency(selectedRecon.actualCash)}</div>
+                    <CardContent className="space-y-4">
+                        {/* Quick Filters */}
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                variant={dateFilter === 'today' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setDateFilter('today')}
+                                className="rounded-none border-2 border-brand-black font-mono text-xs"
+                            >
+                                Hari Ini
+                            </Button>
+                            <Button
+                                variant={dateFilter === '7days' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setDateFilter('7days')}
+                                className="rounded-none border-2 border-brand-black font-mono text-xs"
+                            >
+                                7 Hari Terakhir
+                            </Button>
+                            <Button
+                                variant={dateFilter === '30days' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setDateFilter('30days')}
+                                className="rounded-none border-2 border-brand-black font-mono text-xs"
+                            >
+                                30 Hari
+                            </Button>
+                            <Button
+                                variant={dateFilter === 'all' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setDateFilter('all')}
+                                className="rounded-none border-2 border-brand-black font-mono text-xs"
+                            >
+                                Semua
+                            </Button>
+                            <Button
+                                variant={dateFilter === 'custom' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setDateFilter('custom')}
+                                className="rounded-none border-2 border-brand-black font-mono text-xs"
+                            >
+                                Custom
+                            </Button>
+                        </div>
+
+                        {/* Custom Date Range */}
+                        {dateFilter === 'custom' && (
+                            <div className="flex gap-2 items-center border-2 border-brand-black p-3 bg-gray-50">
+                                <div className="flex-1">
+                                    <label className="text-xs font-mono font-bold block mb-1">Dari Tanggal</label>
+                                    <Input
+                                        type="date"
+                                        value={customStartDate}
+                                        onChange={(e) => setCustomStartDate(e.target.value)}
+                                        className="border-2 border-brand-black rounded-none font-mono text-sm"
+                                    />
+                                </div>
+                                <div className="flex-1">
+                                    <label className="text-xs font-mono font-bold block mb-1">Sampai Tanggal</label>
+                                    <Input
+                                        type="date"
+                                        value={customEndDate}
+                                        onChange={(e) => setCustomEndDate(e.target.value)}
+                                        className="border-2 border-brand-black rounded-none font-mono text-sm"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Filter Summary */}
+                        <div className="flex justify-between items-center text-xs font-mono p-2 bg-blue-50 border-2 border-blue-300">
+                            <span>Menampilkan: <strong>{filteredReconciliations.length}</strong> dari {reconciliations.length} catatan</span>
+                            {filteredReconciliations.length > 0 && (
+                                <span className="font-bold text-blue-700">
+                                    Total Kas: {formatCurrency(filteredReconciliations.reduce((sum, r) => sum + r.actualCash, 0))}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Reconciliation List */}
+                        {filteredReconciliations.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground font-mono text-sm">
+                                Tidak ada data untuk periode yang dipilih
+                            </div>
+                        ) : (
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {filteredReconciliations.map((recon) => (
+                                    <div
+                                        key={recon.id}
+                                        className={cn(
+                                            "flex justify-between items-center p-3 border-2",
+                                            recon.stockItems.length > 0
+                                                ? "border-blue-500 bg-blue-50"
+                                                : "border-green-500 bg-green-50"
+                                        )}
+                                    >
+                                        <div>
+                                            <p className="font-mono font-bold">{formatDate(recon.createdAt)}</p>
+                                            <p className="text-xs text-muted-foreground font-mono">
+                                                {recon.stockItems.length > 0 ? (
+                                                    <>Rekon Stok: {recon.stockItems.filter(i => i.difference < 0).length} terjual | </>
+                                                ) : null}
+                                                Kas: {formatCurrency(recon.actualCash)}
+                                            </p>
+                                        </div>
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setSelectedRecon(recon)}
+                                                    className="border-2 border-brand-black rounded-none"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-lg rounded-none border-4 border-brand-black">
+                                                <DialogHeader>
+                                                    <DialogTitle className="font-display">Detail Rekonsiliasi</DialogTitle>
+                                                </DialogHeader>
+                                                {selectedRecon && (
+                                                    <div className="space-y-4 font-mono text-sm">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div>Tanggal:</div>
+                                                            <div className="font-bold">{formatDate(selectedRecon.createdAt)}</div>
+                                                            <div>Kas Dicatat:</div>
+                                                            <div className="font-bold text-green-600">{formatCurrency(selectedRecon.actualCash)}</div>
+                                                            {selectedRecon.stockItems.length > 0 && (
+                                                                <>
+                                                                    <div>Est. Penjualan (Stok):</div>
+                                                                    <div className="font-bold text-blue-600">{formatCurrency(selectedRecon.totalStockValue)}</div>
+                                                                    <div>Selisih:</div>
+                                                                    <div className={cn("font-bold", selectedRecon.unidentifiedAmount > 0 ? "text-yellow-600" : selectedRecon.unidentifiedAmount < 0 ? "text-red-600" : "text-gray-600")}>
+                                                                        {formatCurrency(selectedRecon.unidentifiedAmount)}
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
                                                         {selectedRecon.stockItems.length > 0 && (
-                                                            <>
-                                                                <div>Est. Penjualan (Stok):</div>
-                                                                <div className="font-bold text-blue-600">{formatCurrency(selectedRecon.totalStockValue)}</div>
-                                                                <div>Selisih:</div>
-                                                                <div className={cn("font-bold", selectedRecon.unidentifiedAmount > 0 ? "text-yellow-600" : selectedRecon.unidentifiedAmount < 0 ? "text-red-600" : "text-gray-600")}>
-                                                                    {formatCurrency(selectedRecon.unidentifiedAmount)}
+                                                            <div>
+                                                                <p className="font-bold mb-2">Produk Terjual:</p>
+                                                                <div className="max-h-40 overflow-y-auto space-y-1">
+                                                                    {selectedRecon.stockItems.filter(i => i.difference < 0).map((item, idx) => (
+                                                                        <div key={idx} className="flex justify-between text-xs bg-gray-50 p-2">
+                                                                            <span>{item.productName}</span>
+                                                                            <span>{Math.abs(item.difference)} × {formatCurrency(item.unitPrice)}</span>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-                                                            </>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {selectedRecon.stockItems.length > 0 && (
-                                                        <div>
-                                                            <p className="font-bold mb-2">Produk Terjual:</p>
-                                                            <div className="max-h-40 overflow-y-auto space-y-1">
-                                                                {selectedRecon.stockItems.filter(i => i.difference < 0).map((item, idx) => (
-                                                                    <div key={idx} className="flex justify-between text-xs bg-gray-50 p-2">
-                                                                        <span>{item.productName}</span>
-                                                                        <span>{Math.abs(item.difference)} × {formatCurrency(item.unitPrice)}</span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-                            ))}
-                        </div>
+                                                )}
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             )}
@@ -300,15 +434,15 @@ export function ReconciliationTerpadu() {
             {/* Main Tabs */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as RekonTab)} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 rounded-none border-4 border-brand-black h-auto p-0">
-                    <TabsTrigger 
-                        value="kas" 
+                    <TabsTrigger
+                        value="kas"
                         className="rounded-none font-mono font-bold py-3 data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black"
                     >
                         <Wallet className="w-4 h-4 mr-2" />
                         Catat Kas Harian
                     </TabsTrigger>
-                    <TabsTrigger 
-                        value="stok" 
+                    <TabsTrigger
+                        value="stok"
                         className="rounded-none font-mono font-bold py-3 data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black"
                     >
                         <Package className="w-4 h-4 mr-2" />
@@ -354,7 +488,7 @@ export function ReconciliationTerpadu() {
 
                             <Alert className="border-2 border-blue-300 bg-blue-50">
                                 <AlertDescription className="font-mono text-xs text-blue-800">
-                                    <strong>Catatan:</strong> Jika ada penjualan via QRIS, uang masuk ke rekening secara otomatis 
+                                    <strong>Catatan:</strong> Jika ada penjualan via QRIS, uang masuk ke rekening secara otomatis
                                     dan sudah tercatat di sistem. Yang perlu dicatat di sini hanya uang tunai (cash).
                                 </AlertDescription>
                             </Alert>
@@ -517,12 +651,12 @@ export function ReconciliationTerpadu() {
                             {actualCashNum > 0 && soldItems.length > 0 && (
                                 <Alert className={cn(
                                     "border-2",
-                                    Math.abs(actualCashNum - totalStockValue) < 5000 
-                                        ? "border-green-500 bg-green-50" 
+                                    Math.abs(actualCashNum - totalStockValue) < 5000
+                                        ? "border-green-500 bg-green-50"
                                         : "border-yellow-500 bg-yellow-50"
                                 )}>
                                     <AlertDescription className="font-mono text-sm">
-                                        <strong>Cross-check:</strong> Kas ({formatCurrency(actualCashNum)}) vs Est. Penjualan ({formatCurrency(totalStockValue)}) 
+                                        <strong>Cross-check:</strong> Kas ({formatCurrency(actualCashNum)}) vs Est. Penjualan ({formatCurrency(totalStockValue)})
                                         {' = '}
                                         <span className={cn(
                                             "font-bold",
