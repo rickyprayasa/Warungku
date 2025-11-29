@@ -214,17 +214,19 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .order('name');
 
           if (error) throw error;
-          set({ products: (data || []).map(toProduct), isLoading: false });
+          set({ products: (data || []).map(toProduct) });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to fetch products';
-          set({ isLoading: false, error: errorMessage });
+          set({ error: errorMessage });
+        } finally {
+          set({ isLoading: false });
         }
       },
 
       fetchSales: async () => {
         const storeId = get().currentStoreId;
         if (!storeId) {
-          set({ sales: [], isLoading: false });
+          set({ sales: [] });
           return;
         }
 
@@ -258,10 +260,12 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             toSale(sale, itemsData.filter(item => item.sale_id === sale.id))
           );
 
-          set({ sales, isLoading: false });
+          set({ sales });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sales';
-          set({ isLoading: false, error: errorMessage });
+          set({ error: errorMessage });
+        } finally {
+          set({ isLoading: false });
         }
       },
 
@@ -908,21 +912,124 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const storeId = get().currentStoreId;
         if (!storeId) throw new Error('No store selected');
 
-        // Simplified reconciliation - full logic to be implemented
+        const products = get().products;
+        const expectedCash = 0; // For self-service mode, we assume 0 expected cash from system for now
+
+        const stockItems: any[] = [];
+        let totalStockValue = 0;
+        let totalStockCost = 0;
+        const soldItems: any[] = [];
+
+        // Process each stock item
+        for (const item of payload.stockItems) {
+          const product = products.find(p => p.id === item.productId);
+          if (!product) continue;
+
+          const systemStock = product.totalStock || 0;
+          const physicalStock = item.physicalStock;
+          const difference = physicalStock - systemStock; // negative = sold
+
+          // Calculate value if sold (difference < 0)
+          let itemValue = 0;
+          let itemCost = 0;
+
+          if (difference < 0) {
+            const qtySold = Math.abs(difference);
+            itemValue = qtySold * product.price;
+            itemCost = qtySold * (product.cost || 0);
+
+            totalStockValue += itemValue;
+            totalStockCost += itemCost;
+
+            soldItems.push({
+              product_id: product.id,
+              product_name: product.name,
+              quantity: qtySold,
+              price: product.price,
+              cost: product.cost || 0
+            });
+          }
+
+          stockItems.push({
+            productId: product.id,
+            productName: product.name,
+            systemStock,
+            physicalStock,
+            difference,
+            unitPrice: product.price,
+            unitCost: product.cost || 0,
+            totalValue: itemValue
+          });
+
+          // Update product stock
+          if (difference !== 0) {
+            await supabase
+              .from('products')
+              .update({ total_stock: physicalStock })
+              .eq('id', product.id);
+          }
+        }
+
+        const generatedSaleIds: string[] = [];
+
+        // Create a sale record if there are sold items
+        if (soldItems.length > 0) {
+          const saleData = {
+            store_id: storeId,
+            total: totalStockValue,
+            profit: totalStockValue - totalStockCost,
+            sale_type: 'retail', // Default to retail
+            notes: '[REKON] Penjualan cash dari rekonsiliasi terpadu'
+          };
+
+          const { data: sale, error: saleError } = await supabase
+            .from('sales')
+            .insert(saleData)
+            .select()
+            .single();
+
+          if (saleError) throw saleError;
+          if (sale) {
+            generatedSaleIds.push(sale.id);
+
+            // Create sale items
+            const saleItems = soldItems.map(item => ({
+              sale_id: sale.id,
+              ...item
+            }));
+
+            const { error: itemsError } = await supabase
+              .from('sale_items')
+              .insert(saleItems);
+
+            if (itemsError) throw itemsError;
+          }
+        }
+
+        // Calculate unidentified amount (Cash Difference - Stock Value)
+        // If cash > stock value, it's surplus. If cash < stock value, it's missing money.
+        // But here logic is: Actual Cash is what we have. 
+        // We assume "sold items" *should* generate cash.
+        // So expected cash from THIS session = totalStockValue.
+        // But we might have previous cash. 
+        // Let's stick to the requirement: Unidentified = Actual Cash - Total Stock Value (assuming 0 start)
+        const unidentifiedAmount = payload.actualCash - totalStockValue;
+
         const { data, error } = await supabase
           .from('reconciliations')
           .insert({
             store_id: storeId,
             date: new Date().toISOString().split('T')[0],
-            expected_cash: 0,
+            expected_cash: expectedCash,
             actual_cash: payload.actualCash,
-            cash_difference: payload.actualCash,
-            stock_items: payload.stockItems,
-            total_stock_value: 0,
-            total_stock_cost: 0,
-            unidentified_amount: 0,
+            cash_difference: payload.actualCash - expectedCash, // Total cash difference
+            stock_items: stockItems,
+            total_stock_value: totalStockValue,
+            total_stock_cost: totalStockCost,
+            unidentified_amount: unidentifiedAmount,
+            generated_sale_ids: generatedSaleIds,
             notes: payload.notes || '',
-            status: 'completed',
+            status: unidentifiedAmount !== 0 ? 'has_discrepancy' : 'completed',
           })
           .select()
           .single();
@@ -930,8 +1037,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         if (error) throw error;
         const newRecon = toReconciliation(data);
         set((state) => { state.reconciliations.unshift(newRecon); });
+
+        // Refresh data
         await get().fetchProducts();
         await get().fetchSales();
+
         return newRecon;
       },
     })),
