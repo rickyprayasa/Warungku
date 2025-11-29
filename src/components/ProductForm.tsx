@@ -134,12 +134,8 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
         // Add Initial Stock if provided
         if (initialStock > 0) {
           try {
-            await api(`/api/products/${newProduct.id}/add-stock`, {
-              method: 'POST',
-              body: JSON.stringify({ quantity: initialStock, unitCost: calculatedUnitCost, isInitialStock: true })
-            });
-            // Refresh products to reflect stock change
-            await fetchProducts();
+            // Use store action instead of API call
+            await adjustStock(newProduct.id, initialStock, calculatedUnitCost, true);
             toast.success(`Stok awal ${initialStock} berhasil ditambahkan!`);
           } catch (stockError) {
             console.error('Failed to add initial stock:', stockError);

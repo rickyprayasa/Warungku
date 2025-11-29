@@ -241,6 +241,21 @@ export function AnalyticsDashboard() {
       }))
       .sort((a, b) => b.value - a.value);
 
+    // Calculate Today and Month metrics for the Sales Tab
+    const now = new Date();
+    const startOfToday = startOfDay(now).getTime();
+    const endOfToday = endOfDay(now).getTime();
+    const startOfMonth = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1)).getTime();
+
+    const todaySales = validSales.filter(s => s.createdAt >= startOfToday && s.createdAt <= endOfToday);
+    const monthSales = validSales.filter(s => s.createdAt >= startOfMonth && s.createdAt <= endOfToday);
+
+    const todayProfit = todaySales.reduce((sum, s) => sum + (Number(s.profit) || 0), 0);
+    const thisMonthProfit = monthSales.reduce((sum, s) => sum + (Number(s.profit) || 0), 0);
+    const thisMonthRevenue = monthSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+    const todaySalesCount = todaySales.length;
+    const thisMonthSalesCount = monthSales.length;
+
     return {
       revenue,
       profit,
@@ -255,6 +270,12 @@ export function AnalyticsDashboard() {
       activeProducts,
       lowStockProducts,
       outOfStockProducts,
+      // Added metrics
+      todayProfit,
+      thisMonthProfit,
+      thisMonthRevenue,
+      todaySalesCount,
+      thisMonthSalesCount,
     };
   }, [sales, purchases, products, dateRange]);
 

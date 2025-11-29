@@ -47,7 +47,7 @@ export function HomePage() {
   // Set store ID based on auth state
   useEffect(() => {
     if (authLoading) return;
-    
+
     if (isAuthenticated && store) {
       // Authenticated user - use their store
       setCurrentStoreId(store.id);
@@ -62,6 +62,9 @@ export function HomePage() {
     if (currentStoreId) {
       fetchStoreProfile();
       fetchProducts();
+      // Fetch sales and purchases for dashboard
+      useWarungStore.getState().fetchSales();
+      useWarungStore.getState().fetchPurchases();
     }
   }, [currentStoreId, fetchStoreProfile, fetchProducts]);
 
