@@ -173,6 +173,29 @@ function toReconciliation(row: any): Reconciliation {
   };
 }
 
+// Timeout helper
+async function withTimeout<T>(
+  promise: Promise<T> | PromiseLike<T>,
+  timeoutMs: number = 15000,
+  errorMessage: string = 'Request timed out'
+): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId!);
+    throw error;
+  }
+}
+
 export const useWarungStore = create<WarungState & WarungActions>()(
   persist(
     immer((set, get) => ({
@@ -207,17 +230,24 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         try {
           set({ isLoading: true, error: null });
-          const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('store_id', storeId)
-            .order('name');
+
+          // Use withTimeout to prevent hanging indefinitely
+          const { data, error } = await withTimeout(
+            supabase
+              .from('products')
+              .select('*')
+              .eq('store_id', storeId)
+              .order('name') as any, // Cast to any to avoid complex TS issues with PostgrestBuilder
+            15000, // 15s timeout
+            'Koneksi lambat - Gagal memuat produk'
+          );
 
           if (error) throw error;
           set({ products: (data || []).map(toProduct) });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch products';
+          const errorMessage = error instanceof Error ? error.message : 'Gagal memuat produk';
           set({ error: errorMessage });
+          console.error('[FETCH PRODUCTS ERROR]', error);
         } finally {
           set({ isLoading: false });
         }
@@ -233,37 +263,46 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         try {
           set({ isLoading: true, error: null });
 
-          // Fetch sales
-          const { data: salesData, error: salesError } = await supabase
-            .from('sales')
-            .select('*')
-            .eq('store_id', storeId)
-            .order('created_at', { ascending: false });
+          // Fetch sales with timeout
+          const { data: salesData, error: salesError } = await withTimeout(
+            supabase
+              .from('sales')
+              .select('*')
+              .eq('store_id', storeId)
+              .order('created_at', { ascending: false }) as any,
+            15000,
+            'Koneksi lambat - Gagal memuat penjualan'
+          );
 
           if (salesError) throw salesError;
 
-          // Fetch sale items for all sales
-          const saleIds = (salesData || []).map(s => s.id);
+          // Fetch sale items
+          const saleIds = (salesData || []).map((s: any) => s.id);
           let itemsData: any[] = [];
 
           if (saleIds.length > 0) {
-            const { data, error: itemsError } = await supabase
-              .from('sale_items')
-              .select('*')
-              .in('sale_id', saleIds);
+            const { data, error: itemsError } = await withTimeout(
+              supabase
+                .from('sale_items')
+                .select('*')
+                .in('sale_id', saleIds) as any,
+              15000,
+              'Koneksi lambat - Gagal memuat detail penjualan'
+            );
 
             if (itemsError) throw itemsError;
             itemsData = data || [];
           }
 
-          const sales = (salesData || []).map(sale =>
+          const sales = (salesData || []).map((sale: any) =>
             toSale(sale, itemsData.filter(item => item.sale_id === sale.id))
           );
 
           set({ sales });
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sales';
+          const errorMessage = error instanceof Error ? error.message : 'Gagal memuat penjualan';
           set({ error: errorMessage });
+          console.error('[FETCH SALES ERROR]', error);
         } finally {
           set({ isLoading: false });
         }
