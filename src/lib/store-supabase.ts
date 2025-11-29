@@ -237,13 +237,28 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               .from('products')
               .select('*')
               .eq('store_id', storeId)
-              .order('name') as any, // Cast to any to avoid complex TS issues with PostgrestBuilder
+              .order('created_at', { ascending: false }) as any, // Cast to any to avoid complex TS issues with PostgrestBuilder
             15000, // 15s timeout
             'Koneksi lambat - Gagal memuat produk'
           );
 
           if (error) throw error;
-          set({ products: (data || []).map(toProduct) });
+
+          const mappedProducts = (data || []).map(toProduct);
+
+          // Sort: In-stock first (newest to oldest), then Out-of-stock (newest to oldest)
+          mappedProducts.sort((a, b) => {
+            const aOut = (a.totalStock || 0) <= 0;
+            const bOut = (b.totalStock || 0) <= 0;
+
+            if (aOut !== bOut) {
+              return aOut ? 1 : -1; // Put out-of-stock last
+            }
+            // If stock status is same, sort by created_at desc
+            return b.createdAt - a.createdAt;
+          });
+
+          set({ products: mappedProducts });
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Gagal memuat produk';
           set({ error: errorMessage });
@@ -404,7 +419,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .select('value')
             .eq('store_id', storeId)
             .eq('key', 'initial_balance')
-            .single();
+            .single() as any;
 
           if (error && error.code !== 'PGRST116') throw error;
           const balance = data ? parseFloat(data.value) || 0 : 0;
@@ -425,7 +440,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .from('stores')
             .select('*')
             .eq('id', storeId)
-            .single();
+            .single() as any;
 
           if (error) throw error;
 
@@ -456,7 +471,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .select('value')
             .eq('store_id', storeId)
             .eq('key', 'opname_mode')
-            .single();
+            .single() as any;
 
           if (error && error.code !== 'PGRST116') throw error;
           const mode = (data?.value as 'retail' | 'display' | 'terpadu') || 'retail';
@@ -478,7 +493,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               store_id: storeId,
               key: 'initial_balance',
               value: balance.toString(),
-            }, { onConflict: 'store_id,key' });
+            }, { onConflict: 'store_id,key' } as any);
 
           if (error) throw error;
           set({ initialBalance: balance });
@@ -524,7 +539,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               store_id: storeId,
               key: 'opname_mode',
               value: mode,
-            }, { onConflict: 'store_id,key' });
+            }, { onConflict: 'store_id,key' } as any);
 
           if (error) throw error;
           set({ opnameMode: mode });
@@ -559,7 +574,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             qty_per_unit: productData.qtyPerUnit || 1,
           })
           .select()
-          .single();
+          .single() as any;
 
         if (error) throw error;
         const newProduct = toProduct(data);
@@ -586,7 +601,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           })
           .eq('id', productId)
           .select()
-          .single();
+          .single() as any;
 
         if (error) throw error;
         const updatedProduct = toProduct(data);
@@ -641,7 +656,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             notes: saleData.notes || '',
           })
           .select()
-          .single();
+          .single() as any;
 
         if (saleError) throw saleError;
 
@@ -677,7 +692,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const { data: items } = await supabase
           .from('sale_items')
           .select('*')
-          .eq('sale_id', saleId);
+          .eq('sale_id', saleId) as any;
 
         // Delete sale (cascade deletes items)
         const { error } = await supabase
@@ -729,7 +744,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             notes: purchaseData.notes || '',
           })
           .select('*, suppliers(name)')
-          .single();
+          .single() as any;
 
         if (error) throw error;
 
@@ -762,7 +777,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .from('purchases')
           .select('*')
           .eq('id', purchaseId)
-          .single();
+          .single() as any;
 
         if (!purchase) throw new Error('Purchase not found');
 
