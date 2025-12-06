@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Sitemap: https://omzetin.web.id/sitemap.xml
+
+# Allow crawling of all public pages
+Allow: /dashboard
+Allow: /opname
+
+# Disallow admin/sensitive areas if any
+Disallow: /api/
+Disallow: *.json$
