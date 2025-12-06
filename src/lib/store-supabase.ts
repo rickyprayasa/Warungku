@@ -219,6 +219,18 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       setCurrentStoreId: (storeId) => {
         set({ currentStoreId: storeId });
+        
+        // When store ID changes, fetch fresh data
+        if (storeId) {
+          get().fetchProducts();
+          get().fetchSales();
+          get().fetchPurchases();
+          get().fetchSuppliers();
+          get().fetchJajananRequests();
+          get().fetchStoreProfile();
+          get().fetchInitialBalance();
+          get().fetchOpnameMode();
+        }
       },
 
       fetchProducts: async () => {
@@ -1100,11 +1112,24 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
     })),
     {
-      name: 'warung-storage-v2',
+      name: 'warung-storage-v3',
       storage: createJSONStorage(() => localStorage),
+      // Only persist store ID, never persist data entities
+      // This prevents stale data from localStorage
       partialize: (state) => ({
         currentStoreId: state.currentStoreId,
       }),
+      version: 3,
+      migrate: (persistedState: any, version: number) => {
+        // Clear old cached data from previous versions
+        if (version < 3) {
+          console.log('[STORE] Migrating to v3: clearing stale cached data');
+          return { 
+            currentStoreId: persistedState?.currentStoreId || null 
+          };
+        }
+        return persistedState as any;
+      },
     }
   )
 );

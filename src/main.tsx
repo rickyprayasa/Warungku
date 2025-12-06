@@ -10,7 +10,59 @@ import {
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { shouldRetryQuery, getRetryDelay } from '@/lib/query-utils';
 import '@/index.css'
+
+// App version check - clear stale cached data when version changes
+const APP_VERSION = '2.1.0';
+const storedVersion = localStorage.getItem('app-version');
+
+if (storedVersion !== APP_VERSION) {
+  console.log('[VERSION CHECK] App version changed from', storedVersion, 'to', APP_VERSION);
+  console.log('[VERSION CHECK] Clearing stale cached data...');
+  
+  // Clear old store data (keep auth data)
+  const keysToRemove = [
+    'warung-storage-v2',
+    'warung-storage-v3',
+    'dismissedNotifications',
+  ];
+  
+  keysToRemove.forEach(key => {
+    if (localStorage.getItem(key)) {
+      localStorage.removeItem(key);
+      console.log('[VERSION CHECK] Removed:', key);
+    }
+  });
+  
+  localStorage.setItem('app-version', APP_VERSION);
+  console.log('[VERSION CHECK] Migration complete!');
+}
+
+// Setup Tanstack Query Client with smart retry logic
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 30, // 30 seconds
+      gcTime: 1000 * 60 * 5, // 5 minutes (formerly cacheTime)
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: shouldRetryQuery,
+      retryDelay: getRetryDelay,
+      // Network mode: online only (don't try to fetch if offline)
+      networkMode: 'online',
+    },
+    mutations: {
+      retry: (failureCount, error) => {
+        // Only retry mutations on network errors, max 1 retry
+        return failureCount < 1 && shouldRetryQuery(failureCount, error);
+      },
+      retryDelay: getRetryDelay,
+      networkMode: 'online',
+    },
+  },
+});
 
 // Lazy load all page components for code splitting
 const HomePage = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })));
@@ -153,9 +205,11 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

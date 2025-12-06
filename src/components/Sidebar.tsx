@@ -3,7 +3,8 @@ import { cn } from '@/lib/utils';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from './ui/button';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode } from 'lucide-react';
+import { toast } from 'sonner';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
@@ -37,6 +38,27 @@ export function Sidebar() {
     const handleLogout = async () => {
         await signOut();
         navigate('/login');
+    };
+
+    const handleRefreshData = async () => {
+        const store = useWarungStore.getState();
+        
+        toast.promise(
+            Promise.all([
+                store.fetchProducts(),
+                store.fetchSales(),
+                store.fetchPurchases(),
+                store.fetchSuppliers(),
+                store.fetchJajananRequests(),
+                store.fetchReconciliations(),
+                store.fetchStoreProfile(),
+            ]),
+            {
+                loading: 'Memuat ulang data...',
+                success: 'Data berhasil di-refresh!',
+                error: 'Gagal memuat ulang data',
+            }
+        );
     };
 
     if (!isAuthenticated) return null;
@@ -213,6 +235,20 @@ export function Sidebar() {
                     // Collapsed footer icons
                     <TooltipProvider delayDuration={300}>
                         <div className="flex flex-col items-center gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={handleRefreshData}
+                                        variant="ghost"
+                                        size="icon"
+                                        className="hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">Refresh Data</TooltipContent>
+                            </Tooltip>
+
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div className="w-full flex justify-center">

@@ -11,6 +11,8 @@ import { CartSheet } from '@/components/CartSheet';
 import { FloatingCart } from '@/components/FloatingCart';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
+import { setupRealtimeSync, setRealtimeQueryClient } from '@/lib/realtime-sync';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Default store ID for public access (omzetin store)
 const DEFAULT_STORE_ID = '6c65a321-3576-4a38-a834-19afa1c4d83e';
@@ -21,6 +23,7 @@ export function HomePage() {
   const fetchStoreProfile = useWarungStore((state) => state.fetchStoreProfile);
   const setCurrentStoreId = useWarungStore((state) => state.setCurrentStoreId);
   const currentStoreId = useWarungStore((state) => state.currentStoreId);
+  const queryClient = useQueryClient();
 
   // Track sidebar collapse state for margin adjustment
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -67,6 +70,24 @@ export function HomePage() {
       useWarungStore.getState().fetchPurchases();
     }
   }, [currentStoreId, fetchStoreProfile, fetchProducts]);
+
+  // Setup query client for realtime sync
+  useEffect(() => {
+    setRealtimeQueryClient(queryClient);
+  }, [queryClient]);
+
+  // Setup realtime sync when store ID is available
+  useEffect(() => {
+    if (currentStoreId) {
+      console.log('[HOMEPAGE] Setting up realtime sync for store:', currentStoreId);
+      const cleanup = setupRealtimeSync(currentStoreId);
+      
+      return () => {
+        console.log('[HOMEPAGE] Cleaning up realtime sync');
+        cleanup();
+      };
+    }
+  }, [currentStoreId]);
 
   return (
     <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden">
