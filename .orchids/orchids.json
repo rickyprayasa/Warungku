@@ -1,0 +1,7 @@
+{
+  "projectId": "warungos-vsarw0kgo77brnns486v0",
+  "createdAt": 1765420521855,
+  "startupCommands": [
+    "npm install; npm run dev"
+  ]
+}

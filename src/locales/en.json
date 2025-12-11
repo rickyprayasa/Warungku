@@ -1,0 +1,157 @@
+{
+  "header": {
+    "menu": "Menu",
+    "dashboard": "Dashboard",
+    "logout": "Logout"
+  },
+  "footer": {
+    "tagline": "Modern point-of-sale, reimagined. Built with love for the next generation of entrepreneurs.",
+    "builtWith": "Built with ❤️ at Cloudflare",
+    "poweredBy": "Powered by",
+    "marketing": "Explore our gallery of Google Sheets application templates to boost your productivity!"
+  },
+  "menuPage": {
+    "title": "Snack Menu",
+    "subtitle": "See the details of available snacks.",
+    "searchPlaceholder": "Search for snack name or category...",
+    "allCategory": "All",
+    "noProducts": "No products found."
+  },
+  "loginPage": {
+    "title": "Admin Access",
+    "subtitle": "Enter credentials to manage WarungOS.",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "loginButton": "Login"
+  },
+  "dashboard": {
+    "title": "Warungku Dashboard",
+    "subtitle": "Manage your store's products, sales, and finances.",
+    "tabs": {
+      "products": "Products",
+      "sales": "Sales",
+      "purchases": "Purchases",
+      "suppliers": "Suppliers",
+      "cashflow": "Cash Flow",
+      "finance": "Finance"
+    }
+  },
+  "productManagement": {
+    "title": "Product Inventory",
+    "subtitle": "Add, edit, or delete your products.",
+    "newProduct": "New Product"
+  },
+  "salesDashboard": {
+    "title": "Sales History",
+    "subtitle": "Review past transactions and record new sales.",
+    "export": "Export",
+    "recordSale": "Record Sale"
+  },
+  "purchasesDashboard": {
+    "title": "Purchase History",
+    "subtitle": "Track your inventory purchases and supplier orders.",
+    "recordPurchase": "Record Purchase"
+  },
+  "suppliersDashboard": {
+    "title": "Supplier Management",
+    "subtitle": "Add, edit, or delete your suppliers.",
+    "newSupplier": "New Supplier"
+  },
+  "cashflowDashboard": {
+    "title": "Cash Flow",
+    "subtitle": "Monitor the flow of cash in and out of your business.",
+    "totalCashIn": "Total Cash In",
+    "totalCashOut": "Total Cash Out",
+    "netCashFlow": "Net Cash Flow",
+    "recentTransactions": "Recent Transactions",
+    "type": "Type",
+    "date": "Date",
+    "description": "Description",
+    "amount": "Amount",
+    "sale": "Sale",
+    "purchase": "Purchase",
+    "noTransactions": "No transactions recorded yet."
+  },
+  "financeDashboard": {
+    "title": "Financial Summary",
+    "subtitle": "An overview of your business's financial health.",
+    "exportReport": "Export Report",
+    "grossRevenue": "Gross Revenue",
+    "cogs": "Cost of Goods Sold",
+    "netProfit": "Net Profit",
+    "profitMargin": "Profit Margin",
+    "monthlyPerformance": "Monthly Performance",
+    "cashOnHand": "Cash on Hand",
+    "cashOnHandSubtitle": "Based on initial balance, sales, and purchases.",
+    "setInitialBalance": "Set Initial Balance",
+    "setInitialBalancePlaceholder": "Enter starting cash",
+    "setButton": "Set"
+  },
+  "forms": {
+    "save": "Save",
+    "saving": "Saving...",
+    "product": {
+      "addTitle": "Add New Product",
+      "editTitle": "Edit Product",
+      "name": "Product Name",
+      "sellPrice": "Sell Price",
+      "buyPrice": "Buy Price",
+      "category": "Category",
+      "imageUrl": "Image URL"
+    },
+    "sale": {
+      "title": "Record New Sale",
+      "product": "Product",
+      "selectProduct": "Select a product",
+      "qty": "Qty",
+      "addItem": "Add Item",
+      "total": "Total"
+    },
+    "purchase": {
+      "title": "Record New Purchase",
+      "product": "Product",
+      "selectProduct": "Select a product",
+      "quantity": "Quantity",
+      "unitBuyPrice": "Unit Buy Price",
+      "supplier": "Supplier",
+      "selectSupplier": "Select a supplier",
+      "totalCost": "Total Cost"
+    },
+    "supplier": {
+      "addTitle": "Add New Supplier",
+      "editTitle": "Edit Supplier",
+      "name": "Supplier Name",
+      "contactPerson": "Contact Person",
+      "phone": "Phone Number"
+    }
+  },
+  "tables": {
+    "actions": "Actions",
+    "image": "Image",
+    "name": "Name",
+    "category": "Category",
+    "price": "Price",
+    "date": "Date",
+    "items": "{count, plural, one {# item sold} other {# items sold}}",
+    "totalSale": "Total Sale",
+    "profit": "Profit",
+    "product": "Product",
+    "qty": "Qty",
+    "cost": "Cost",
+    "subtotal": "Subtotal",
+    "quantity": "Quantity",
+    "supplier": "Supplier",
+    "totalCost": "Total Cost",
+    "contactPerson": "Contact Person",
+    "phone": "Phone"
+  },
+  "dialogs": {
+    "deleteTitle": "Are you sure?",
+    "deleteProduct": "This action cannot be undone. This will permanently delete the product \"{productName}\".",
+    "deleteSupplier": "This action will permanently delete the supplier \"{supplierName}\".",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "productDetails": "Detailed description for {productName} will be displayed here. For now, we are only showing basic information."
+  }
+}

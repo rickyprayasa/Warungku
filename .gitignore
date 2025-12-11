@@ -1,0 +1,39 @@
+
+# Bootstrap marker
+.bootstrap-complete
+node_modules
+CREDENTIALS.md
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Supabase
+.supabase
+
+# Build outputs
+dist/
+.wrangler/
+# OS files
+.DS_Store
+*.DS_Store
+
+# Cache
+.eslintcache
+tsconfig.tsbuildinfo
+
+# Screenshots (local only)
+*.png
+screenshot/
+
+# Documentation with potential secrets
+CHANGELOG-REALTIME-SYNC.md
+SETUP-SUPABASE.md
+TROUBLESHOOTING.md
+CHECK-LOCALHOST-ERRORS.md
+FIX-LOCALHOST-ONLY.md
+FIX-SALES-ERROR.md
+IMPLEMENTATION-SUMMARY.md
+CREDENTIALS.md
