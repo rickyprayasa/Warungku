@@ -231,11 +231,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    useWarungStore.getState().resetStore();
-    setUser(null);
-    setSession(null);
-    setStore(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out from Supabase:', error);
+    } finally {
+      // Always clear local state
+      useWarungStore.getState().resetStore();
+      setUser(null);
+      setSession(null);
+      setStore(null);
+    }
   };
 
   // For general auth status, we just check if user exists (not store)
