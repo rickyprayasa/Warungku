@@ -26,34 +26,48 @@ export function PublicStorePage() {
 
   // Load store by slug
   useEffect(() => {
-    if (slug && slug !== lastSlugRef.current) {
-      lastSlugRef.current = slug;
-      hasFetchedRef.current = false;
+    let isMounted = true;
 
-      // Reset store to public mode to avoid conflicts with authenticated user's store
-      const store = useWarungStore.getState();
-      store.resetToPublicStoreMode();
+    const initStore = async () => {
+      if (slug && slug !== lastSlugRef.current) {
+        lastSlugRef.current = slug;
+        hasFetchedRef.current = false;
 
-      loadStoreBySlug(slug);
-    }
+        console.log('[PublicStorePage] Initializing public store for slug:', slug);
+
+        // Reset store to public mode
+        const store = useWarungStore.getState();
+        store.resetToPublicStoreMode();
+
+        // Load store data
+        const loadedStore = await loadStoreBySlug(slug);
+
+        if (isMounted && loadedStore?.id) {
+          console.log('[PublicStorePage] Store loaded, fetching details for:', loadedStore.id);
+          // Explicitly set current store ID again to be sure
+          store.setCurrentStoreId(loadedStore.id);
+
+          // Fetch details
+          await Promise.all([
+            store.fetchStoreProfile(),
+            store.fetchProducts()
+          ]);
+
+          hasFetchedRef.current = true;
+        }
+      }
+    };
+
+    initStore();
 
     return () => {
+      isMounted = false;
       // Clear public mode when leaving this page
       clearPublicStore();
     };
   }, [slug, loadStoreBySlug, clearPublicStore]);
 
-  // Fetch products when store is loaded
-  useEffect(() => {
-    console.log('[PublicStorePage] useEffect triggered - publicStore?.id:', publicStore?.id, 'hasFetchedRef.current:', hasFetchedRef.current, 'publicStoreLoading:', publicStoreLoading);
-    if (publicStore?.id && !hasFetchedRef.current && !publicStoreLoading) {
-      hasFetchedRef.current = true;
-      console.log('[PublicStorePage] Fetching store profile and products for ID:', publicStore.id);
-      const store = useWarungStore.getState();
-      store.fetchStoreProfile();
-      store.fetchProducts();
-    }
-  }, [publicStore?.id, hasFetchedRef.current, publicStoreLoading]);
+  // Removed the second useEffect as it's now integrated into the first one to ensure sequential execution
 
   // Loading state
   if (publicStoreLoading) {

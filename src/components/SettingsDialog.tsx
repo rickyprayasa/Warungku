@@ -11,8 +11,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Settings, Trash2, Database, Download, Info, AlertTriangle, Package, ShoppingCart } from 'lucide-react';
+import { Settings, Trash2, Database, Download, Info, AlertTriangle, Package, ShoppingCart, LogOut } from 'lucide-react';
 import { useWarungStore } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCartStore } from '@/lib/cart-store';
 import { toast } from 'sonner';
 
@@ -430,6 +431,27 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         >
                             <Info className="w-4 h-4 mr-2" />
                             Tentang Aplikasi
+                        </Button>
+                    </div>
+
+                    {/* Account Section */}
+                    <div className="border-2 border-brand-black p-4 space-y-3 bg-red-50">
+                        <h3 className="font-mono font-bold flex items-center gap-2 text-red-900">
+                            <LogOut className="w-4 h-4" />
+                            Akun
+                        </h3>
+                        <Button
+                            onClick={async () => {
+                                if (window.confirm('Apakah Anda yakin ingin keluar?')) {
+                                    await useAuth().signOut();
+                                    window.location.href = '/login';
+                                }
+                            }}
+                            variant="destructive"
+                            className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                        >
+                            <LogOut className="w-4 h-4 mr-2" />
+                            Keluar Aplikasi
                         </Button>
                     </div>
 
