@@ -1,4 +1,6 @@
 import { ExternalLink, Youtube, Instagram, Share2, Download, Facebook, Twitter, Share, Mail, Phone, MapPin } from 'lucide-react';
+import logo40 from '@/assets/rsquare-logo-40.png';
+import logo80 from '@/assets/rsquare-logo-80.png';
 import { QRCodeSVG } from 'qrcode.react';
 import { toPng } from 'html-to-image';
 import { useRef, useCallback } from 'react';
@@ -239,8 +241,8 @@ export function AppFooter() {
               className="flex items-center gap-3 group bg-brand-white p-3 border-2 border-brand-orange rounded-lg shadow-[2px_2px_0px_0px_rgba(255,138,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,138,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all cursor-default"
             >
               <img
-                src="/rsquare-logo-40.png"
-                srcSet="/rsquare-logo-40.png 1x, /rsquare-logo-80.png 2x"
+                src={logo40}
+                srcSet={`${logo40} 1x, ${logo80} 2x`}
                 alt="RSQUARE Logo"
                 width={40}
                 height={40}
