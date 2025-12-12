@@ -1,0 +1,22 @@
+{
+    "name": "OMZETIN",
+    "short_name": "OMZETIN",
+    "description": "Aplikasi kasir dan manajemen warung modern",
+    "icons": [
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/android-chrome-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#F38020",
+    "background_color": "#FEFEFE",
+    "display": "standalone",
+    "start_url": "/",
+    "scope": "/"
+}
