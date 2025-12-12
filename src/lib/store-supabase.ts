@@ -593,25 +593,29 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
-      const { data, error } = await supabase
-        .from('products')
-        .insert({
-          store_id: storeId,
-          name: productData.name,
-          price: productData.price,
-          cost: productData.cost || 0,
-          image_url: productData.imageUrl || '',
-          category: productData.category || '',
-          description: productData.description || '',
-          is_promo: productData.isPromo || false,
-          promo_price: productData.promoPrice,
-          is_active: productData.isActive !== false,
-          is_best_seller: productData.isBestSeller || false,
-          min_stock_level: productData.minStockLevel || 10,
-          qty_per_unit: productData.qtyPerUnit || 1,
-        })
-        .select()
-        .single() as any;
+      const { data, error } = await withTimeout(
+        supabase
+          .from('products')
+          .insert({
+            store_id: storeId,
+            name: productData.name,
+            price: productData.price,
+            cost: productData.cost || 0,
+            image_url: productData.imageUrl || '',
+            category: productData.category || '',
+            description: productData.description || '',
+            is_promo: productData.isPromo || false,
+            promo_price: productData.promoPrice,
+            is_active: productData.isActive !== false,
+            is_best_seller: productData.isBestSeller || false,
+            min_stock_level: productData.minStockLevel || 10,
+            qty_per_unit: productData.qtyPerUnit || 1,
+          })
+          .select()
+          .single() as any,
+        20000,
+        'Gagal menyimpan produk (timeout)'
+      );
 
       if (error) throw error;
       const newProduct = toProduct(data);
@@ -620,25 +624,29 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     },
 
     updateProduct: async (productId, productData) => {
-      const { data, error } = await supabase
-        .from('products')
-        .update({
-          name: productData.name,
-          price: productData.price,
-          cost: productData.cost,
-          image_url: productData.imageUrl,
-          category: productData.category,
-          description: productData.description,
-          is_promo: productData.isPromo,
-          promo_price: productData.promoPrice,
-          is_active: productData.isActive,
-          is_best_seller: productData.isBestSeller,
-          min_stock_level: productData.minStockLevel,
-          qty_per_unit: productData.qtyPerUnit,
-        })
-        .eq('id', productId)
-        .select()
-        .single() as any;
+      const { data, error } = await withTimeout(
+        supabase
+          .from('products')
+          .update({
+            name: productData.name,
+            price: productData.price,
+            cost: productData.cost,
+            image_url: productData.imageUrl,
+            category: productData.category,
+            description: productData.description,
+            is_promo: productData.isPromo,
+            promo_price: productData.promoPrice,
+            is_active: productData.isActive,
+            is_best_seller: productData.isBestSeller,
+            min_stock_level: productData.minStockLevel,
+            qty_per_unit: productData.qtyPerUnit,
+          })
+          .eq('id', productId)
+          .select()
+          .single() as any,
+        20000,
+        'Gagal update produk (timeout)'
+      );
 
       if (error) throw error;
       const updatedProduct = toProduct(data);
@@ -650,10 +658,14 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     },
 
     deleteProduct: async (productId) => {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
+      const { error } = await withTimeout(
+        supabase
+          .from('products')
+          .delete()
+          .eq('id', productId),
+        20000,
+        'Gagal menghapus produk (timeout)'
+      );
 
       if (error) throw error;
       set((state) => { state.products = state.products.filter((p) => p.id !== productId); });
@@ -683,24 +695,32 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       });
 
       // Insert sale
-      const { data: saleRow, error: saleError } = await supabase
-        .from('sales')
-        .insert({
-          store_id: storeId,
-          total,
-          profit,
-          sale_type: 'retail',
-          notes: saleData.notes || '',
-        })
-        .select()
-        .single() as any;
+      const { data: saleRow, error: saleError } = await withTimeout(
+        supabase
+          .from('sales')
+          .insert({
+            store_id: storeId,
+            total,
+            profit,
+            sale_type: 'retail',
+            notes: saleData.notes || '',
+          })
+          .select()
+          .single() as any,
+        20000,
+        'Gagal menyimpan penjualan (timeout)'
+      );
 
       if (saleError) throw saleError;
 
       // Insert sale items
-      const { error: itemsError } = await supabase
-        .from('sale_items')
-        .insert(items.map(item => ({ ...item, sale_id: saleRow.id })));
+      const { error: itemsError } = await withTimeout(
+        supabase
+          .from('sale_items')
+          .insert(items.map(item => ({ ...item, sale_id: saleRow.id }))),
+        20000,
+        'Gagal menyimpan detail penjualan (timeout)'
+      );
 
       if (itemsError) throw itemsError;
 
@@ -709,10 +729,14 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const product = products.find(p => p.id === item.productId);
         if (product) {
           const qtyToDeduct = item.quantity * (product.qtyPerUnit || 1);
-          await supabase
-            .from('products')
-            .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
-            .eq('id', item.productId);
+          await withTimeout(
+            supabase
+              .from('products')
+              .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
+              .eq('id', item.productId),
+            10000,
+            'Gagal update stok produk (timeout)'
+          );
         }
       }
 
@@ -726,16 +750,24 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
     deleteSale: async (saleId) => {
       // Get sale items first for stock restoration
-      const { data: items } = await supabase
-        .from('sale_items')
-        .select('*')
-        .eq('sale_id', saleId) as any;
+      const { data: items } = await withTimeout(
+        supabase
+          .from('sale_items')
+          .select('*')
+          .eq('sale_id', saleId) as any,
+        10000,
+        'Gagal mengambil detail penjualan (timeout)'
+      );
 
       // Delete sale (cascade deletes items)
-      const { error } = await supabase
-        .from('sales')
-        .delete()
-        .eq('id', saleId);
+      const { error } = await withTimeout(
+        supabase
+          .from('sales')
+          .delete()
+          .eq('id', saleId),
+        20000,
+        'Gagal menghapus penjualan (timeout)'
+      );
 
       if (error) throw error;
 
@@ -745,10 +777,14 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const product = products.find(p => p.id === item.product_id);
         if (product) {
           const qtyToRestore = item.quantity * (product.qtyPerUnit || 1);
-          await supabase
-            .from('products')
-            .update({ total_stock: (product.totalStock || 0) + qtyToRestore })
-            .eq('id', item.product_id);
+          await withTimeout(
+            supabase
+              .from('products')
+              .update({ total_stock: (product.totalStock || 0) + qtyToRestore })
+              .eq('id', item.product_id),
+            10000,
+            'Gagal mengembalikan stok (timeout)'
+          );
         }
       }
 
@@ -831,35 +867,51 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
     deletePurchase: async (purchaseId) => {
       // Get purchase for stock restoration
-      const { data: purchase } = await supabase
-        .from('purchases')
-        .select('*')
-        .eq('id', purchaseId)
-        .single() as any;
+      const { data: purchase } = await withTimeout(
+        supabase
+          .from('purchases')
+          .select('*')
+          .eq('id', purchaseId)
+          .single() as any,
+        10000,
+        'Gagal mengambil data pembelian (timeout)'
+      );
 
       if (!purchase) throw new Error('Purchase not found');
 
       // Delete stock details
-      await supabase
-        .from('stock_details')
-        .delete()
-        .eq('purchase_id', purchaseId);
+      await withTimeout(
+        supabase
+          .from('stock_details')
+          .delete()
+          .eq('purchase_id', purchaseId),
+        10000,
+        'Gagal menghapus detail stok (timeout)'
+      );
 
       // Delete purchase
-      const { error } = await supabase
-        .from('purchases')
-        .delete()
-        .eq('id', purchaseId);
+      const { error } = await withTimeout(
+        supabase
+          .from('purchases')
+          .delete()
+          .eq('id', purchaseId),
+        20000,
+        'Gagal menghapus pembelian (timeout)'
+      );
 
       if (error) throw error;
 
       // Update product stock
       const product = get().products.find(p => p.id === purchase.product_id);
       if (product) {
-        await supabase
-          .from('products')
-          .update({ total_stock: Math.max(0, (product.totalStock || 0) - purchase.quantity) })
-          .eq('id', purchase.product_id);
+        await withTimeout(
+          supabase
+            .from('products')
+            .update({ total_stock: Math.max(0, (product.totalStock || 0) - purchase.quantity) })
+            .eq('id', purchase.product_id),
+          10000,
+          'Gagal update stok produk (timeout)'
+        );
       }
 
       set((state) => { state.purchases = state.purchases.filter((p) => p.id !== purchaseId); });
@@ -870,17 +922,21 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
-      const { data, error } = await supabase
-        .from('suppliers')
-        .insert({
-          store_id: storeId,
-          name: supplierData.name,
-          contact_person: supplierData.contactPerson || '',
-          phone: supplierData.phone || '',
-          address: supplierData.address || '',
-        })
-        .select()
-        .single();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('suppliers')
+          .insert({
+            store_id: storeId,
+            name: supplierData.name,
+            contact_person: supplierData.contactPerson || '',
+            phone: supplierData.phone || '',
+            address: supplierData.address || '',
+          })
+          .select()
+          .single(),
+        20000,
+        'Gagal menyimpan pemasok (timeout)'
+      );
 
       if (error) throw error;
       const newSupplier = toSupplier(data);
@@ -889,17 +945,21 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     },
 
     updateSupplier: async (supplierId, supplierData) => {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .update({
-          name: supplierData.name,
-          contact_person: supplierData.contactPerson,
-          phone: supplierData.phone,
-          address: supplierData.address,
-        })
-        .eq('id', supplierId)
-        .select()
-        .single();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('suppliers')
+          .update({
+            name: supplierData.name,
+            contact_person: supplierData.contactPerson,
+            phone: supplierData.phone,
+            address: supplierData.address,
+          })
+          .eq('id', supplierId)
+          .select()
+          .single(),
+        20000,
+        'Gagal update pemasok (timeout)'
+      );
 
       if (error) throw error;
       const updatedSupplier = toSupplier(data);
@@ -911,10 +971,14 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     },
 
     deleteSupplier: async (supplierId) => {
-      const { error } = await supabase
-        .from('suppliers')
-        .delete()
-        .eq('id', supplierId);
+      const { error } = await withTimeout(
+        supabase
+          .from('suppliers')
+          .delete()
+          .eq('id', supplierId),
+        20000,
+        'Gagal menghapus pemasok (timeout)'
+      );
 
       if (error) throw error;
       set((state) => { state.suppliers = state.suppliers.filter((s) => s.id !== supplierId); });
@@ -924,18 +988,22 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
-      const { data, error } = await supabase
-        .from('snack_requests')
-        .insert({
-          store_id: storeId,
-          requester_name: requestData.requesterName,
-          snack_name: requestData.snackName,
-          quantity: requestData.quantity,
-          notes: requestData.notes || '',
-          status: 'pending',
-        })
-        .select()
-        .single();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('snack_requests')
+          .insert({
+            store_id: storeId,
+            requester_name: requestData.requesterName,
+            snack_name: requestData.snackName,
+            quantity: requestData.quantity,
+            notes: requestData.notes || '',
+            status: 'pending',
+          })
+          .select()
+          .single(),
+        20000,
+        'Gagal menyimpan request (timeout)'
+      );
 
       if (error) throw error;
       const newRequest = toJajananRequest(data);
@@ -944,12 +1012,16 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     },
 
     updateJajananRequestStatus: async (requestId, status) => {
-      const { data, error } = await supabase
-        .from('snack_requests')
-        .update({ status, is_read: true })
-        .eq('id', requestId)
-        .select()
-        .single();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('snack_requests')
+          .update({ status, is_read: true })
+          .eq('id', requestId)
+          .select()
+          .single(),
+        20000,
+        'Gagal update status request (timeout)'
+      );
 
       if (error) throw error;
       const updatedRequest = toJajananRequest(data);
@@ -978,21 +1050,29 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       if (delta > 0) {
         // Add stock
-        await supabase
-          .from('stock_details')
-          .insert({
-            store_id: storeId,
-            product_id: productId,
-            quantity: delta,
-            unit_cost: unitCost,
-          });
+        await withTimeout(
+          supabase
+            .from('stock_details')
+            .insert({
+              store_id: storeId,
+              product_id: productId,
+              quantity: delta,
+              unit_cost: unitCost,
+            }),
+          10000,
+          'Gagal menyimpan detail stok (timeout)'
+        );
       }
 
       // Update product stock
-      await supabase
-        .from('products')
-        .update({ total_stock: quantity })
-        .eq('id', productId);
+      await withTimeout(
+        supabase
+          .from('products')
+          .update({ total_stock: quantity })
+          .eq('id', productId),
+        10000,
+        'Gagal update stok produk (timeout)'
+      );
 
       await get().fetchProducts();
     },
