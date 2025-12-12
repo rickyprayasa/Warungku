@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield } from 'lucide-react';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield, CreditCard } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
@@ -175,6 +175,14 @@ export function Sidebar() {
                 <NavItem to="/dashboard" tab="cashflow" icon={ArrowRightLeft} label="Arus Kas" collapsed={collapsed} />
                 <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" collapsed={collapsed} />
                 <RekonNavItem collapsed={collapsed} />
+
+                {/* UPGRADE */}
+                {!collapsed && (
+                    <div className="pt-3 pb-1 px-4">
+                        <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Langganan</p>
+                    </div>
+                )}
+                <NavItem to="/upgrade" icon={CreditCard} label="Upgrade Plan" collapsed={collapsed} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" />
 
                 {/* ADMIN CMS LINK */}
                 {isAdmin && (

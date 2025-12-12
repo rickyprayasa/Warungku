@@ -11,7 +11,8 @@ import {
     Settings,
     LogOut,
     Shield,
-    ChevronLeft
+    ChevronLeft,
+    Banknote
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -29,6 +30,7 @@ export function AdminLayout() {
         { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
         { to: '/admin/users', icon: Users, label: 'Users' },
         { to: '/admin/stores', icon: Store, label: 'Stores' },
+        { to: '/admin/transactions', icon: Banknote, label: 'Transactions' },
         { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
     ];
 

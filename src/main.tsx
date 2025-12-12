@@ -84,6 +84,9 @@ const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage')
 const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
 const AdminStoresPage = lazy(() => import('@/pages/admin/AdminStoresPage').then(m => ({ default: m.AdminStoresPage })));
 const AdminAnalyticsPage = lazy(() => import('@/pages/admin/AdminAnalyticsPage').then(m => ({ default: m.AdminAnalyticsPage })));
+const AdminTransactionsPage = lazy(() => import('@/pages/admin/AdminTransactionsPage').then(m => ({ default: m.AdminTransactionsPage })));
+
+const UpgradePlanPage = lazy(() => import('@/pages/UpgradePlanPage').then(m => ({ default: m.UpgradePlanPage })));
 
 // Loading animation
 const PageLoader = () => {
@@ -210,6 +213,16 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: "upgrade",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <ProtectedRoute>
+              <UpgradePlanPage />
+            </ProtectedRoute>
+          </Suspense>
+        ),
+      },
     ]
   },
   {
@@ -262,6 +275,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <AdminAnalyticsPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "transactions",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AdminTransactionsPage />
           </Suspense>
         ),
       },
