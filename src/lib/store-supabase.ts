@@ -766,44 +766,65 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const totalCost = purchaseData.quantity * purchaseData.unitCost;
 
       // Insert purchase
-      const { data, error } = await supabase
-        .from('purchases')
-        .insert({
-          store_id: storeId,
-          product_id: purchaseData.productId,
-          product_name: product.name,
-          quantity: purchaseData.quantity,
-          unit_cost: purchaseData.unitCost,
-          total_cost: totalCost,
-          pack_quantity: purchaseData.packQuantity,
-          units_per_pack: purchaseData.unitsPerPack,
-          supplier_id: purchaseData.supplierId || null,
-          notes: purchaseData.notes || '',
-        })
-        .select('*, suppliers(name)')
-        .single() as any;
+      const { data, error } = await withTimeout(
+        supabase
+          .from('purchases')
+          .insert({
+            store_id: storeId,
+            product_id: purchaseData.productId,
+            product_name: product.name,
+            quantity: purchaseData.quantity,
+            unit_cost: purchaseData.unitCost,
+            total_cost: totalCost,
+            pack_quantity: purchaseData.packQuantity,
+            units_per_pack: purchaseData.unitsPerPack,
+            supplier_id: purchaseData.supplierId || null,
+            notes: purchaseData.notes || '',
+          })
+          .select('*, suppliers(name)')
+          .single() as any,
+        20000,
+        'Gagal menyimpan data pembelian (timeout)'
+      );
 
       if (error) throw error;
 
-      // Add stock detail
-      await supabase
-        .from('stock_details')
-        .insert({
-          store_id: storeId,
-          product_id: purchaseData.productId,
-          purchase_id: data.id,
-          quantity: purchaseData.quantity,
-          unit_cost: purchaseData.unitCost,
-        });
+      try {
+        // Add stock detail
+        await withTimeout(
+          supabase
+            .from('stock_details')
+            .insert({
+              store_id: storeId,
+              product_id: purchaseData.productId,
+              purchase_id: data.id,
+              quantity: purchaseData.quantity,
+              unit_cost: purchaseData.unitCost,
+            }),
+          10000,
+          'Gagal menyimpan detail stok'
+        );
 
-      // Update product stock
-      await supabase
-        .from('products')
-        .update({ total_stock: (product.totalStock || 0) + purchaseData.quantity })
-        .eq('id', purchaseData.productId);
+        // Update product stock
+        await withTimeout(
+          supabase
+            .from('products')
+            .update({ total_stock: (product.totalStock || 0) + purchaseData.quantity })
+            .eq('id', purchaseData.productId),
+          10000,
+          'Gagal update stok produk'
+        );
+      } catch (err) {
+        console.error('Error updating stock after purchase:', err);
+        // We don't throw here to avoid failing the whole operation if just the stock update fails
+        // but ideally we should have a transaction.
+        // For now, at least the purchase is recorded.
+      }
 
       const newPurchase = toPurchase(data);
       set((state) => { state.purchases.unshift(newPurchase); });
+
+      // Refresh products to ensure UI is in sync
       await get().fetchProducts();
       return newPurchase;
     },

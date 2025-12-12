@@ -44,11 +44,30 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
     if (suppliers.length === 0) fetchSuppliers();
   }, [products.length, suppliers.length, fetchProducts, fetchSuppliers]);
 
+  const sortedProducts = [...products].sort((a, b) => a.name.localeCompare(b.name));
+
   const onSubmit = async (values: PurchaseFormValues) => {
+    // Calculate actual values based on mode
+    let finalQuantity = values.quantity;
+    let finalUnitCost = values.unitCost;
+
+    if (isPackPurchase && values.packQuantity && values.unitsPerPack) {
+      finalQuantity = values.packQuantity * values.unitsPerPack;
+      // If user entered total cost per pack, divide by units per pack to get unit cost
+      // The form field for pack mode is 'unitCost' but conceptually it's 'price per pack'
+      // So we need to divide it by unitsPerPack
+      if (values.unitCost) {
+        finalUnitCost = values.unitCost / values.unitsPerPack;
+      }
+    }
+
     const purchaseData = {
       ...values,
+      quantity: finalQuantity,
+      unitCost: finalUnitCost,
       notes: notes.trim() || undefined,
     };
+
     const promise = addPurchase(purchaseData);
     toast.promise(promise, {
       loading: 'Menyimpan...',
@@ -56,7 +75,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
       error: 'Gagal mencatat pembelian.',
     });
     await promise;
-    
+
     // Reset form
     form.reset({
       productId: '',
@@ -68,7 +87,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
     });
     setNotes('');
     setIsPackPurchase(false);
-    
+
     onSuccess();
   };
 
@@ -99,7 +118,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
-                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  {sortedProducts.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <FormMessage />

@@ -1,6 +1,7 @@
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStore } from '@/contexts/StoreContext';
 import { Button } from './ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { LogOut, Menu, X } from 'lucide-react';
@@ -17,6 +18,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
   const { isAuthenticated, signOut } = useAuth();
+  const { isPublicMode } = useStore();
   const navigate = useNavigate();
   const [isMenuOpen, setMenuOpen] = useState(false);
   const handleLogout = async () => {
@@ -68,7 +70,7 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
               {/* Desktop Actions - HIDDEN (Moved to Sidebar) */}
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center gap-2">
-                {!isAuthenticated ? (
+                {!isAuthenticated || isPublicMode ? (
                   <Button
                     onClick={() => navigate('/login')}
                     variant="ghost"
@@ -86,7 +88,7 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
 
               {/* Mobile Menu Toggle */}
               <div className="md:hidden flex items-center gap-2">
-                {isAuthenticated && (
+                {isAuthenticated && !isPublicMode && (
                   <>
                     <NotificationBell />
                     <SettingsDialog />
@@ -116,7 +118,7 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
                     <div className="flex flex-col space-y-2">
                       {navLinks}
 
-                      {isAuthenticated && (
+                      {isAuthenticated && !isPublicMode && (
                         <>
                           {/* Logout Button */}
                           <Button

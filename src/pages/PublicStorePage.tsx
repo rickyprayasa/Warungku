@@ -22,11 +22,15 @@ export function PublicStorePage() {
     publicStoreError,
     loadStoreBySlug,
     clearPublicStore,
+    setIsPublicMode,
   } = useStore();
 
   // Load store by slug
   useEffect(() => {
     let isMounted = true;
+
+    // Set public mode immediately
+    setIsPublicMode(true);
 
     const initStore = async () => {
       if (slug && slug !== lastSlugRef.current) {
@@ -64,8 +68,9 @@ export function PublicStorePage() {
       isMounted = false;
       // Clear public mode when leaving this page
       clearPublicStore();
+      setIsPublicMode(false);
     };
-  }, [slug, loadStoreBySlug, clearPublicStore]);
+  }, [slug, loadStoreBySlug, clearPublicStore, setIsPublicMode]);
 
   // Removed the second useEffect as it's now integrated into the first one to ensure sequential execution
 
