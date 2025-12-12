@@ -7,11 +7,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Package } from 'lucide-react';
+import { Package, Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 interface PurchaseFormProps {
   onSuccess: () => void;
   purchase?: Purchase;
@@ -32,6 +35,7 @@ export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
   const initialIsPackMode = !!(purchase?.packQuantity && purchase?.unitsPerPack);
   const [isPackPurchase, setIsPackPurchase] = useState(initialIsPackMode);
   const [notes, setNotes] = useState(purchase?.notes || '');
+  const [productPopoverOpen, setProductPopoverOpen] = useState(false);
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
@@ -135,22 +139,66 @@ export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
           control={form.control}
           name="productId"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="flex flex-col">
               <FormLabel className="font-mono font-bold">Produk</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                disabled={!!purchase}
-              >
-                <FormControl>
-                  <SelectTrigger className="rounded-none border-2 border-brand-black disabled:opacity-50 disabled:cursor-not-allowed">
-                    <SelectValue placeholder="Pilih produk" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
-                  {sortedProducts.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Popover open={productPopoverOpen} onOpenChange={setProductPopoverOpen}>
+                <PopoverTrigger asChild disabled={!!purchase}>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "w-full justify-between rounded-none border-2 border-brand-black bg-brand-white hover:bg-gray-50",
+                        !field.value && "text-muted-foreground",
+                        !!purchase && "opacity-50 cursor-not-allowed"
+                      )}
+                      disabled={!!purchase}
+                    >
+                      {field.value
+                        ? sortedProducts.find(p => p.id === field.value)?.name
+                        : "Pilih produk..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-full min-w-[300px] p-0 rounded-none border-2 border-brand-black" align="start">
+                  <Command className="rounded-none">
+                    <CommandInput
+                      placeholder="Cari produk..."
+                      className="border-none focus:ring-0"
+                    />
+                    <CommandList>
+                      <CommandEmpty>Produk tidak ditemukan.</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-y-auto">
+                        {sortedProducts.map(p => (
+                          <CommandItem
+                            key={p.id}
+                            value={p.name}
+                            onSelect={() => {
+                              field.onChange(p.id);
+                              setProductPopoverOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                p.id === field.value ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-1 justify-between items-center">
+                              <span className="font-mono">{p.name}</span>
+                              <span className="text-xs text-muted-foreground font-mono">
+                                Stok: {p.totalStock || 0}
+                              </span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {purchase && <FormDescription className="text-xs text-amber-600">Produk tidak dapat diubah saat edit.</FormDescription>}
               <FormMessage />
             </FormItem>
