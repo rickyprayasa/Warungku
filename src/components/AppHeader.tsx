@@ -48,9 +48,11 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
         <header className="bg-brand-orange/90 backdrop-blur-sm border-b-4 border-brand-black fixed top-0 left-0 right-0 z-50 w-full">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-20">
-              {/* Logo */}
-              <Link to="/" className="flex items-center gap-3">
-                {logoUrl ? (
+              {/* Logo (Left) */}
+              <Link to="/" className="flex items-center gap-3 relative z-10">
+                {isPublicMode ? (
+                  <AnimatedLogo textColor="text-brand-white" />
+                ) : logoUrl ? (
                   <div className="flex items-center gap-2">
                     <img src={logoUrl} alt={storeName || 'Store'} className="h-10 w-auto object-contain" />
                     {storeName && <span className="font-display font-bold text-xl text-brand-black hidden sm:inline">{storeName}</span>}
@@ -61,6 +63,15 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
                   <AnimatedLogo textColor="text-brand-white" />
                 )}
               </Link>
+
+              {/* Centered Store Name (Public Mode Only) */}
+              {isPublicMode && storeName && (
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full pointer-events-none">
+                  <span className="font-display font-bold text-xl md:text-2xl text-brand-black uppercase tracking-wider">
+                    {storeName}
+                  </span>
+                </div>
+              )}
 
               {/* Desktop Navigation - HIDDEN (Moved to Sidebar) */}
               <nav className="hidden md:hidden items-center space-x-2 bg-brand-black/10 border-2 border-brand-black/20 p-1">
