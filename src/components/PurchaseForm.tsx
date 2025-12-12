@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { purchaseSchema, type PurchaseFormValues } from '@shared/types';
+import { purchaseSchema, type PurchaseFormValues, type Purchase } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -14,29 +14,37 @@ import { useShallow } from 'zustand/react/shallow';
 import { Package } from 'lucide-react';
 interface PurchaseFormProps {
   onSuccess: () => void;
+  purchase?: Purchase;
 }
-export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
-  const { products, suppliers, fetchProducts, fetchSuppliers, addPurchase } = useWarungStore(
+export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
+  const { products, suppliers, fetchProducts, fetchSuppliers, addPurchase, updatePurchase } = useWarungStore(
     useShallow((state) => ({
       products: state.products,
       suppliers: state.suppliers,
       fetchProducts: state.fetchProducts,
       fetchSuppliers: state.fetchSuppliers,
       addPurchase: state.addPurchase,
+      updatePurchase: state.updatePurchase,
     }))
   );
-  const [isPackPurchase, setIsPackPurchase] = useState(false);
-  const [notes, setNotes] = useState('');
+
+  // Determine initial mode based on purchase data
+  const initialIsPackMode = !!(purchase?.packQuantity && purchase?.unitsPerPack);
+  const [isPackPurchase, setIsPackPurchase] = useState(initialIsPackMode);
+  const [notes, setNotes] = useState(purchase?.notes || '');
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
     defaultValues: {
-      productId: '',
-      quantity: 1,
-      packQuantity: 1,
-      unitsPerPack: 1,
-      unitCost: 0,
-      supplierId: '',
+      productId: purchase?.productId || '',
+      quantity: purchase?.quantity || 1,
+      packQuantity: purchase?.packQuantity || 1,
+      unitsPerPack: purchase?.unitsPerPack || 1,
+      // If pack mode, unitCost field represents price per pack
+      unitCost: initialIsPackMode && purchase?.unitCost && purchase?.unitsPerPack
+        ? purchase.unitCost * purchase.unitsPerPack
+        : (purchase?.unitCost || 0),
+      supplierId: purchase?.supplierId || '',
     },
   });
   useEffect(() => {
@@ -54,8 +62,6 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
     if (isPackPurchase && values.packQuantity && values.unitsPerPack) {
       finalQuantity = values.packQuantity * values.unitsPerPack;
       // If user entered total cost per pack, divide by units per pack to get unit cost
-      // The form field for pack mode is 'unitCost' but conceptually it's 'price per pack'
-      // So we need to divide it by unitsPerPack
       if (values.unitCost) {
         finalUnitCost = values.unitCost / values.unitsPerPack;
       }
@@ -68,27 +74,44 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
       notes: notes.trim() || undefined,
     };
 
-    const promise = addPurchase(purchaseData);
-    toast.promise(promise, {
-      loading: 'Menyimpan...',
-      success: 'Pembelian berhasil dicatat!',
-      error: 'Gagal mencatat pembelian.',
-    });
-    await promise;
+    try {
+      let promise;
+      if (purchase) {
+        promise = updatePurchase(purchase.id, purchaseData);
+        toast.promise(promise, {
+          loading: 'Mengupdate...',
+          success: 'Pembelian berhasil diupdate!',
+          error: 'Gagal mengupdate pembelian.',
+        });
+      } else {
+        promise = addPurchase(purchaseData);
+        toast.promise(promise, {
+          loading: 'Menyimpan...',
+          success: 'Pembelian berhasil dicatat!',
+          error: 'Gagal mencatat pembelian.',
+        });
+      }
 
-    // Reset form
-    form.reset({
-      productId: '',
-      quantity: 1,
-      packQuantity: 1,
-      unitsPerPack: 1,
-      unitCost: 0,
-      supplierId: '',
-    });
-    setNotes('');
-    setIsPackPurchase(false);
+      await promise;
 
-    onSuccess();
+      // Reset form only if adding new
+      if (!purchase) {
+        form.reset({
+          productId: '',
+          quantity: 1,
+          packQuantity: 1,
+          unitsPerPack: 1,
+          unitCost: 0,
+          supplierId: '',
+        });
+        setNotes('');
+        setIsPackPurchase(false);
+      }
+
+      onSuccess();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const { quantity, unitCost, packQuantity, unitsPerPack } = form.watch();
@@ -111,9 +134,13 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-mono font-bold">Produk</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                disabled={!!purchase}
+              >
                 <FormControl>
-                  <SelectTrigger className="rounded-none border-2 border-brand-black">
+                  <SelectTrigger className="rounded-none border-2 border-brand-black disabled:opacity-50 disabled:cursor-not-allowed">
                     <SelectValue placeholder="Pilih produk" />
                   </SelectTrigger>
                 </FormControl>
@@ -121,6 +148,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
                   {sortedProducts.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {purchase && <FormDescription className="text-xs text-amber-600">Produk tidak dapat diubah saat edit.</FormDescription>}
               <FormMessage />
             </FormItem>
           )}
@@ -322,7 +350,7 @@ export function PurchaseForm({ onSuccess }: PurchaseFormProps) {
           disabled={form.formState.isSubmitting}
           className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
         >
-          {form.formState.isSubmitting ? 'Menyimpan...' : 'Simpan'}
+          {form.formState.isSubmitting ? 'Menyimpan...' : (purchase ? 'Update Pembelian' : 'Simpan')}
         </Button>
       </form>
     </Form>

@@ -51,7 +51,7 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
   const itemsPerPage = 5;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
   // Get unique categories from products
   const categories = useMemo(() => {
@@ -63,9 +63,21 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
     return products.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+
+      let matchesFilter = true;
+      if (selectedFilter === 'out_of_stock') {
+        matchesFilter = (product.totalStock || 0) === 0;
+      } else if (selectedFilter === 'low_stock') {
+        matchesFilter = (product.totalStock || 0) <= (product.minStockLevel || 5) && (product.totalStock || 0) > 0;
+      } else if (selectedFilter === 'new_arrival') {
+        // Products created in the last 7 days
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        matchesFilter = (product.createdAt || 0) > sevenDaysAgo;
+      }
+
+      return matchesSearch && matchesCategory && matchesFilter;
     });
-  }, [products, searchQuery, selectedCategory]);
+  }, [products, searchQuery, selectedCategory, selectedFilter]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = useMemo(() => {
@@ -145,6 +157,26 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
             className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
           />
         </div>
+        <Select
+          value={selectedFilter}
+          onValueChange={(value) => {
+            setSelectedFilter(value);
+            setCurrentPage(1);
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-[200px] rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <SelectValue placeholder="Filter Status" />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="rounded-lg border-2 border-brand-black">
+            <SelectItem value="all">Semua Status</SelectItem>
+            <SelectItem value="out_of_stock">Stok Habis</SelectItem>
+            <SelectItem value="low_stock">Stok Rendah</SelectItem>
+            <SelectItem value="new_arrival">Produk Baru</SelectItem>
+          </SelectContent>
+        </Select>
         <Select
           value={selectedCategory}
           onValueChange={(value) => {

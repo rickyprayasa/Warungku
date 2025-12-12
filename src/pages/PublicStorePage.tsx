@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '@/contexts/StoreContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useWarungStore } from '@/lib/store-supabase';
 import { Toaster } from '@/components/ui/sonner';
 import { CartSheet } from '@/components/CartSheet';
@@ -16,6 +17,7 @@ export function PublicStorePage() {
   const hasFetchedRef = useRef(false);
   const lastSlugRef = useRef<string | null>(null);
 
+  const { refreshStore } = useAuth();
   const {
     publicStore,
     publicStoreLoading,
@@ -33,8 +35,7 @@ export function PublicStorePage() {
     setIsPublicMode(true);
 
     const initStore = async () => {
-      if (slug && slug !== lastSlugRef.current) {
-        lastSlugRef.current = slug;
+      if (slug) {
         hasFetchedRef.current = false;
 
         console.log('[PublicStorePage] Initializing public store for slug:', slug);
@@ -69,8 +70,10 @@ export function PublicStorePage() {
       // Clear public mode when leaving this page
       clearPublicStore();
       setIsPublicMode(false);
+      // Refresh user store to ensure dashboard works correctly when returning
+      refreshStore();
     };
-  }, [slug, loadStoreBySlug, clearPublicStore, setIsPublicMode]);
+  }, [slug, loadStoreBySlug, clearPublicStore, setIsPublicMode, refreshStore]);
 
   // Removed the second useEffect as it's now integrated into the first one to ensure sequential execution
 

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Purchase } from '@shared/types';
 import { Button } from './ui/button';
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2, MessageSquare } from 'lucide-react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2, MessageSquare, Pencil } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
@@ -17,6 +17,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { PurchaseForm } from './PurchaseForm';
 
 interface PurchasesDataTableProps {
   purchases: Purchase[];
@@ -26,6 +33,8 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const deletePurchase = useWarungStore((state) => state.deletePurchase);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
+  const [isEditDialogOpen, setEditDialogOpen] = useState(false);
 
   const pageCount = Math.ceil(purchases.length / rowsPerPage);
   const paginatedPurchases = useMemo(() => {
@@ -49,6 +58,11 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
       success: 'Pembelian berhasil dihapus! Stok dikurangi.',
       error: (err) => err instanceof Error ? err.message : 'Gagal menghapus pembelian.',
     });
+  };
+
+  const handleEdit = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    setEditDialogOpen(true);
   };
 
   if (purchases.length === 0) {
@@ -93,9 +107,68 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
                   )}
                 </TableCell>
                 <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => handleEdit(purchase)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-none border-4 border-brand-black">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Hapus Pembelian?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tindakan ini akan menghapus data pembelian dan <strong>mengurangi stok barang</strong>.
+                            Tindakan ini tidak dapat dibatalkan.
+                            <br /><br />
+                            <strong>PENTING:</strong> Pembelian hanya bisa dihapus jika stok dari pembelian ini BELUM terjual.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(purchase.id)} className="rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {
+          paginatedPurchases.map((purchase) => (
+            <div key={purchase.id} className="border-4 border-brand-black bg-brand-white p-3 shadow-hard-sm">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground font-mono">{formatDate(purchase.createdAt)}</p>
+                  <h3 className="font-bold text-lg leading-tight mt-1">{purchase.productName}</h3>
+                  <p className="text-sm text-muted-foreground font-mono mt-1">Pemasok: {purchase.supplier}</p>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 border-2 border-brand-black rounded-none text-blue-600 hover:bg-blue-50"
+                    onClick={() => handleEdit(purchase)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 border-2 border-brand-black rounded-none text-destructive hover:bg-destructive/10">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </AlertDialogTrigger>
@@ -115,68 +188,30 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-4">
-        {paginatedPurchases.map((purchase) => (
-          <div key={purchase.id} className="border-4 border-brand-black bg-brand-white p-3 shadow-hard-sm">
-            <div className="flex justify-between items-start mb-3">
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground font-mono">{formatDate(purchase.createdAt)}</p>
-                <h3 className="font-bold text-lg leading-tight mt-1">{purchase.productName}</h3>
-                <p className="text-sm text-muted-foreground font-mono mt-1">Pemasok: {purchase.supplier}</p>
-              </div>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 border-2 border-brand-black rounded-none text-destructive hover:bg-destructive/10">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="rounded-none border-4 border-brand-black">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Hapus Pembelian?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Tindakan ini akan menghapus data pembelian dan <strong>mengurangi stok barang</strong>.
-                      Tindakan ini tidak dapat dibatalkan.
-                      <br /><br />
-                      <strong>PENTING:</strong> Pembelian hanya bisa dihapus jika stok dari pembelian ini BELUM terjual.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleDelete(purchase.id)} className="rounded-none bg-destructive text-destructive-foreground hover:bg-destructive/90">Hapus</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-muted-foreground font-mono">Jumlah</p>
-                <p className="font-bold font-mono text-lg">{purchase.quantity}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground font-mono">Total Biaya</p>
-                <p className="font-bold font-mono text-lg text-red-600">{formatCurrency(purchase.totalCost)}</p>
-              </div>
-            </div>
-
-            {purchase.notes && (
-              <div className="mt-2 p-2 bg-blue-50/50 border-l-4 border-blue-500 rounded-r">
-                <div className="flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs italic text-muted-foreground font-mono leading-relaxed">{purchase.notes}</p>
                 </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground font-mono">Jumlah</p>
+                  <p className="font-bold font-mono text-lg">{purchase.quantity}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground font-mono">Total Biaya</p>
+                  <p className="font-bold font-mono text-lg text-red-600">{formatCurrency(purchase.totalCost)}</p>
+                </div>
+              </div>
+
+              {purchase.notes && (
+                <div className="mt-2 p-2 bg-blue-50/50 border-l-4 border-blue-500 rounded-r">
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs italic text-muted-foreground font-mono leading-relaxed">{purchase.notes}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
       </div>
       <div className="flex items-center justify-end space-x-2 py-4 font-mono">
         <div className="flex items-center space-x-2">
@@ -206,6 +241,21 @@ export function PurchasesDataTable({ purchases }: PurchasesDataTableProps) {
           <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex rounded-none border-2 border-brand-black" onClick={() => setPage(pageCount - 1)} disabled={page >= pageCount - 1}><span className="sr-only">Go to last page</span><ChevronsRight className="h-4 w-4" /></Button>
         </div>
       </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-bold">Edit Pembelian</DialogTitle>
+          </DialogHeader>
+          <PurchaseForm
+            onSuccess={() => {
+              setEditDialogOpen(false);
+              setSelectedPurchase(null);
+            }}
+            purchase={selectedPurchase || undefined}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

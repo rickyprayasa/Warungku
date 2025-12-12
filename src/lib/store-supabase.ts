@@ -49,7 +49,8 @@ interface WarungActions {
   deleteProduct: (productId: string) => Promise<void>;
   addSale: (saleData: SaleFormValues) => Promise<Sale>;
   deleteSale: (saleId: string) => Promise<void>;
-  addPurchase: (purchaseData: PurchaseFormValues) => Promise<Purchase>;
+  addPurchase: (purchase: Omit<Purchase, 'id' | 'createdAt' | 'productName' | 'totalCost' | 'supplier'> & { productName?: string }) => Promise<Purchase>;
+  updatePurchase: (purchaseId: string, purchase: Omit<Purchase, 'id' | 'createdAt' | 'productName' | 'totalCost' | 'supplier'> & { productName?: string }) => Promise<Purchase>;
   deletePurchase: (purchaseId: string) => Promise<void>;
   addSupplier: (supplierData: SupplierFormValues) => Promise<Supplier>;
   updateSupplier: (supplierId: string, supplierData: SupplierFormValues) => Promise<Supplier>;
@@ -825,44 +826,155 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       if (error) throw error;
 
-      try {
-        // Add stock detail
-        await withTimeout(
-          supabase
-            .from('stock_details')
-            .insert({
-              store_id: storeId,
-              product_id: purchaseData.productId,
-              purchase_id: data.id,
-              quantity: purchaseData.quantity,
-              unit_cost: purchaseData.unitCost,
-            }),
-          10000,
-          'Gagal menyimpan detail stok'
-        );
+      // Add stock detail
+      await withTimeout(
+        supabase
+          .from('stock_details')
+          .insert({
+            store_id: storeId,
+            product_id: purchaseData.productId,
+            purchase_id: data.id,
+            quantity: purchaseData.quantity,
+            unit_cost: purchaseData.unitCost,
+          }),
+        10000,
+        'Gagal menyimpan detail stok'
+      );
 
-        // Update product stock
-        await withTimeout(
-          supabase
-            .from('products')
-            .update({ total_stock: (product.totalStock || 0) + purchaseData.quantity })
-            .eq('id', purchaseData.productId),
-          10000,
-          'Gagal update stok produk'
-        );
-      } catch (err) {
-        console.error('Error updating stock after purchase:', err);
-        // We don't throw here to avoid failing the whole operation if just the stock update fails
-        // but ideally we should have a transaction.
-        // For now, at least the purchase is recorded.
-      }
+      // Fetch latest stock to ensure accuracy
+      const { data: latestProduct } = await supabase
+        .from('products')
+        .select('total_stock')
+        .eq('id', purchaseData.productId)
+        .single();
+
+      const currentStock = latestProduct?.total_stock || 0;
+
+      // Update product stock
+      await withTimeout(
+        supabase
+          .from('products')
+          .update({ total_stock: currentStock + purchaseData.quantity })
+          .eq('id', purchaseData.productId),
+        10000,
+        'Gagal update stok produk'
+      );
 
       const newPurchase = toPurchase(data);
-      set((state) => { state.purchases.unshift(newPurchase); });
+
+      set((state) => {
+        state.purchases.unshift(newPurchase);
+        // Optimistically update product stock in local state
+        const p = state.products.find(p => p.id === purchaseData.productId);
+        if (p) {
+          p.totalStock = (p.totalStock || 0) + purchaseData.quantity;
+        }
+      });
 
       // Refresh products to ensure UI is in sync
       await get().fetchProducts();
       return newPurchase;
+    },
+
+    updatePurchase: async (purchaseId, purchaseData) => {
+      const storeId = get().currentStoreId;
+      if (!storeId) throw new Error('No store selected');
+
+      // Get old purchase to calculate stock difference
+      const { data: oldPurchase } = await withTimeout(
+        supabase
+          .from('purchases')
+          .select('*')
+          .eq('id', purchaseId)
+          .single() as any,
+        10000,
+        'Gagal mengambil data pembelian lama'
+      );
+
+      if (!oldPurchase) throw new Error('Purchase not found');
+
+      // Calculate stock difference
+      const oldQuantity = oldPurchase.quantity;
+      const newQuantity = purchaseData.quantity;
+      const quantityDiff = newQuantity - oldQuantity;
+      const totalCost = purchaseData.quantity * purchaseData.unitCost;
+
+      // Update purchase
+      const { data, error } = await withTimeout(
+        supabase
+          .from('purchases')
+          .update({
+            quantity: purchaseData.quantity,
+            unit_cost: purchaseData.unitCost,
+            total_cost: totalCost,
+            pack_quantity: purchaseData.packQuantity,
+            units_per_pack: purchaseData.unitsPerPack,
+            supplier_id: purchaseData.supplierId || null,
+            notes: purchaseData.notes || '',
+          })
+          .eq('id', purchaseId)
+          .select('*, suppliers(name)')
+          .single() as any,
+        20000,
+        'Gagal mengupdate data pembelian'
+      );
+
+      if (error) throw error;
+
+      // Update stock detail
+      // We assume one stock detail per purchase for simplicity
+      await withTimeout(
+        supabase
+          .from('stock_details')
+          .update({
+            quantity: purchaseData.quantity,
+            unit_cost: purchaseData.unitCost,
+          })
+          .eq('purchase_id', purchaseId),
+        10000,
+        'Gagal mengupdate detail stok'
+      );
+
+      // Update product stock if quantity changed
+      if (quantityDiff !== 0) {
+        // Fetch latest stock
+        const { data: latestProduct } = await supabase
+          .from('products')
+          .select('total_stock')
+          .eq('id', oldPurchase.product_id)
+          .single();
+
+        const currentStock = latestProduct?.total_stock || 0;
+
+        await withTimeout(
+          supabase
+            .from('products')
+            .update({ total_stock: currentStock + quantityDiff })
+            .eq('id', oldPurchase.product_id),
+          10000,
+          'Gagal update stok produk'
+        );
+      }
+
+      const updatedPurchase = toPurchase(data);
+
+      set((state) => {
+        const index = state.purchases.findIndex(p => p.id === purchaseId);
+        if (index !== -1) {
+          state.purchases[index] = updatedPurchase;
+        }
+
+        // Optimistically update product stock
+        if (quantityDiff !== 0) {
+          const p = state.products.find(p => p.id === oldPurchase.product_id);
+          if (p) {
+            p.totalStock = (p.totalStock || 0) + quantityDiff;
+          }
+        }
+      });
+
+      await get().fetchProducts();
+      return updatedPurchase;
     },
 
     deletePurchase: async (purchaseId) => {

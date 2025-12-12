@@ -50,11 +50,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setPublicStoreError(null);
 
     try {
-      const { data, error } = await supabase
-        .from('stores')
-        .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
-        .eq('slug', slug)
-        .single();
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Koneksi timeout, silakan coba lagi')), 15000);
+      });
+
+      // Race between fetch and timeout
+      const { data, error } = await Promise.race([
+        supabase
+          .from('stores')
+          .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+          .eq('slug', slug)
+          .single(),
+        timeoutPromise
+      ]) as any;
 
       if (error) {
         console.error('[StoreContext] Error loading store:', error);
