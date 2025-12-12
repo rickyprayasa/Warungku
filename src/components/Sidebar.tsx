@@ -10,6 +10,7 @@ import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
 import { SettingsDialog } from './SettingsDialog';
 import { useState, useEffect } from 'react';
+import rsquareLogo from '@/assets/rsquare-logo-80.png';
 import {
     Tooltip,
     TooltipContent,
@@ -22,7 +23,7 @@ export function Sidebar() {
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const navigate = useNavigate();
     const location = useLocation();
-    
+
 
 
     // Collapsed state with localStorage persistence
@@ -44,7 +45,7 @@ export function Sidebar() {
 
     const handleRefreshData = async () => {
         const store = useWarungStore.getState();
-        
+
         toast.promise(
             Promise.all([
                 store.fetchProducts(),
@@ -79,8 +80,7 @@ export function Sidebar() {
                         {/* RSQUARE Logo */}
                         <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
                             <img
-                                src="/rsquare-logo-48.png"
-                                srcSet="/rsquare-logo-48.png 1x, /rsquare-logo-96.png 2x"
+                                src={rsquareLogo}
                                 alt="RSQUARE Logo"
                                 width={48}
                                 height={48}
@@ -100,8 +100,7 @@ export function Sidebar() {
                     <div className="flex justify-center">
                         <div className="w-12 h-12 flex items-center justify-center">
                             <img
-                                src="/rsquare-logo-48.png"
-                                srcSet="/rsquare-logo-48.png 1x, /rsquare-logo-96.png 2x"
+                                src={rsquareLogo}
                                 alt="RSQUARE Logo"
                                 width={48}
                                 height={48}
@@ -134,14 +133,14 @@ export function Sidebar() {
                 )}
                 <NavItem to="/" icon={Store} label="Kasir (POS)" collapsed={collapsed} />
                 <NavItem to="/dashboard" tab="analytics" icon={BarChart3} label="Dasbor" collapsed={collapsed} />
-                
+
                 {/* Link to Public Store */}
                 {store?.slug && (
-                    <ExternalNavItem 
-                        href={`/store/${store.slug}`} 
-                        icon={ExternalLink} 
-                        label="Lihat Toko" 
-                        collapsed={collapsed} 
+                    <ExternalNavItem
+                        href={`/store/${store.slug}`}
+                        icon={ExternalLink}
+                        label="Lihat Toko"
+                        collapsed={collapsed}
                     />
                 )}
 

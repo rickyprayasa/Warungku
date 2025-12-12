@@ -75,18 +75,32 @@ export function HomePage() {
     if (!hasFetchedRef.current && targetStoreId) {
       console.log('[HomePage] Fetching data for store ID:', targetStoreId);
       hasFetchedRef.current = true;
-      storeActions.fetchStoreProfile();
-      storeActions.fetchProducts();
+
+      // Fetch core data in parallel
+      const corePromises = [
+        storeActions.fetchStoreProfile(),
+        storeActions.fetchProducts(),
+      ];
 
       // Only fetch admin data if authenticated
       if (isAuthenticated) {
-        storeActions.fetchSales();
-        storeActions.fetchPurchases();
-        storeActions.fetchSuppliers();
-        storeActions.fetchJajananRequests();
-        storeActions.fetchInitialBalance();
-        storeActions.fetchOpnameMode();
+        corePromises.push(
+          storeActions.fetchSales(),
+          storeActions.fetchPurchases(),
+          storeActions.fetchSuppliers(),
+          storeActions.fetchJajananRequests(),
+          storeActions.fetchInitialBalance(),
+          storeActions.fetchOpnameMode()
+        );
       }
+
+      // Execute all fetches in parallel with error resilience
+      Promise.allSettled(corePromises).then((results) => {
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+          console.warn('[HomePage] Some fetches failed:', failed);
+        }
+      });
     }
   }, [authLoading, isAuthenticated, store, currentStoreId]);
 
