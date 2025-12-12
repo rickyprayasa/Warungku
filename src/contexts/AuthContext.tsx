@@ -35,11 +35,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      const { data: memberData, error: memberError } = await supabase
-        .from('store_members')
-        .select('store_id, role')
-        .eq('user_id', userId)
-        .single();
+      // Helper to add timeout to promises
+      const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error('Request timeout')), ms)
+          )
+        ]);
+      };
+
+      const { data: memberData, error: memberError } = await withTimeout(
+        supabase
+          .from('store_members')
+          .select('store_id, role')
+          .eq('user_id', userId)
+          .single(),
+        10000 // 10s timeout
+      );
 
       console.warn('[AuthContext] Store member query result:', JSON.stringify({ memberData, memberError }));
 
@@ -53,11 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      const { data: storeData, error: storeError } = await supabase
-        .from('stores')
-        .select('*')
-        .eq('id', memberData.store_id)
-        .single();
+      const { data: storeData, error: storeError } = await withTimeout(
+        supabase
+          .from('stores')
+          .select('*')
+          .eq('id', memberData.store_id)
+          .single(),
+        10000 // 10s timeout
+      );
 
       console.warn('[AuthContext] Store query result:', JSON.stringify({ storeData: storeData?.id, storeError }));
 

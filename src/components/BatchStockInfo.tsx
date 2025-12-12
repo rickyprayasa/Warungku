@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Layers, Calendar, Package, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import type { StockDetail } from '@shared/types';
 import { cn } from '@/lib/utils';
 
@@ -25,14 +26,28 @@ export function BatchStockInfo({ productId, productName, totalStock, stockMethod
   const loadStockDetails = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/stock-details/${productId}`);
-      if (res.ok) {
-        const data = await res.json();
-        // Assuming API returns sorted by createdAt DESC (newest first)
-        setStockDetails(data.data || []);
-      } else {
-        console.error('Failed to load stock details:', res.status);
+      // Fetch stock details from Supabase directly
+      const { data, error } = await supabase
+        .from('stock_details')
+        .select('*')
+        .eq('product_id', productId)
+        .gt('quantity', 0) // Only batches with stock remaining
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load stock details:', error);
         setStockDetails([]);
+      } else {
+        // Map to StockDetail type
+        const mappedDetails = (data || []).map((s: any) => ({
+          id: s.id,
+          productId: s.product_id,
+          purchaseId: s.purchase_id,
+          quantity: s.quantity,
+          unitCost: s.unit_cost,
+          createdAt: new Date(s.created_at).getTime(),
+        }));
+        setStockDetails(mappedDetails);
       }
     } catch (error) {
       console.error('Failed to load stock details:', error);

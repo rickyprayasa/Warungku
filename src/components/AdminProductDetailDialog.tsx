@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWarungStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 import type { Product, StockDetail, Purchase, Sale } from '@shared/types';
 import { Package, TrendingUp, TrendingDown, History, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,31 +31,46 @@ export function AdminProductDetailDialog({ product, open, onOpenChange, stockMet
             loadProductDetails();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [product, open]);
+    }, [product, open, purchases, sales]);
 
     const loadProductDetails = async () => {
         if (!product) return;
 
         setIsLoading(true);
         try {
-            // Fetch stock details (batch info)
-            const stockRes = await fetch(`/api/stock-details/${product.id}`);
-            if (stockRes.ok) {
-                const data = await stockRes.json();
-                setStockDetails(data.data || []);
-            } else {
-                console.error('Failed to fetch stock details:', stockRes.status);
+            // Fetch stock details from Supabase directly
+            const { data: stockData, error: stockError } = await supabase
+                .from('stock_details')
+                .select('*')
+                .eq('product_id', product.id)
+                .order('created_at', { ascending: false });
+
+            if (stockError) {
+                console.error('Failed to fetch stock details:', stockError);
                 setStockDetails([]);
+            } else {
+                // Map to StockDetail type
+                const mappedStockDetails = (stockData || []).map((s: any) => ({
+                    id: s.id,
+                    productId: s.product_id,
+                    purchaseId: s.purchase_id,
+                    quantity: s.quantity,
+                    unitCost: s.unit_cost,
+                    createdAt: new Date(s.created_at).getTime(),
+                }));
+                setStockDetails(mappedStockDetails);
             }
 
-            // Filter purchases for this product
+            // Filter purchases for this product from store state
             const productPurchases = purchases.filter(p => p.productId === product.id);
+            console.log('[AdminProductDetailDialog] Filtered purchases for product:', product.id, 'count:', productPurchases.length);
             setPurchaseHistory(productPurchases);
 
-            // Filter sales for this product
+            // Filter sales for this product from store state
             const productSales = sales.filter(sale =>
                 sale.items.some(item => item.productId === product.id)
             );
+            console.log('[AdminProductDetailDialog] Filtered sales for product:', product.id, 'count:', productSales.length);
             setSalesHistory(productSales);
 
         } catch (error) {

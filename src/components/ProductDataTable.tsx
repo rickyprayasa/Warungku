@@ -52,6 +52,7 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Get unique categories from products
   const categories = useMemo(() => {

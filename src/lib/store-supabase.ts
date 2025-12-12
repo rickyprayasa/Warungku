@@ -49,8 +49,8 @@ interface WarungActions {
   deleteProduct: (productId: string) => Promise<void>;
   addSale: (saleData: SaleFormValues) => Promise<Sale>;
   deleteSale: (saleId: string) => Promise<void>;
-  addPurchase: (purchase: Omit<Purchase, 'id' | 'createdAt' | 'productName' | 'totalCost' | 'supplier'> & { productName?: string }) => Promise<Purchase>;
-  updatePurchase: (purchaseId: string, purchase: Omit<Purchase, 'id' | 'createdAt' | 'productName' | 'totalCost' | 'supplier'> & { productName?: string }) => Promise<Purchase>;
+  addPurchase: (purchaseData: PurchaseFormValues) => Promise<Purchase>;
+  updatePurchase: (purchaseId: string, purchaseData: PurchaseFormValues) => Promise<Purchase>;
   deletePurchase: (purchaseId: string) => Promise<void>;
   addSupplier: (supplierData: SupplierFormValues) => Promise<Supplier>;
   updateSupplier: (supplierId: string, supplierData: SupplierFormValues) => Promise<Supplier>;
@@ -298,6 +298,12 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         }
 
         const mappedProducts = (data || []).map(toProduct);
+
+        // Debug: Log products with their stock
+        const debugProducts = mappedProducts.filter(p => p.name.toLowerCase().includes('good day'));
+        if (debugProducts.length > 0) {
+          console.log('[FETCH PRODUCTS] Good Day products:', debugProducts.map(p => ({ name: p.name, totalStock: p.totalStock })));
+        }
 
         // Sort: In-stock first (newest to oldest), then Out-of-stock (newest to oldest)
         mappedProducts.sort((a, b) => {
@@ -842,23 +848,43 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       );
 
       // Fetch latest stock to ensure accuracy
-      const { data: latestProduct } = await supabase
+      const { data: latestProduct, error: fetchError } = await supabase
         .from('products')
         .select('total_stock')
         .eq('id', purchaseData.productId)
         .single();
 
-      const currentStock = latestProduct?.total_stock || 0;
+      if (fetchError) {
+        console.error('[addPurchase] Error fetching product stock:', fetchError);
+      }
 
-      // Update product stock
-      await withTimeout(
+      const currentStock = latestProduct?.total_stock || 0;
+      const newStock = currentStock + purchaseData.quantity;
+      console.log('[addPurchase] Updating stock:', { productId: purchaseData.productId, currentStock, quantity: purchaseData.quantity, newStock });
+
+      // Update product stock - use simple update without .select() to avoid RLS issues
+      const { error: stockUpdateError } = await withTimeout(
         supabase
           .from('products')
-          .update({ total_stock: currentStock + purchaseData.quantity })
-          .eq('id', purchaseData.productId),
+          .update({ total_stock: newStock })
+          .eq('id', purchaseData.productId) as any,
         10000,
         'Gagal update stok produk'
       );
+
+      if (stockUpdateError) {
+        console.error('[addPurchase] Error updating product stock:', stockUpdateError);
+        throw stockUpdateError;
+      }
+
+      // Verify the update was successful by fetching the product
+      const { data: verifyProduct } = await supabase
+        .from('products')
+        .select('total_stock')
+        .eq('id', purchaseData.productId)
+        .single();
+
+      console.log('[addPurchase] Stock update verification - expected:', newStock, 'actual:', verifyProduct?.total_stock);
 
       const newPurchase = toPurchase(data);
 
@@ -867,7 +893,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         // Optimistically update product stock in local state
         const p = state.products.find(p => p.id === purchaseData.productId);
         if (p) {
-          p.totalStock = (p.totalStock || 0) + purchaseData.quantity;
+          p.totalStock = newStock;
+          console.log('[addPurchase] Optimistic update - set product stock to:', p.totalStock);
         }
       });
 

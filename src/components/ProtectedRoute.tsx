@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
@@ -15,14 +15,18 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const setCurrentStoreId = useWarungStore((state) => state.setCurrentStoreId);
   const location = useLocation();
   const hasFetched = useRef(false);
+  const isRefreshing = useRef(false);
 
   // Set store ID and fetch settings when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      if (!store) {
+      if (!store && !isRefreshing.current) {
         // If authenticated but no store (e.g. came from public mode), refresh store
-        refreshStore();
-      } else if (!hasFetched.current) {
+        isRefreshing.current = true;
+        refreshStore().finally(() => {
+          isRefreshing.current = false;
+        });
+      } else if (store && !hasFetched.current) {
         hasFetched.current = true;
         setCurrentStoreId(store.id);
         fetchInitialBalance();

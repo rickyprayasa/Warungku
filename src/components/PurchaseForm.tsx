@@ -24,7 +24,7 @@ export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
       fetchProducts: state.fetchProducts,
       fetchSuppliers: state.fetchSuppliers,
       addPurchase: state.addPurchase,
-      updatePurchase: state.updatePurchase,
+      updatePurchase: state.updatePurchase || (() => Promise.reject(new Error('Update not available'))),
     }))
   );
 
@@ -77,6 +77,9 @@ export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
     try {
       let promise;
       if (purchase) {
+        if (!updatePurchase) {
+          throw new Error('Update purchase function not available');
+        }
         promise = updatePurchase(purchase.id, purchaseData);
         toast.promise(promise, {
           loading: 'Mengupdate...',
@@ -110,7 +113,7 @@ export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
 
       onSuccess();
     } catch (error) {
-      console.error(error);
+      console.error('Purchase submit error:', error);
     }
   };
 
