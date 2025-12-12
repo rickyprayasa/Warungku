@@ -8,9 +8,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWarungStore } from '@/lib/store';
 
+import { useAdmin } from '@/contexts/AdminContext';
+
 export function LoginPage() {
   const navigate = useNavigate();
   const { signIn, isAuthenticated, store } = useAuth();
+  const { checkAdminAccess } = useAdmin();
   const setCurrentStoreId = useWarungStore((state) => state.setCurrentStoreId);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,11 +22,39 @@ export function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && store) {
-      setCurrentStoreId(store.id);
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, store, navigate, setCurrentStoreId]);
+    const checkAndRedirect = async () => {
+      console.log('[LoginPage] Auth check - isAuthenticated:', isAuthenticated, 'store:', !!store);
+
+      if (isAuthenticated) {
+        console.log('[LoginPage] User authenticated, checking admin access...');
+
+        try {
+          // Check admin status explicitly
+          const isAdminUser = await checkAdminAccess();
+          console.log('[LoginPage] Is Admin result:', isAdminUser);
+
+          if (isAdminUser) {
+            console.log('[LoginPage] Redirecting to /admin');
+            navigate('/admin');
+            return;
+          }
+
+          // Only redirect to dashboard if store exists
+          if (store) {
+            console.log('[LoginPage] Redirecting to /dashboard');
+            setCurrentStoreId(store.id);
+            navigate('/dashboard');
+          } else {
+            console.log('[LoginPage] No store found, staying on login page (unless admin)');
+          }
+        } catch (e) {
+          console.error('[LoginPage] Error checking admin access:', e);
+        }
+      }
+    };
+
+    checkAndRedirect();
+  }, [isAuthenticated, store, navigate, setCurrentStoreId, checkAdminAccess]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

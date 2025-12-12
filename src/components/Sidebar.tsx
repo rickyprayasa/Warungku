@@ -2,9 +2,10 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink } from 'lucide-react';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
@@ -20,6 +21,7 @@ import {
 
 export function Sidebar() {
     const { isAuthenticated, signOut, store } = useAuth();
+    const { isAdmin } = useAdmin();
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const navigate = useNavigate();
     const location = useLocation();
@@ -174,6 +176,24 @@ export function Sidebar() {
                 <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" collapsed={collapsed} />
                 <RekonNavItem collapsed={collapsed} />
 
+                {/* ADMIN CMS LINK */}
+                {isAdmin && (
+                    <>
+                        {!collapsed && (
+                            <div className="pt-3 pb-1 px-4">
+                                <p className="font-mono text-[10px] font-bold text-brand-orange uppercase tracking-wider">Platform</p>
+                            </div>
+                        )}
+                        <NavItem
+                            to="/admin"
+                            icon={Shield}
+                            label="CMS Admin"
+                            collapsed={collapsed}
+                            className="text-brand-orange hover:text-brand-orange hover:bg-brand-orange/10"
+                        />
+                    </>
+                )}
+
             </nav>
 
             {/* Footer Actions */}
@@ -324,7 +344,7 @@ export function Sidebar() {
     );
 }
 
-function NavItem({ to, icon: Icon, label, tab, collapsed }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean }) {
+function NavItem({ to, icon: Icon, label, tab, collapsed, className }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean; className?: string }) {
     const location = useLocation();
 
     const isActive = () => {
@@ -346,7 +366,8 @@ function NavItem({ to, icon: Icon, label, tab, collapsed }: { to: string; icon: 
                 active
                     ? 'border-brand-orange bg-brand-orange/20 text-brand-black'
                     : 'text-muted-foreground hover:text-brand-black',
-                collapsed && 'justify-center'
+                collapsed && 'justify-center',
+                className
             )}
         >
             <Icon className="w-4 h-4 flex-shrink-0" />

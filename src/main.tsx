@@ -12,6 +12,7 @@ import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { StoreProvider } from '@/contexts/StoreContext';
 import { PlanProvider } from '@/contexts/PlanContext';
+import { AdminProvider } from '@/contexts/AdminContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { shouldRetryQuery, getRetryDelay } from '@/lib/query-utils';
 import '@/index.css'
@@ -23,21 +24,21 @@ const storedVersion = localStorage.getItem('app-version');
 if (storedVersion !== APP_VERSION) {
   console.log('[VERSION CHECK] App version changed from', storedVersion, 'to', APP_VERSION);
   console.log('[VERSION CHECK] Clearing stale cached data...');
-  
+
   // Clear old store data (keep auth data)
   const keysToRemove = [
     'warung-storage-v2',
     'warung-storage-v3',
     'dismissedNotifications',
   ];
-  
+
   keysToRemove.forEach(key => {
     if (localStorage.getItem(key)) {
       localStorage.removeItem(key);
       console.log('[VERSION CHECK] Removed:', key);
     }
   });
-  
+
   localStorage.setItem('app-version', APP_VERSION);
   console.log('[VERSION CHECK] Migration complete!');
 }
@@ -75,6 +76,14 @@ const OpnamePage = lazy(() => import('@/pages/OpnamePage').then(m => ({ default:
 const CheckoutPage = lazy(() => import('@/pages/CheckoutPage').then(m => ({ default: m.CheckoutPage })));
 const ProtectedRoute = lazy(() => import('@/components/ProtectedRoute').then(m => ({ default: m.ProtectedRoute })));
 const PublicStorePage = lazy(() => import('@/pages/PublicStorePage').then(m => ({ default: m.PublicStorePage })));
+
+// Admin pages
+const AdminProtectedRoute = lazy(() => import('@/components/AdminProtectedRoute').then(m => ({ default: m.AdminProtectedRoute })));
+const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
+const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
+const AdminStoresPage = lazy(() => import('@/pages/admin/AdminStoresPage').then(m => ({ default: m.AdminStoresPage })));
+const AdminAnalyticsPage = lazy(() => import('@/pages/admin/AdminAnalyticsPage').then(m => ({ default: m.AdminAnalyticsPage })));
 
 // Loading animation
 const PageLoader = () => {
@@ -212,6 +221,52 @@ const router = createBrowserRouter([
     ),
     errorElement: <RouteErrorBoundary />,
   },
+  // Admin CMS Dashboard
+  {
+    path: "/admin",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <AdminProtectedRoute>
+          <AdminLayout />
+        </AdminProtectedRoute>
+      </Suspense>
+    ),
+    errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AdminDashboardPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "users",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AdminUsersPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "stores",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AdminStoresPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "analytics",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AdminAnalyticsPage />
+          </Suspense>
+        ),
+      },
+    ]
+  },
 ]);
 // Do not touch this code
 createRoot(document.getElementById('root')!).render(
@@ -219,11 +274,13 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <StoreProvider>
-            <PlanProvider>
-              <RouterProvider router={router} />
-            </PlanProvider>
-          </StoreProvider>
+          <AdminProvider>
+            <StoreProvider>
+              <PlanProvider>
+                <RouterProvider router={router} />
+              </PlanProvider>
+            </StoreProvider>
+          </AdminProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
