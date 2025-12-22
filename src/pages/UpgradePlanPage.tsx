@@ -50,6 +50,24 @@ export function UpgradePlanPage() {
         setIsProcessing(plan.id);
 
         try {
+            // Check if Duitku is enabled by fetching settings
+            const { data: settingsData, error: settingsError } = await supabase
+                .from('settings')
+                .select('value')
+                .eq('key', 'duitku_enabled')
+                .single();
+
+            if (settingsError && settingsError.code !== 'PGRST116') { // PGRST116 means no rows found
+                throw settingsError;
+            }
+
+            const duitkuEnabled = settingsData ? settingsData.value === 'true' : true; // Default to true if not set
+
+            if (!duitkuEnabled) {
+                toast.error('Pembayaran Duitku sedang dinonaktifkan. Silakan hubungi admin.');
+                return;
+            }
+
             // Call Edge Function
             const { data, error } = await supabase.functions.invoke('duitku-payment/create-invoice', {
                 body: {

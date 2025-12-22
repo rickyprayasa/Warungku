@@ -12,7 +12,8 @@ import {
     LogOut,
     Shield,
     ChevronLeft,
-    Banknote
+    Banknote,
+    CreditCard
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -31,6 +32,7 @@ export function AdminLayout() {
         { to: '/admin/users', icon: Users, label: 'Users' },
         { to: '/admin/stores', icon: Store, label: 'Stores' },
         { to: '/admin/transactions', icon: Banknote, label: 'Transactions' },
+        { to: '/admin/duitku-settings', icon: CreditCard, label: 'Duitku Settings' },
         { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
     ];
 

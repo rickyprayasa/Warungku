@@ -37,7 +37,16 @@ Masuk ke Dashboard Merchant Duitku (Sandbox/Production):
 3.  Set **Return URL** (opsional, sudah di-handle di request code) ke:
     `https://[DOMAIN_ANDA]/dashboard?tab=billing&status=success`
 
-## 4. Testing
+## 4. Konfigurasi Melalui CMS Admin
+1.  Login ke **CMS Admin** menggunakan akun admin.
+2.  Klik menu **"Duitku Settings"** di sidebar.
+3.  Masukkan **Merchant Code** dan **API Key** dari dashboard Duitku Anda.
+4.  Pilih **Mode Sandbox** saat testing atau **Production** saat siap live.
+5.  Aktifkan **Duitku Payment Gateway**.
+6.  Klik **"Simpan Pengaturan"**.
+7.  Gunakan tombol **"Test Koneksi"** untuk memverifikasi konfigurasi.
+
+## 5. Testing
 1.  Login sebagai User Toko.
 2.  Klik menu **"Langganan" > "Upgrade Plan"** di sidebar.
 3.  Pilih paket dan lakukan pembayaran (gunakan simulator di mode Sandbox).
@@ -46,3 +55,4 @@ Masuk ke Dashboard Merchant Duitku (Sandbox/Production):
 ## Catatan
 - Kode saat ini menggunakan URL Sandbox Duitku (`https://sandbox.duitku.com/...`). Ubah ke URL Production di `duitku-payment/index.ts` saat siap live.
 - Pastikan RLS policies sudah sesuai dengan kebutuhan keamanan Anda.
+- Pengaturan Duitku dapat dikelola melalui **CMS Admin > Duitku Settings** oleh administrator platform.

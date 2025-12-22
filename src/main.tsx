@@ -85,6 +85,7 @@ const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage').then(m 
 const AdminStoresPage = lazy(() => import('@/pages/admin/AdminStoresPage').then(m => ({ default: m.AdminStoresPage })));
 const AdminAnalyticsPage = lazy(() => import('@/pages/admin/AdminAnalyticsPage').then(m => ({ default: m.AdminAnalyticsPage })));
 const AdminTransactionsPage = lazy(() => import('@/pages/admin/AdminTransactionsPage').then(m => ({ default: m.AdminTransactionsPage })));
+const AdminDuitkuSettingsPage = lazy(() => import('@/pages/admin/AdminDuitkuSettingsPage').then(m => ({ default: m.AdminDuitkuSettingsPage })));
 
 const UpgradePlanPage = lazy(() => import('@/pages/UpgradePlanPage').then(m => ({ default: m.UpgradePlanPage })));
 
@@ -283,6 +284,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <AdminTransactionsPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "duitku-settings",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AdminDuitkuSettingsPage />
           </Suspense>
         ),
       },
