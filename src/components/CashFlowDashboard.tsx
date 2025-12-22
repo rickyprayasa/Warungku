@@ -1,9 +1,16 @@
 import { useWarungStore } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, TrendingDown, Scale, ArrowRight, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, ArrowRight, ArrowLeft, MoreVertical } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Sale, Purchase } from '@shared/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
 
 interface Transaction {
   id: string;
@@ -47,7 +54,7 @@ export function CashFlowDashboard() {
     return [...saleTransactions, ...purchaseTransactions].sort((a, b) => b.date - a.date);
   }, [sales, purchases]);
 
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
@@ -61,10 +68,6 @@ export function CashFlowDashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  const toggleRow = (id: string) => {
-    setExpandedRow(expandedRow === id ? null : id);
   };
 
   const kpiData = [
@@ -97,147 +100,134 @@ export function CashFlowDashboard() {
         <Table>
           <TableHeader className="border-b-4 border-brand-black bg-muted/40">
             <TableRow>
-              <TableHead className="w-[50px] font-bold text-brand-black">Aksi</TableHead>
               <TableHead className="w-[100px] font-bold text-brand-black">Tipe</TableHead>
               <TableHead className="font-bold text-brand-black">Tanggal</TableHead>
               <TableHead className="font-bold text-brand-black">Deskripsi</TableHead>
               <TableHead className="font-bold text-brand-black text-right">Jumlah</TableHead>
+              <TableHead className="w-[50px] font-bold text-brand-black">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {combinedTransactions.slice(0, 10).map((tx, index) => (
-              <div key={`${tx.id}-${index}`}>
-                <TableRow
-                  className="border-b-2 border-brand-black last:border-b-0 cursor-pointer hover:bg-gray-50"
-                  onClick={() => toggleRow(tx.id)}
-                >
-                  <TableCell className="align-middle">
-                    <button
-                      className="p-1 rounded hover:bg-gray-200 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleRow(tx.id);
-                      }}
-                    >
-                      {expandedRow === tx.id ? (
-                        <ChevronUp className="w-4 h-4 text-brand-black" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-brand-black" />
-                      )}
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center font-mono text-xs font-bold px-2 py-1 ${tx.type === 'Sale' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {tx.type === 'Sale' ? <ArrowLeft className="w-3 h-3 mr-1" /> : <ArrowRight className="w-3 h-3 mr-1" />}
-                      {tx.type === 'Sale' ? "Masuk" : "Keluar"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{formatDateTime(tx.date)}</TableCell>
-                  <TableCell className="font-mono text-sm">{tx.description}</TableCell>
-                  <TableCell className={`font-mono text-right font-bold ${tx.type === 'Sale' ? 'text-green-600' : 'text-red-600'}`}>
-                    {tx.type === 'Sale' ? '+' : '-'} {formatCurrency(tx.amount)}
-                  </TableCell>
-                </TableRow>
-
-                {expandedRow === tx.id && (
-                  <TableRow className="border-b-2 border-brand-black bg-gray-50">
-                    <TableCell colSpan={5} className="p-4">
-                      <div className="space-y-3">
-                        <h5 className="font-bold font-mono text-brand-black border-b-2 border-brand-black pb-2">
-                          Detail Transaksi
-                        </h5>
-
-                        {tx.type === 'Sale' ? (
-                          <div className="space-y-2">
+              <TableRow key={`${tx.id}-${index}`} className="border-b-2 border-brand-black last:border-b-0">
+                <TableCell>
+                  <span className={`inline-flex items-center font-mono text-xs font-bold px-2 py-1 ${tx.type === 'Sale' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {tx.type === 'Sale' ? <ArrowLeft className="w-3 h-3 mr-1" /> : <ArrowRight className="w-3 h-3 mr-1" />}
+                    {tx.type === 'Sale' ? "Masuk" : "Keluar"}
+                  </span>
+                </TableCell>
+                <TableCell className="font-mono text-sm">{formatDateTime(tx.date)}</TableCell>
+                <TableCell className="font-mono text-sm">{tx.description}</TableCell>
+                <TableCell className={`font-mono text-right font-bold ${tx.type === 'Sale' ? 'text-green-600' : 'text-red-600'}`}>
+                  {tx.type === 'Sale' ? '+' : '-'} {formatCurrency(tx.amount)}
+                </TableCell>
+                <TableCell className="align-middle">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button
+                        className="p-1 rounded hover:bg-gray-200 transition-colors"
+                        onClick={() => setSelectedTransaction(tx)}
+                      >
+                        <MoreVertical className="w-4 h-4 text-brand-black" />
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="rounded-none border-2 border-brand-black max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="font-display font-bold text-brand-black">Detail Transaksi</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        {selectedTransaction?.type === 'Sale' ? (
+                          <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">ID Penjualan</p>
-                                <p className="font-mono font-bold">{(tx.details as Sale).id}</p>
+                                <p className="font-mono font-bold">{(selectedTransaction.details as Sale).id}</p>
                               </div>
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">Tanggal</p>
-                                <p className="font-mono font-bold">{formatDateTime((tx.details as Sale).createdAt)}</p>
+                                <p className="font-mono font-bold">{formatDateTime((selectedTransaction.details as Sale).createdAt)}</p>
                               </div>
                             </div>
 
                             <div>
                               <p className="font-mono text-sm text-muted-foreground">Catatan</p>
-                              <p className="font-mono font-bold">{(tx.details as Sale).notes || '-'}</p>
+                              <p className="font-mono font-bold">{(selectedTransaction.details as Sale).notes || '-'}</p>
                             </div>
 
                             <div>
                               <p className="font-mono text-sm text-muted-foreground">Jenis Penjualan</p>
-                              <p className="font-mono font-bold">{(tx.details as Sale).saleType === 'display' ? 'Display/Etalase' : 'Eceran'}</p>
+                              <p className="font-mono font-bold">{(selectedTransaction.details as Sale).saleType === 'display' ? 'Display/Etalase' : 'Eceran'}</p>
                             </div>
 
-                            <div className="border-t border-brand-black pt-2">
-                              <h6 className="font-bold font-mono text-brand-black mb-2">Item yang Dijual</h6>
-                              <div className="space-y-1">
-                                {(tx.details as Sale).items.map((item, idx) => (
-                                  <div key={idx} className="flex justify-between border-b border-gray-200 pb-1">
-                                    <span className="font-mono">{item.productName}</span>
-                                    <span className="font-mono">
-                                      {item.quantity} x {formatCurrency(item.price)} = {formatCurrency(item.quantity * item.price)}
-                                    </span>
+                            <div className="border-t border-brand-black pt-4">
+                              <h6 className="font-bold font-mono text-brand-black mb-3">Item yang Dijual</h6>
+                              <div className="space-y-2">
+                                {(selectedTransaction.details as Sale).items.map((item, idx) => (
+                                  <div key={idx} className="flex justify-between border-b border-gray-200 pb-2">
+                                    <div>
+                                      <p className="font-mono">{item.productName}</p>
+                                      <p className="font-mono text-sm text-muted-foreground">{item.quantity} x {formatCurrency(item.price)}</p>
+                                    </div>
+                                    <p className="font-mono font-bold">{formatCurrency(item.quantity * item.price)}</p>
                                   </div>
                                 ))}
                               </div>
-                              <div className="flex justify-between font-bold mt-2 pt-2 border-t border-brand-black">
+                              <div className="flex justify-between font-bold mt-3 pt-3 border-t border-brand-black text-lg">
                                 <span className="font-mono">Total</span>
-                                <span className="font-mono">{formatCurrency((tx.details as Sale).total)}</span>
+                                <span className="font-mono">{formatCurrency((selectedTransaction.details as Sale).total)}</span>
                               </div>
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">ID Pembelian</p>
-                                <p className="font-mono font-bold">{(tx.details as Purchase).id}</p>
+                                <p className="font-mono font-bold">{(selectedTransaction.details as Purchase).id}</p>
                               </div>
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">Tanggal</p>
-                                <p className="font-mono font-bold">{formatDateTime((tx.details as Purchase).createdAt)}</p>
+                                <p className="font-mono font-bold">{formatDateTime((selectedTransaction.details as Purchase).createdAt)}</p>
                               </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">Nama Produk</p>
-                                <p className="font-mono font-bold">{(tx.details as Purchase).productName}</p>
+                                <p className="font-mono font-bold">{(selectedTransaction.details as Purchase).productName}</p>
                               </div>
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">Supplier</p>
-                                <p className="font-mono font-bold">{(tx.details as Purchase).supplier || '-'}</p>
+                                <p className="font-mono font-bold">{(selectedTransaction.details as Purchase).supplier || '-'}</p>
                               </div>
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">Jumlah</p>
-                                <p className="font-mono font-bold">{(tx.details as Purchase).quantity}</p>
+                                <p className="font-mono font-bold">{(selectedTransaction.details as Purchase).quantity}</p>
                               </div>
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">Harga Satuan</p>
-                                <p className="font-mono font-bold">{formatCurrency((tx.details as Purchase).unitCost)}</p>
+                                <p className="font-mono font-bold">{formatCurrency((selectedTransaction.details as Purchase).unitCost)}</p>
                               </div>
                               <div>
                                 <p className="font-mono text-sm text-muted-foreground">Total</p>
-                                <p className="font-mono font-bold">{formatCurrency((tx.details as Purchase).totalCost)}</p>
+                                <p className="font-mono font-bold">{formatCurrency((selectedTransaction.details as Purchase).totalCost)}</p>
                               </div>
                             </div>
 
                             <div>
                               <p className="font-mono text-sm text-muted-foreground">Catatan</p>
-                              <p className="font-mono font-bold">{(tx.details as Purchase).notes || '-'}</p>
+                              <p className="font-mono font-bold">{(selectedTransaction.details as Purchase).notes || '-'}</p>
                             </div>
                           </div>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </div>
+                    </DialogContent>
+                  </Dialog>
+                </TableCell>
+              </TableRow>
             ))}
           </TableBody>
         </Table>
