@@ -222,7 +222,9 @@ export function AdminStoresPage() {
             setStores((prev) =>
                 prev.map((s) => (s.id === storeId ? { ...s, plan: newPlan } : s))
             );
-            toast.success(`Plan berhasil diubah ke ${newPlan.toUpperCase()}`);
+
+            // Update successful, but inform that users may need to refresh to see changes
+            toast.success(`Plan berhasil diubah ke ${newPlan.toUpperCase()}. Pengguna mungkin perlu merefresh halaman untuk melihat perubahan.`);
         } catch (error) {
             console.error('Error updating plan:', error);
             toast.error('Gagal mengubah plan');

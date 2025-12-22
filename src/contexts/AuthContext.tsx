@@ -15,6 +15,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, storeName: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshStore: () => Promise<void>;
+  updateStorePlan: (newPlan: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -246,6 +247,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateStorePlan = async (newPlan: string) => {
+    if (!store?.id) {
+      console.error('No store available to update plan');
+      return;
+    }
+
+    try {
+      // Update the plan in the database
+      const { error } = await supabase
+        .from('stores')
+        .update({ plan: newPlan })
+        .eq('id', store.id);
+
+      if (error) {
+        console.error('Error updating store plan:', error);
+        throw error;
+      }
+
+      // Update the local store state with the new plan
+      setStore(prev => prev ? { ...prev, plan: newPlan } : null);
+      console.log(`Store plan updated to ${newPlan}`);
+    } catch (error) {
+      console.error('Failed to update store plan:', error);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -280,6 +308,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     refreshStore,
+    updateStorePlan,
   };
 
   return (
