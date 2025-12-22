@@ -9,17 +9,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
-import { PlusCircle, Trash2, AlertTriangle, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { PlusCircle, Trash2, AlertTriangle, Package, Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 interface SaleFormProps {
   onSuccess: () => void;
 }
+
 export function SaleForm({ onSuccess }: SaleFormProps) {
-  const products = useWarungStore((state) => state.products);
-  const fetchProducts = useWarungStore((state) => state.fetchProducts);
-  const addSale = useWarungStore((state) => state.addSale);
+  const { products, fetchProducts, addSale } = useWarungStore(
+    useShallow((state) => ({
+      products: state.products,
+      fetchProducts: state.fetchProducts,
+      addSale: state.addSale,
+    }))
+  );
+  const sortedProducts = [...products].sort((a, b) => a.name.localeCompare(b.name));
+
   const [isDisplaySale, setIsDisplaySale] = useState(false);
   const [notes, setNotes] = useState('');
   const form = useForm<SaleFormValues>({
@@ -56,19 +68,19 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
       error: 'Gagal mencatat penjualan.',
     });
     await promise;
-    
+
     // Reset form
     form.reset({
       items: [{ productId: '', productName: '', quantity: 1, price: 0 }],
     });
     setNotes('');
     setIsDisplaySale(false);
-    
+
     onSuccess();
   };
 
   const handleProductChange = (productId: string, index: number) => {
-    const product = products.find(p => p.id === productId);
+    const product = sortedProducts.find(p => p.id === productId);
     if (product) {
       const currentItem = form.getValues(`items.${index}`);
 
@@ -179,45 +191,12 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
                 }`}>
                 {/* Product Selection */}
                 <div className="grid grid-cols-[1fr,auto] gap-2 items-end">
-                  <FormField
+                  <ProductSelectField
                     control={form.control}
-                    name={`items.${index}.productId`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-mono font-bold text-sm">Produk</FormLabel>
-                        <Select
-                          onValueChange={(value) => handleProductChange(value, index)}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="rounded-none border-2 border-brand-black">
-                              <SelectValue placeholder="Pilih produk" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="rounded-none border-2 border-brand-black bg-brand-white">
-                            {products.map(p => {
-                              const pStock = p.totalStock || 0;
-                              const pStatus = getStockStatus(pStock);
-                              return (
-                                <SelectItem
-                                  key={p.id}
-                                  value={p.id}
-                                  disabled={pStock === 0}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span>{p.name}</span>
-                                    <Badge className={`${pStatus.color} text-white text-xs`}>
-                                      {pStatus.label}
-                                    </Badge>
-                                  </div>
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    index={index}
+                    sortedProducts={sortedProducts}
+                    getStockStatus={getStockStatus}
+                    handleProductChange={handleProductChange}
                   />
 
                   <Button
@@ -351,5 +330,92 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
         </Button>
       </form>
     </Form>
+  );
+}
+
+interface ProductSelectFieldProps {
+  control: any; // This should be Control<SaleFormValues> from react-hook-form
+  index: number;
+  sortedProducts: any[];
+  getStockStatus: (stock: number) => { label: string; color: string };
+  handleProductChange: (productId: string, index: number) => void;
+}
+
+function ProductSelectField({ control, index, sortedProducts, getStockStatus, handleProductChange }: ProductSelectFieldProps) {
+  const [productPopoverOpen, setProductPopoverOpen] = useState(false);
+
+  return (
+    <FormField
+      control={control}
+      name={`items.${index}.productId`}
+      render={({ field }) => (
+        <FormItem className="flex flex-col">
+          <FormLabel className="font-mono font-bold text-sm">Produk</FormLabel>
+          <Popover open={productPopoverOpen} onOpenChange={setProductPopoverOpen}>
+            <PopoverTrigger asChild>
+              <FormControl>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "w-full justify-between rounded-none border-2 border-brand-black bg-brand-white hover:bg-gray-50",
+                    !field.value && "text-muted-foreground"
+                  )}
+                >
+                  {field.value
+                    ? sortedProducts.find(p => p.id === field.value)?.name
+                    : "Pilih produk..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </FormControl>
+            </PopoverTrigger>
+            <PopoverContent className="w-full min-w-[300px] p-0 rounded-none border-2 border-brand-black" align="start">
+              <Command className="rounded-none">
+                <CommandInput
+                  placeholder="Cari produk..."
+                  className="border-none focus:ring-0"
+                />
+                <CommandList>
+                  <CommandEmpty>Produk tidak ditemukan.</CommandEmpty>
+                  <CommandGroup className="max-h-64 overflow-y-auto">
+                    {sortedProducts.map(p => {
+                      const pStock = p.totalStock || 0;
+                      const pStatus = getStockStatus(pStock);
+                      return (
+                        <CommandItem
+                          key={p.id}
+                          value={p.name}
+                          onSelect={() => {
+                            field.onChange(p.id);
+                            handleProductChange(p.id, index);
+                            setProductPopoverOpen(false);
+                          }}
+                          className="cursor-pointer"
+                          disabled={pStock === 0}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              p.id === field.value ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div className="flex flex-1 justify-between items-center">
+                            <span className="font-mono">{p.name}</span>
+                            <Badge className={`${pStatus.color} text-white text-xs`}>
+                              {pStatus.label}
+                            </Badge>
+                          </div>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
