@@ -11,6 +11,11 @@ export function DemoWatermark() {
     return null;
   }
 
+  // Don't show watermark for paid plans
+  if (!isFreePlan) {
+    return null;
+  }
+
   const planLabel = plan === 'demo' ? 'DEMO' : 'TRIAL';
 
   return (
@@ -30,10 +35,10 @@ export function DemoWatermark() {
         </button>
       </div>
 
-      <UpgradeDialog 
-        open={upgradeOpen} 
-        onOpenChange={setUpgradeOpen} 
-        trigger="general" 
+      <UpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        trigger="general"
       />
     </>
   );
