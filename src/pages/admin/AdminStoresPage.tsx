@@ -20,13 +20,22 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
     Store,
     Search,
     ChevronLeft,
     ChevronRight,
     Package,
     ShoppingCart,
-    ExternalLink
+    ExternalLink,
+    Eye,
+    Users,
+    User
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,15 +47,38 @@ interface StoreData {
     created_at: string;
     productCount?: number;
     salesCount?: number;
+    purchasesCount?: number;
+    userCount?: number;
+}
+
+interface StoreWithUsers {
+    id: string;
+    name: string;
+    slug: string;
+    plan: string;
+    created_at: string;
+    productCount?: number;
+    salesCount?: number;
+    purchasesCount?: number;
+    userCount?: number;
+    users?: Array<{
+        id: string;
+        user_id: string;
+        role: string;
+        created_at: string;
+        email?: string;
+    }>;
 }
 
 export function AdminStoresPage() {
-    const [stores, setStores] = useState<StoreData[]>([]);
+    const [stores, setStores] = useState<StoreWithUsers[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [planFilter, setPlanFilter] = useState('all');
     const [page, setPage] = useState(0);
     const [rowsPerPage] = useState(10);
+    const [selectedStore, setSelectedStore] = useState<StoreWithUsers | null>(null);
+    const [isDetailOpen, setDetailOpen] = useState(false);
 
     useEffect(() => {
         fetchStores();
@@ -75,10 +107,22 @@ export function AdminStoresPage() {
                         .select('*', { count: 'exact', head: true })
                         .eq('store_id', store.id);
 
+                    const { count: purchasesCount } = await supabase
+                        .from('purchases')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('store_id', store.id);
+
+                    const { count: userCount } = await supabase
+                        .from('store_members')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('store_id', store.id);
+
                     return {
                         ...store,
                         productCount: productCount || 0,
                         salesCount: salesCount || 0,
+                        purchasesCount: purchasesCount || 0,
+                        userCount: userCount || 0,
                     };
                 })
             );
@@ -89,6 +133,32 @@ export function AdminStoresPage() {
             toast.error('Gagal memuat data stores');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const viewStoreDetails = async (store: StoreWithUsers) => {
+        try {
+            // Fetch users for this store
+            const { data: usersData, error: usersError } = await supabase
+                .from('store_members')
+                .select('id, user_id, role, created_at')
+                .eq('store_id', store.id);
+
+            if (usersError) throw usersError;
+
+            // For each user, we could fetch their email from auth.users if needed
+            // But for now, we'll just use the basic user data
+
+            const storeWithUsers = {
+                ...store,
+                users: usersData || [],
+            };
+
+            setSelectedStore(storeWithUsers);
+            setDetailOpen(true);
+        } catch (error) {
+            console.error('Error fetching store details:', error);
+            toast.error('Gagal memuat detail store');
         }
     };
 
@@ -168,7 +238,7 @@ export function AdminStoresPage() {
                     Store Management
                 </h1>
                 <p className="text-muted-foreground font-mono text-sm mt-1">
-                    Kelola semua toko di platform
+                    Kelola semua toko dan pengguna di platform
                 </p>
             </div>
 
@@ -222,6 +292,7 @@ export function AdminStoresPage() {
                                 <TableHeader>
                                     <TableRow className="border-b-2 border-brand-black bg-gray-50">
                                         <TableHead className="font-mono font-bold">Store</TableHead>
+                                        <TableHead className="font-mono font-bold">Users</TableHead>
                                         <TableHead className="font-mono font-bold">Products</TableHead>
                                         <TableHead className="font-mono font-bold">Sales</TableHead>
                                         <TableHead className="font-mono font-bold">Plan</TableHead>
@@ -236,6 +307,12 @@ export function AdminStoresPage() {
                                                 <div>
                                                     <p className="font-mono font-bold">{store.name}</p>
                                                     <p className="text-xs text-muted-foreground font-mono">/{store.slug}</p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1 font-mono">
+                                                    <Users className="w-4 h-4 text-purple-500" />
+                                                    {store.userCount}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -269,14 +346,24 @@ export function AdminStoresPage() {
                                                 {formatDate(store.created_at)}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="rounded-none border-2 border-brand-black"
-                                                    onClick={() => window.open(`/store/${store.slug}`, '_blank')}
-                                                >
-                                                    <ExternalLink className="w-4 h-4" />
-                                                </Button>
+                                                <div className="flex gap-2 justify-end">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="rounded-none border-2 border-brand-black"
+                                                        onClick={() => viewStoreDetails(store)}
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="rounded-none border-2 border-brand-black"
+                                                        onClick={() => window.open(`/store/${store.slug}`, '_blank')}
+                                                    >
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -315,6 +402,103 @@ export function AdminStoresPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Store Detail Dialog */}
+            <Dialog open={isDetailOpen} onOpenChange={setDetailOpen}>
+                <DialogContent className="border-4 border-brand-black rounded-none max-w-2xl">
+                    <DialogHeader className="border-b-2 border-brand-black pb-4">
+                        <DialogTitle className="font-display text-xl flex items-center gap-2">
+                            <Store className="w-6 h-6" />
+                            {selectedStore?.name}
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {selectedStore && (
+                        <div className="space-y-6 py-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="p-3 bg-gray-50 border-2 border-gray-200">
+                                    <p className="text-xs font-mono text-muted-foreground">Slug</p>
+                                    <p className="font-mono font-bold">/{selectedStore.slug}</p>
+                                </div>
+                                <div className="p-3 bg-gray-50 border-2 border-gray-200">
+                                    <p className="text-xs font-mono text-muted-foreground">Plan</p>
+                                    <Badge className={`rounded-none font-mono ${getPlanBadgeColor(selectedStore.plan || 'demo')}`}>
+                                        {selectedStore.plan || 'demo'}
+                                    </Badge>
+                                </div>
+                                <div className="p-3 bg-gray-50 border-2 border-gray-200">
+                                    <p className="text-xs font-mono text-muted-foreground">Created</p>
+                                    <p className="font-mono">{formatDate(selectedStore.created_at)}</p>
+                                </div>
+                                <div className="p-3 bg-gray-50 border-2 border-gray-200">
+                                    <p className="text-xs font-mono text-muted-foreground">Users</p>
+                                    <p className="font-mono font-bold">{selectedStore.userCount}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="p-4 bg-blue-50 border-2 border-blue-200 text-center">
+                                    <Package className="w-6 h-6 mx-auto text-blue-600" />
+                                    <p className="text-2xl font-bold font-mono mt-2">{selectedStore.productCount}</p>
+                                    <p className="text-xs font-mono text-muted-foreground">Products</p>
+                                </div>
+                                <div className="p-4 bg-green-50 border-2 border-green-200 text-center">
+                                    <ShoppingCart className="w-6 h-6 mx-auto text-green-600" />
+                                    <p className="text-2xl font-bold font-mono mt-2">{selectedStore.salesCount}</p>
+                                    <p className="text-xs font-mono text-muted-foreground">Sales</p>
+                                </div>
+                                <div className="p-4 bg-orange-50 border-2 border-orange-200 text-center">
+                                    <Package className="w-6 h-6 mx-auto text-orange-600" />
+                                    <p className="text-2xl font-bold font-mono mt-2">{selectedStore.purchasesCount}</p>
+                                    <p className="text-xs font-mono text-muted-foreground">Purchases</p>
+                                </div>
+                            </div>
+
+                            {/* Users Table */}
+                            <div>
+                                <h3 className="font-display font-bold text-lg mb-3 flex items-center gap-2">
+                                    <User className="w-5 h-5" />
+                                    Pengguna
+                                </h3>
+                                <div className="border-2 border-brand-black rounded-none max-h-60 overflow-y-auto">
+                                    <Table>
+                                        <TableHeader className="bg-gray-50 sticky top-0">
+                                            <TableRow className="border-b-2 border-brand-black">
+                                                <TableHead className="font-mono font-bold">User ID</TableHead>
+                                                <TableHead className="font-mono font-bold">Role</TableHead>
+                                                <TableHead className="font-mono font-bold">Joined</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {selectedStore.users && selectedStore.users.length > 0 ? (
+                                                selectedStore.users.map((user) => (
+                                                    <TableRow key={user.id} className="border-b-2 border-brand-black last:border-b-0">
+                                                        <TableCell className="font-mono text-sm">{user.user_id}</TableCell>
+                                                        <TableCell>
+                                                            <Badge variant="outline" className="rounded-none font-mono uppercase text-xs">
+                                                                {user.role}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="font-mono text-sm">
+                                                            {formatDate(user.created_at)}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="text-center font-mono text-muted-foreground py-8">
+                                                        Tidak ada pengguna
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -13,7 +13,8 @@ import {
     Shield,
     ChevronLeft,
     Banknote,
-    CreditCard
+    CreditCard,
+    Package
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -29,8 +30,8 @@ export function AdminLayout() {
 
     const navItems = [
         { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-        { to: '/admin/users', icon: Users, label: 'Users' },
         { to: '/admin/stores', icon: Store, label: 'Stores' },
+        { to: '/admin/subscription-plans', icon: Package, label: 'Subscription Plans' },
         { to: '/admin/transactions', icon: Banknote, label: 'Transactions' },
         { to: '/admin/duitku-settings', icon: CreditCard, label: 'Duitku Settings' },
         { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
