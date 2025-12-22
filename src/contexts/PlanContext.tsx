@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useWarungStore } from '@/lib/store-supabase';
 
@@ -69,6 +69,7 @@ interface PlanContextType {
   transactionUsagePercent: number;
   isFreePlan: boolean;
   isPaidPlan: boolean;
+  refreshPlan: () => void;
 }
 
 const PlanContext = createContext<PlanContextType | undefined>(undefined);
@@ -78,21 +79,28 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const products = useWarungStore((state) => state.products);
   const sales = useWarungStore((state) => state.sales);
 
+  // Add a state to force refresh of the plan
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const plan = useMemo((): PlanType => {
     if (!isAuthenticated || !store) {
       // Not logged in - assume enterprise (no restrictions for public view)
       return 'enterprise';
     }
-    
+
     const storePlan = (store as any)?.plan as string | undefined;
-    
+
     if (storePlan && ['demo', 'trial', 'basic', 'pro', 'enterprise'].includes(storePlan)) {
       return storePlan as PlanType;
     }
-    
+
     // No plan set - assume paid/enterprise (existing stores before plan feature)
     return 'enterprise';
-  }, [isAuthenticated, store]);
+  }, [isAuthenticated, store, refreshTrigger]); // Add refreshTrigger to dependency array
+
+  const refreshPlan = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   const limits = PLAN_LIMITS[plan];
 
@@ -136,6 +144,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     transactionUsagePercent,
     isFreePlan,
     isPaidPlan,
+    refreshPlan,
   };
 
   return (
