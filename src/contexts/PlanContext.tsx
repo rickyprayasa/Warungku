@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useWarungStore } from '@/lib/store-supabase';
+import { supabase } from '@/lib/supabase';
 
 export type PlanType = 'demo' | 'trial' | 'basic' | 'pro' | 'enterprise';
 
@@ -102,18 +103,38 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  // Optional: Add polling to check for plan changes (disabled by default)
-  // This would refresh the plan periodically to catch changes made in admin panel
+  // Optional: Add polling to check for plan changes
+  // This checks if the plan has changed in the database and refreshes if needed
   useEffect(() => {
     if (!isAuthenticated || !store?.id) return;
 
-    const interval = setInterval(() => {
-      // In a real implementation, you might want to check if the plan has changed
-      // For now, we'll just keep this as a mechanism that can be enabled if needed
+    const interval = setInterval(async () => {
+      try {
+        // Fetch the current plan from the database to check if it has changed
+        const { data, error } = await supabase
+          .from('stores')
+          .select('plan')
+          .eq('id', store.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching store plan for refresh check:', error);
+          return;
+        }
+
+        // If the plan in DB is different from current plan, refresh
+        if (data?.plan && data.plan !== store.plan) {
+          console.log(`Plan changed from ${store.plan} to ${data.plan}, refreshing...`);
+          // We can't directly update the store here, but we can refresh the plan context
+          refreshPlan();
+        }
+      } catch (err) {
+        console.error('Error in plan refresh check:', err);
+      }
     }, 300000); // Check every 5 minutes
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, store?.id]);
+  }, [isAuthenticated, store?.id, store?.plan, refreshPlan]);
 
   const limits = PLAN_LIMITS[plan];
 
