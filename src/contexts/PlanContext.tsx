@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useWarungStore } from '@/lib/store-supabase';
 
@@ -101,6 +101,19 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const refreshPlan = () => {
     setRefreshTrigger(prev => prev + 1);
   };
+
+  // Optional: Add polling to check for plan changes (disabled by default)
+  // This would refresh the plan periodically to catch changes made in admin panel
+  useEffect(() => {
+    if (!isAuthenticated || !store?.id) return;
+
+    const interval = setInterval(() => {
+      // In a real implementation, you might want to check if the plan has changed
+      // For now, we'll just keep this as a mechanism that can be enabled if needed
+    }, 300000); // Check every 5 minutes
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, store?.id]);
 
   const limits = PLAN_LIMITS[plan];
 
