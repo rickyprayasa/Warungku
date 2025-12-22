@@ -93,7 +93,7 @@ export function AdminSubscriptionPlansPage() {
                     .eq('id', planId);
 
                 if (error) throw error;
-                toast.success('Paket berhasil diperbarui');
+                toast.success('Paket berhasil diperbarui. Perubahan akan terlihat di halaman upgrade setelah refresh.');
             } else {
                 // Create new plan
                 const { error } = await supabase
