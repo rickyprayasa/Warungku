@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, CreditCard } from 'lucide-react';
+import { Check, Loader2, CreditCard, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -104,9 +104,20 @@ export function UpgradePlanPage() {
     return (
         <div className="container mx-auto py-12 px-4">
             <div className="text-center mb-12">
-                <h1 className="text-4xl font-display font-bold text-brand-black mb-4">
-                    Upgrade Toko Anda
-                </h1>
+                <div className="flex justify-center gap-4 mb-4">
+                    <h1 className="text-4xl font-display font-bold text-brand-black">
+                        Upgrade Toko Anda
+                    </h1>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={fetchPlans}
+                        disabled={isLoading}
+                        className="rounded-none border-2 border-brand-black"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                </div>
                 <p className="text-muted-foreground font-mono max-w-2xl mx-auto">
                     Pilih paket yang sesuai dengan kebutuhan bisnis Anda. Nikmati fitur premium untuk meningkatkan omzet penjualan.
                 </p>
