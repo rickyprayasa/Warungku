@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { supabase } from './supabase';
 import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload, Reconciliation, ReconciliationPayload } from '@shared/types';
+import { AuditLogger } from './audit-logger';
 
 interface WarungState {
   products: Product[];
@@ -627,6 +628,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       if (error) throw error;
       const newProduct = toProduct(data);
       set((state) => { state.products.push(newProduct); });
+
+      // Log audit event
+      const user = await supabase.auth.getUser();
+      if (user.data.user) {
+        await AuditLogger.logProductCreate(user.data.user.id, storeId, newProduct.id, newProduct);
+      }
+
       return newProduct;
     },
 
@@ -657,10 +665,21 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       if (error) throw error;
       const updatedProduct = toProduct(data);
+
+      // Get the old product for audit logging
+      const oldProduct = get().products.find(p => p.id === productId);
+
       set((state) => {
         const index = state.products.findIndex((p) => p.id === productId);
         if (index !== -1) state.products[index] = updatedProduct;
       });
+
+      // Log audit event
+      const user = await supabase.auth.getUser();
+      if (user.data.user && oldProduct) {
+        await AuditLogger.logProductUpdate(user.data.user.id, get().currentStoreId, updatedProduct.id, oldProduct, updatedProduct);
+      }
+
       return updatedProduct;
     },
 
@@ -675,7 +694,17 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       );
 
       if (error) throw error;
+
+      // Get the deleted product for audit logging
+      const deletedProduct = get().products.find(p => p.id === productId);
+
       set((state) => { state.products = state.products.filter((p) => p.id !== productId); });
+
+      // Log audit event
+      const user = await supabase.auth.getUser();
+      if (user.data.user && deletedProduct) {
+        await AuditLogger.logProductDelete(user.data.user.id, get().currentStoreId, deletedProduct.id, deletedProduct);
+      }
     },
 
     addSale: async (saleData) => {
@@ -862,11 +891,14 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const newStock = currentStock + purchaseData.quantity;
       console.log('[addPurchase] Updating stock:', { productId: purchaseData.productId, currentStock, quantity: purchaseData.quantity, newStock });
 
-      // Update product stock - use simple update without .select() to avoid RLS issues
+      // Update product stock and cost - use simple update without .select() to avoid RLS issues
       const { error: stockUpdateError } = await withTimeout(
         supabase
           .from('products')
-          .update({ total_stock: newStock })
+          .update({
+            total_stock: newStock,
+            cost: purchaseData.unitCost  // Update the cost to the latest purchase cost
+          })
           .eq('id', purchaseData.productId) as any,
         10000,
         'Gagal update stok produk'
@@ -890,11 +922,12 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       set((state) => {
         state.purchases.unshift(newPurchase);
-        // Optimistically update product stock in local state
+        // Optimistically update product stock and cost in local state
         const p = state.products.find(p => p.id === purchaseData.productId);
         if (p) {
           p.totalStock = newStock;
-          console.log('[addPurchase] Optimistic update - set product stock to:', p.totalStock);
+          p.cost = purchaseData.unitCost;  // Update the cost to the latest purchase cost
+          console.log('[addPurchase] Optimistic update - set product stock to:', p.totalStock, 'and cost to:', p.cost);
         }
       });
 
@@ -962,7 +995,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         'Gagal mengupdate detail stok'
       );
 
-      // Update product stock if quantity changed
+      // Update product stock and cost if relevant
+      const productUpdates: { total_stock?: number; cost?: number } = {};
       if (quantityDiff !== 0) {
         // Fetch latest stock
         const { data: latestProduct } = await supabase
@@ -972,11 +1006,19 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .single();
 
         const currentStock = latestProduct?.total_stock || 0;
+        productUpdates.total_stock = currentStock + quantityDiff;
+      }
 
+      // Update cost if the unit cost has changed
+      if (oldPurchase.unit_cost !== purchaseData.unitCost) {
+        productUpdates.cost = purchaseData.unitCost;
+      }
+
+      if (Object.keys(productUpdates).length > 0) {
         await withTimeout(
           supabase
             .from('products')
-            .update({ total_stock: currentStock + quantityDiff })
+            .update(productUpdates)
             .eq('id', oldPurchase.product_id),
           10000,
           'Gagal update stok produk'
@@ -991,11 +1033,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           state.purchases[index] = updatedPurchase;
         }
 
-        // Optimistically update product stock
-        if (quantityDiff !== 0) {
-          const p = state.products.find(p => p.id === oldPurchase.product_id);
-          if (p) {
+        // Optimistically update product stock and cost
+        const p = state.products.find(p => p.id === oldPurchase.product_id);
+        if (p) {
+          if (quantityDiff !== 0) {
             p.totalStock = (p.totalStock || 0) + quantityDiff;
+          }
+          // Update cost if the unit cost has changed
+          if (oldPurchase.unit_cost !== purchaseData.unitCost) {
+            p.cost = purchaseData.unitCost;
           }
         }
       });
@@ -1236,6 +1282,30 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reconciliations';
         set({ isLoading: false, error: errorMessage });
+      }
+    },
+
+    // Preload all dashboard data at once
+    preloadDashboardData: async () => {
+      set({ isLoading: true });
+      try {
+        // Fetch all data in parallel
+        await Promise.all([
+          get().fetchProducts(),
+          get().fetchSales(),
+          get().fetchPurchases(),
+          get().fetchSuppliers(),
+          get().fetchJajananRequests(),
+          get().fetchInitialBalance(),
+          get().fetchStoreProfile(),
+          get().fetchReconciliations(),
+        ]);
+
+        set({ isLoading: false });
+      } catch (error: any) {
+        console.error('[PRELOAD DASHBOARD DATA ERROR]', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to preload dashboard data';
+        set({ error: errorMessage, isLoading: false });
       }
     },
 

@@ -27,14 +27,14 @@ export function NotificationBell() {
         }
     }, [fetchRequests]);
 
-    // Filter out dismissed notifications
-    const activeLowStock = lowStockProducts.filter(p =>
-        !dismissedNotifications.has(`stock-${p.id}`)
-    );
+    // Filter out dismissed notifications and sort by quantity (smallest to largest)
+    const activeLowStock = lowStockProducts
+        .filter(p => !dismissedNotifications.has(`stock-${p.id}`))
+        .sort((a, b) => (a.totalStock || 0) - (b.totalStock || 0));
 
-    const activeOutOfStock = outOfStockProducts.filter(p =>
-        !dismissedNotifications.has(`stock-${p.id}`)
-    );
+    const activeOutOfStock = outOfStockProducts
+        .filter(p => !dismissedNotifications.has(`stock-${p.id}`))
+        .sort((a, b) => (a.totalStock || 0) - (b.totalStock || 0));
 
     const pendingRequests = requests.filter(r =>
         r.status === 'pending' &&

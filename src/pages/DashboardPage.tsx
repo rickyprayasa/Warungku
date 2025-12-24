@@ -13,16 +13,31 @@ import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { PriceReferenceTab } from "@/components/PriceReferenceTab";
 import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag } from "lucide-react";
 import { motion, Variants } from "framer-motion";
+import { useWarungStore } from "@/lib/store";
 
 export function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") || "products";
   const [activeTab, setActiveTab] = useState(initialTab);
+  const preloadDashboardData = useWarungStore((state) => state.preloadDashboardData);
 
   const tabContentVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
   };
+
+  // Preload all dashboard data when the component mounts
+  useEffect(() => {
+    const loadAllData = async () => {
+      try {
+        await preloadDashboardData();
+      } catch (error) {
+        console.error('Failed to preload dashboard data:', error);
+      }
+    };
+
+    loadAllData();
+  }, [preloadDashboardData]);
 
   // Sync state with URL param
   useEffect(() => {
@@ -170,16 +185,57 @@ export function DashboardPage() {
           {/* TabsList removed as navigation is now in Sidebar */}
 
           <div>
-            <TabsContent value="analytics" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><AnalyticsDashboard /></motion.div></TabsContent>
-            <TabsContent value="products" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><ProductManagement /></motion.div></TabsContent>
-            <TabsContent value="opname" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><OpnameDashboard /></motion.div></TabsContent>
-            <TabsContent value="sales" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SalesDashboard /></motion.div></TabsContent>
-            <TabsContent value="purchases" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><PurchasesDashboard /></motion.div></TabsContent>
-            <TabsContent value="suppliers" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><SuppliersDashboard /></motion.div></TabsContent>
-            <TabsContent value="price-reference" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><PriceReferenceTab /></motion.div></TabsContent>
-            <TabsContent value="requests" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><JajananRequestsDashboard /></motion.div></TabsContent>
-            <TabsContent value="cashflow" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><CashFlowDashboard /></motion.div></TabsContent>
-            <TabsContent value="finance" asChild><motion.div initial="hidden" animate="visible" variants={tabContentVariants}><FinanceDashboard /></motion.div></TabsContent>
+            {/* Render all components to ensure data is loaded, but only show the active one */}
+            <div className={activeTab === 'analytics' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <AnalyticsDashboard />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'products' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <ProductManagement />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'opname' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <OpnameDashboard />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'sales' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <SalesDashboard />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'purchases' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <PurchasesDashboard />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'suppliers' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <SuppliersDashboard />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'price-reference' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <PriceReferenceTab />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'requests' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <JajananRequestsDashboard />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'cashflow' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <CashFlowDashboard />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'finance' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <FinanceDashboard />
+              </motion.div>
+            </div>
           </div>
         </Tabs>
       </div>

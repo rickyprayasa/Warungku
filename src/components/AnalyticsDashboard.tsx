@@ -13,6 +13,7 @@ import {
   BarChart3,
   Calendar,
   ArrowRightLeft,
+  Timer,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ import { subDays, startOfDay, endOfDay, format, differenceInDays } from 'date-fn
 import { RevenueTrendChart } from '@/components/charts/RevenueTrendChart';
 import { TopProductsChart } from '@/components/charts/TopProductsChart';
 import { CategoryPieChart } from '@/components/charts/CategoryPieChart';
+import { getFastMovingProducts, getLowDSLProducts } from '@/lib/stock-analysis';
 
 export function AnalyticsDashboard() {
   const products = useWarungStore((state) => state.products);
@@ -92,6 +94,15 @@ export function AnalyticsDashboard() {
         activeProducts: validProducts.filter(p => p.isActive !== false).length,
         lowStockProducts: validProducts.filter(p => (p.totalStock || 0) < 10).length,
         outOfStockProducts: validProducts.filter(p => (p.totalStock || 0) === 0).length,
+        // Added metrics
+        todayProfit: 0,
+        thisMonthProfit: 0,
+        thisMonthRevenue: 0,
+        todaySalesCount: 0,
+        thisMonthSalesCount: 0,
+        // DSL and fast-moving metrics
+        fastMovingProducts: [],
+        lowDSLProducts: [],
       };
     }
 
@@ -256,6 +267,10 @@ export function AnalyticsDashboard() {
     const todaySalesCount = todaySales.length;
     const thisMonthSalesCount = monthSales.length;
 
+    // Calculate fast-moving products and DSL data
+    const fastMovingProducts = getFastMovingProducts(products, validSales, 30, 10);
+    const lowDSLProducts = getLowDSLProducts(products, validSales, 30, 10);
+
     return {
       revenue,
       profit,
@@ -276,6 +291,9 @@ export function AnalyticsDashboard() {
       thisMonthRevenue,
       todaySalesCount,
       thisMonthSalesCount,
+      // Hari Habis Stok and fast-moving metrics
+      fastMovingProducts,
+      lowDSLProducts,
     };
   }, [sales, purchases, products, dateRange]);
 
@@ -598,38 +616,200 @@ export function AnalyticsDashboard() {
             </Card>
           </div>
 
+          {/* Combined Product Insights Section */}
           <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <CardHeader className="pb-2 px-3 pt-3">
               <CardTitle className="font-display text-base md:text-lg flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Top 10 Produk Terlaris
+                <Package className="w-4 h-4" />
+                Wawasan Produk
               </CardTitle>
             </CardHeader>
             <CardContent className="px-3 pb-3">
-              {metrics.topProducts.length > 0 ? (
-                <div className="space-y-2">
-                  {metrics.topProducts.map((item, index) => (
-                    <div key={`${item.name}-${index}`} className="flex items-center gap-2 p-2 border-2 border-brand-black bg-gray-50 rounded-lg">
-                      <Badge className="rounded-lg bg-brand-orange text-brand-black font-bold text-xs h-5 w-5 p-0 flex items-center justify-center border-2 border-brand-black shrink-0">
-                        {index + 1}
-                      </Badge>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm truncate">{item.name}</p>
-                        <p className="text-[10px] text-muted-foreground font-mono">
-                          {formatNumber(item.quantity)} unit terjual
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="font-bold font-mono text-sm">{formatCurrency(item.revenue)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-muted-foreground font-mono py-4 text-sm">
-                  Belum ada data penjualan
-                </p>
-              )}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-brand-black">
+                      <th className="text-left p-2 font-mono font-bold text-xs">Rank</th>
+                      <th className="text-left p-2 font-mono font-bold text-xs">Produk</th>
+                      <th className="text-center p-2 font-mono font-bold text-xs">Terjual</th>
+                      <th className="text-center p-2 font-mono font-bold text-xs">Kecepatan Jual</th>
+                      <th className="text-center p-2 font-mono font-bold text-xs">Habis dalam</th>
+                      <th className="text-center p-2 font-mono font-bold text-xs">Stok</th>
+                      <th className="text-right p-2 font-mono font-bold text-xs">Pendapatan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      // Create a map to combine data from all three sources by product name
+                      const productMap = new Map();
+
+                      // Add top products to the map
+                      metrics.topProducts.forEach((item, idx) => {
+                        const key = item.name;
+                        if (!productMap.has(key)) {
+                          productMap.set(key, {
+                            name: item.name,
+                            product: { name: item.name, totalStock: 0 }, // Placeholder until we get real data
+                            quantity: item.quantity || 0,
+                            revenue: item.revenue || 0,
+                            rank: idx + 1,
+                            category: 'bestseller',
+                            velocity: 0, // Will be filled if also in fast moving
+                            dsl: null // Will be filled if also in low DSL
+                          });
+                        } else {
+                          // Update existing entry with top product data
+                          const existing = productMap.get(key);
+                          existing.quantity = item.quantity || existing.quantity;
+                          existing.revenue = item.revenue || existing.revenue;
+                          existing.category = 'bestseller'; // Prioritize bestseller category
+                        }
+                      });
+
+                      // Add or update with fast moving data
+                      metrics.fastMovingProducts.forEach((item, idx) => {
+                        const key = item.product.name;
+                        if (productMap.has(key)) {
+                          // Update existing entry with fast moving data
+                          const existing = productMap.get(key);
+                          existing.velocity = item.velocity || existing.velocity;
+                          existing.dsl = item.dsl || existing.dsl;
+                          existing.product = item.product;
+                          // If this product was not a bestseller, set it as fast moving
+                          if (existing.category !== 'bestseller') {
+                            existing.category = 'fastmoving';
+                          }
+                        } else {
+                          // Add new entry for fast moving product
+                          productMap.set(key, {
+                            name: item.product.name,
+                            product: item.product,
+                            quantity: 0, // Not in top sellers
+                            revenue: 0, // Not in top sellers
+                            rank: idx + 1,
+                            category: 'fastmoving',
+                            velocity: item.velocity || 0,
+                            dsl: item.dsl || null
+                          });
+                        }
+                      });
+
+                      // Add or update with low DSL data
+                      metrics.lowDSLProducts.forEach((item, idx) => {
+                        const key = item.product.name;
+                        if (productMap.has(key)) {
+                          // Update existing entry with low DSL data
+                          const existing = productMap.get(key);
+                          existing.dsl = item.dsl || existing.dsl;
+                          existing.velocity = item.velocity || existing.velocity;
+                          existing.product = item.product;
+                          // If this product was not a bestseller or fast mover, set as low DSL
+                          if (existing.category !== 'bestseller' && existing.category !== 'fastmoving') {
+                            existing.category = 'lowdsl';
+                          }
+                        } else {
+                          // Add new entry for low DSL product
+                          productMap.set(key, {
+                            name: item.product.name,
+                            product: item.product,
+                            quantity: 0, // Not in top sellers
+                            revenue: 0, // Not in top sellers
+                            rank: idx + 1, // For low DSL products
+                            category: 'lowdsl',
+                            velocity: item.velocity || 0,
+                            dsl: item.dsl || null
+                          });
+                        }
+                      });
+
+                      // Convert map to array and sort by category priority and relevance
+                      const combinedList = Array.from(productMap.values())
+                        .sort((a, b) => {
+                          // Sort by category priority and then by individual metrics
+                          const categoryPriority = { bestseller: 1, fastmoving: 2, lowdsl: 3 };
+                          if (categoryPriority[a.category] !== categoryPriority[b.category]) {
+                            return categoryPriority[a.category] - categoryPriority[b.category];
+                          }
+                          // Within same category, sort by relevant metric
+                          if (a.category === 'bestseller') return (b.quantity || 0) - (a.quantity || 0);
+                          if (a.category === 'fastmoving') return (b.velocity || 0) - (a.velocity || 0);
+                          if (a.category === 'lowdsl') return (a.dsl || Infinity) - (b.dsl || Infinity);
+                          return 0;
+                        })
+                        .slice(0, 10); // Show top 10 combined items
+
+                      if (combinedList.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={7} className="text-center p-4 text-muted-foreground font-mono text-sm">
+                              Belum ada data produk untuk analisis
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return combinedList.map((item, index) => {
+                        // Determine badge color based on category
+                        let badgeColor = "bg-gray-200"; // default
+                        if (item.category === 'bestseller') badgeColor = "bg-brand-orange";
+                        if (item.category === 'fastmoving') badgeColor = "bg-blue-500";
+                        if (item.category === 'lowdsl') badgeColor = "bg-red-500";
+
+                        return (
+                          <tr key={`${item.product?.name || item.name}-${index}`} className="border-b border-brand-black/30 last:border-b-0 hover:bg-brand-orange/10">
+                            <td className="p-2">
+                              <Badge className={`rounded-lg ${badgeColor} text-brand-black font-bold text-xs h-5 w-5 p-0 flex items-center justify-center border-2 border-brand-black`}>
+                                {index + 1}
+                              </Badge>
+                            </td>
+                            <td className="p-2">
+                              <div className="min-w-[120px]">
+                                <p className="font-bold text-sm truncate">{item.product?.name || item.name}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono capitalize">
+                                  {item.category === 'bestseller' && 'Produk Terlaris'}
+                                  {item.category === 'fastmoving' && 'Produk Laris Cepat'}
+                                  {item.category === 'lowdsl' && 'Perlu Restock Segera'}
+                                  {(item.product?.totalStock || 0) === 0 && 'Stok Habis'}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="p-2 text-center">
+                              <p className="font-bold font-mono text-sm">{formatNumber(item.quantity || 0)}</p>
+                            </td>
+                            <td className="p-2 text-center">
+                              <p className="font-bold font-mono text-sm">{(item.velocity || 0).toFixed(2)} unit/hari</p>
+                            </td>
+                            <td className="p-2 text-center">
+                              <p className={`font-bold font-mono text-sm ${
+                                (item.product?.totalStock || 0) === 0
+                                  ? 'text-red-600'
+                                  : (item.dsl !== null && item.dsl !== undefined && item.dsl < 7)
+                                    ? 'text-red-600'
+                                    : ''
+                              }`}>
+                                {(item.product?.totalStock || 0) === 0
+                                  ? 'HABIS'
+                                  : (item.dsl !== null && item.dsl !== undefined)
+                                    ? `${item.dsl.toFixed(1)} hari`
+                                    : 'N/A'}
+                              </p>
+                            </td>
+                            <td className="p-2 text-center">
+                              <p className="font-bold font-mono text-sm">{item.product?.totalStock || 0}</p>
+                            </td>
+                            <td className="p-2 text-right">
+                              <p className="font-bold font-mono text-sm">{formatCurrency(item.revenue || 0)}</p>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-mono mt-2">
+                * Produk terlaris, fast moving, dan produk yang perlu restock segera
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

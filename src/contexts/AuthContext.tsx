@@ -163,15 +163,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+
+      // Implement rate limiting client-side by tracking failed attempts
+      const failedAttempts = parseInt(localStorage.getItem('login_failed_attempts') || '0');
+      const lastAttempt = parseInt(localStorage.getItem('login_last_attempt') || '0');
+      const now = Date.now();
+
+      // If more than 5 failed attempts in the last 15 minutes, block for 15 minutes
+      if (failedAttempts >= 5 && now - lastAttempt < 15 * 60 * 1000) {
+        setLoading(false);
+        return { error: 'Too many failed attempts. Please try again later.' };
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        // Increment failed attempts
+        const newFailedAttempts = failedAttempts + 1;
+        localStorage.setItem('login_failed_attempts', newFailedAttempts.toString());
+        localStorage.setItem('login_last_attempt', now.toString());
+
         setLoading(false);
         return { error: error.message };
       }
+
+      // Reset failed attempts on successful login
+      localStorage.removeItem('login_failed_attempts');
+      localStorage.removeItem('login_last_attempt');
 
       if (data.user) {
         setUser(data.user);
@@ -285,8 +306,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSession(null);
       setStore(null);
+
+      // Clear any stored session data
+      localStorage.removeItem('login_failed_attempts');
+      localStorage.removeItem('login_last_attempt');
+      localStorage.removeItem('last_activity');
     }
   };
+
+  // Session timeout functionality
+  useEffect(() => {
+    if (!session) return;
+
+    const handleUserActivity = () => {
+      localStorage.setItem('last_activity', Date.now().toString());
+    };
+
+    // Add event listeners for user activity
+    window.addEventListener('mousedown', handleUserActivity);
+    window.addEventListener('keydown', handleUserActivity);
+    window.addEventListener('scroll', handleUserActivity);
+
+    // Check for session timeout every minute
+    const sessionCheckInterval = setInterval(() => {
+      const lastActivity = parseInt(localStorage.getItem('last_activity') || '0');
+      const now = Date.now();
+      const maxInactiveTime = 30 * 60 * 1000; // 30 minutes
+
+      if (lastActivity && (now - lastActivity > maxInactiveTime)) {
+        // Session expired due to inactivity
+        console.log('[AuthContext] Session expired due to inactivity');
+        signOut();
+      }
+    }, 60000); // Check every minute
+
+    // Initialize last activity
+    localStorage.setItem('last_activity', Date.now().toString());
+
+    return () => {
+      window.removeEventListener('mousedown', handleUserActivity);
+      window.removeEventListener('keydown', handleUserActivity);
+      window.removeEventListener('scroll', handleUserActivity);
+      clearInterval(sessionCheckInterval);
+    };
+  }, [session, signOut]);
 
   // For general auth status, we just check if user exists (not store)
   // This prevents public store pages from affecting the auth status

@@ -56,7 +56,22 @@ serve(async (req) => {
             const merchantOrderId = `INV-${Date.now()}-${store_id.substring(0, 8)}`
             const amount = plan.price
             const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/duitku-payment/callback`
-            const returnUrl = `${req.headers.get('origin')}/dashboard?tab=billing&status=success`
+            // Validate origin header to prevent open redirect attacks
+            const origin = req.headers.get('origin');
+            const allowedOrigins = [
+              'https://yourdomain.com', // Replace with your production domain
+              'https://yourdomain.vercel.app', // Replace with your Vercel deployment domain
+              'http://localhost:3000', // For development
+              'http://localhost:5173'  // For development
+            ];
+
+            // Only use the origin if it's in the allowed list
+            let validatedOrigin = 'https://yourdomain.com'; // Default to production domain
+            if (origin && allowedOrigins.includes(origin)) {
+              validatedOrigin = origin;
+            }
+
+            const returnUrl = `${validatedOrigin}/dashboard?tab=billing&status=success`
 
             // Generate Signature: MD5(merchantCode + merchantOrderId + amount + apiKey)
             // Note: Duitku V2 might use SHA256, check documentation. Assuming MD5 for legacy/standard V2.
