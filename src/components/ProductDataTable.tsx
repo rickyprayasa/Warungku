@@ -48,7 +48,7 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDetailDialogOpen, setDetailDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
@@ -375,7 +375,8 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
           <Select
             value={`${itemsPerPage}`}
             onValueChange={(value) => {
-              // Logic to change itemsPerPage would go here
+              setItemsPerPage(Number(value));
+              setCurrentPage(1); // Reset to first page when changing items per page
             }}
           >
             <SelectTrigger className="h-8 w-[70px] rounded-none border-2 border-brand-black"><SelectValue placeholder={String(itemsPerPage)} /></SelectTrigger>
