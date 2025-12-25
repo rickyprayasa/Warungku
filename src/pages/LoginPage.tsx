@@ -98,7 +98,7 @@ export function LoginPage() {
             <KeyRound className="w-8 h-8 text-brand-black" />
           </div>
           <h1 className="text-3xl font-display font-bold text-brand-black">Akses Admin</h1>
-          <p className="font-mono text-muted-foreground">Masukkan kredensial untuk mengelola Warungku.</p>
+          <p className="font-mono text-muted-foreground">Masukkan kredensial untuk mengelola Omzetin.</p>
         </div>
 
         {error && (
@@ -115,7 +115,7 @@ export function LoginPage() {
             <Input
               id="email"
               type="email"
-              placeholder="admin@warungku.com"
+              placeholder="admin@omzetin.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

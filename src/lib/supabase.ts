@@ -41,7 +41,7 @@ export const supabase = createClient<Database>(
     },
     global: {
       headers: {
-        'X-Client-Info': 'warungku-app'
+        'X-Client-Info': 'omzetin-app'
       },
       fetch: (url, options = {}) => {
         // Add debugging for network requests

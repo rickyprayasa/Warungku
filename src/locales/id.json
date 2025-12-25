@@ -19,13 +19,13 @@
   },
   "loginPage": {
     "title": "Akses Admin",
-    "subtitle": "Masukkan kredensial untuk mengelola WarungOS.",
+    "subtitle": "Masukkan kredensial untuk mengelola Omzetin.",
     "emailLabel": "Email",
     "passwordLabel": "Kata Sandi",
     "loginButton": "Masuk"
   },
   "dashboard": {
-    "title": "Dasbor Warungku",
+    "title": "Dasbor Omzetin",
     "subtitle": "Kelola produk, penjualan, dan keuangan toko Anda.",
     "tabs": {
       "products": "Produk",

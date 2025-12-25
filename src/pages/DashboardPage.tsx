@@ -173,7 +173,7 @@ export function DashboardPage() {
       <div className="py-8 md:py-10 lg:py-12">
         <div className="mb-8">
           <h2 className="text-3xl font-display font-bold text-brand-black">
-            Dasbor Warungku
+            Dasbor Omzetin
           </h2>
           <p className="font-mono text-muted-foreground">
             Kelola produk, penjualan, dan keuangan toko Anda.

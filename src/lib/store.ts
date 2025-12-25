@@ -77,7 +77,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       reconciliations: [],
       initialBalance: 0,
       storeProfile: {
-        name: 'Warungku',
+        name: 'Omzetin',
         address: '',
         phone: '',
       },

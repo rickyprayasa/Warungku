@@ -42,7 +42,7 @@ export const supabase = createClient<Database>(
     // Add additional configuration that might help with connection issues
     global: {
       headers: {
-        'X-Client-Info': 'warungku-app'
+        'X-Client-Info': 'omzetin-app'
       }
     },
     db: {

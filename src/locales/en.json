@@ -19,13 +19,13 @@
   },
   "loginPage": {
     "title": "Admin Access",
-    "subtitle": "Enter credentials to manage WarungOS.",
+    "subtitle": "Enter credentials to manage Omzetin.",
     "emailLabel": "Email",
     "passwordLabel": "Password",
     "loginButton": "Login"
   },
   "dashboard": {
-    "title": "Warungku Dashboard",
+    "title": "Omzetin Dashboard",
     "subtitle": "Manage your store's products, sales, and finances.",
     "tabs": {
       "products": "Products",

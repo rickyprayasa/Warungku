@@ -68,9 +68,9 @@ export function AdminDuitkuSettingsPage() {
         merchantCode: settingsMap['duitku_merchant_code'] || '',
         apiKey: settingsMap['duitku_api_key'] || '',
         sandboxMode: settingsMap['duitku_sandbox_mode'] !== 'false',
-        webhookUrl: `https://${window.location.hostname}/functions/v1/duitku-payment/callback`,
-        callbackUrl: settingsMap['duitku_callback_url'] || `https://${window.location.hostname}/functions/v1/duitku-payment/callback`,
-        returnUrl: settingsMap['duitku_return_url'] || `https://${window.location.hostname}/dashboard?tab=billing&status=success`,
+        webhookUrl: 'https://omzetin.web.id/functions/v1/duitku-payment/callback',
+        callbackUrl: settingsMap['duitku_callback_url'] || 'https://omzetin.web.id/functions/v1/duitku-payment/callback',
+        returnUrl: settingsMap['duitku_return_url'] || 'https://omzetin.web.id/dashboard?tab=billing&status=success',
       });
     } catch (error) {
       console.error('Error fetching Duitku settings:', error);

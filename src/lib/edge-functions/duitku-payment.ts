@@ -55,18 +55,18 @@ serve(async (req) => {
             const apiKey = Deno.env.get('DUITKU_API_KEY') || 'YOUR_API_KEY' // Replace with your API Key
             const merchantOrderId = `INV-${Date.now()}-${store_id.substring(0, 8)}`
             const amount = plan.price
-            const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/duitku-payment/callback`
+            const callbackUrl = `https://omzetin.web.id/functions/v1/duitku-payment/callback`
             // Validate origin header to prevent open redirect attacks
             const origin = req.headers.get('origin');
             const allowedOrigins = [
-              'https://yourdomain.com', // Replace with your production domain
-              'https://yourdomain.vercel.app', // Replace with your Vercel deployment domain
+              'https://omzetin.web.id', // Production domain
+              'https://omzetin-main-rsquare.pages.dev', // Cloudflare Pages deployment domain
               'http://localhost:3000', // For development
               'http://localhost:5173'  // For development
             ];
 
             // Only use the origin if it's in the allowed list
-            let validatedOrigin = 'https://yourdomain.com'; // Default to production domain
+            let validatedOrigin = 'https://omzetin.web.id'; // Default to production domain
             if (origin && allowedOrigins.includes(origin)) {
               validatedOrigin = origin;
             }

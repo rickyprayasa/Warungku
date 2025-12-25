@@ -1,4 +1,4 @@
-import { Bell, X, PackageX, AlertTriangle, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, X, PackageX, AlertTriangle, CheckCheck, Trash2, Timer } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useWarungStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ export function NotificationBell() {
     const navigate = useNavigate();
     const requests = useWarungStore((state) => state.jajananRequests);
     const fetchRequests = useWarungStore((state) => state.fetchJajananRequests);
-    const { lowStockProducts, outOfStockProducts, hasCritical } = useLowStockAlerts();
+    const { lowStockProducts, outOfStockProducts, lowDSLProducts, hasCritical } = useLowStockAlerts();
 
     const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
     const [isOpen, setIsOpen] = useState(false);
@@ -27,7 +27,7 @@ export function NotificationBell() {
         }
     }, [fetchRequests]);
 
-    // Filter out dismissed notifications and sort by quantity (smallest to largest)
+    // Filter out dismissed notifications
     const activeLowStock = lowStockProducts
         .filter(p => !dismissedNotifications.has(`stock-${p.id}`))
         .sort((a, b) => (a.totalStock || 0) - (b.totalStock || 0));
@@ -36,12 +36,22 @@ export function NotificationBell() {
         .filter(p => !dismissedNotifications.has(`stock-${p.id}`))
         .sort((a, b) => (a.totalStock || 0) - (b.totalStock || 0));
 
+    // Filter low DSL products and sort by DSL (ascending - lowest first, with null/undefined at the end)
+    const activeLowDSL = lowDSLProducts
+        .filter(item => !dismissedNotifications.has(`dsl-${item.product.id}`))
+        .sort((a, b) => {
+            // Treat null/undefined DSL values as infinity to put them at the end
+            const dslA = a.dsl === null || a.dsl === undefined ? Infinity : a.dsl;
+            const dslB = b.dsl === null || b.dsl === undefined ? Infinity : b.dsl;
+            return dslA - dslB;
+        });
+
     const pendingRequests = requests.filter(r =>
         r.status === 'pending' &&
         !dismissedNotifications.has(`req-${r.id}`)
     );
 
-    const totalNotifications = activeLowStock.length + activeOutOfStock.length + pendingRequests.length;
+    const totalNotifications = activeLowStock.length + activeOutOfStock.length + activeLowDSL.length + pendingRequests.length;
 
     const dismissNotification = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -51,9 +61,17 @@ export function NotificationBell() {
         localStorage.setItem('dismissedNotifications', JSON.stringify([...newDismissed]));
     };
 
-    const handleNotificationClick = (type: 'inventory' | 'requests', id: string) => {
+    const handleNotificationClick = (type: 'inventory' | 'dsl' | 'requests', id: string) => {
         // Dismiss notification
-        const notificationId = type === 'inventory' ? `stock-${id}` : `req-${id}`;
+        let notificationId = '';
+        if (type === 'inventory') {
+            notificationId = `stock-${id}`;
+        } else if (type === 'dsl') {
+            notificationId = `dsl-${id}`;
+        } else {
+            notificationId = `req-${id}`;
+        }
+
         const newDismissed = new Set(dismissedNotifications);
         newDismissed.add(notificationId);
         setDismissedNotifications(newDismissed);
@@ -63,7 +81,7 @@ export function NotificationBell() {
         setIsOpen(false);
 
         // Navigate to relevant tab using query params (reliable navigation)
-        if (type === 'inventory') {
+        if (type === 'inventory' || type === 'dsl') {
             navigate('/dashboard?tab=products'); // Products tab now includes inventory
         } else {
             navigate('/dashboard?tab=requests');
@@ -74,6 +92,7 @@ export function NotificationBell() {
         const allIds = [
             ...activeLowStock.map(p => `stock-${p.id}`),
             ...activeOutOfStock.map(p => `stock-${p.id}`),
+            ...activeLowDSL.map(item => `dsl-${item.product.id}`),
             ...pendingRequests.map(r => `req-${r.id}`)
         ];
         const newDismissed = new Set([...dismissedNotifications, ...allIds]);
@@ -86,6 +105,7 @@ export function NotificationBell() {
         const allIds = [
             ...activeLowStock.map(p => `stock-${p.id}`),
             ...activeOutOfStock.map(p => `stock-${p.id}`),
+            ...activeLowDSL.map(item => `dsl-${item.product.id}`),
             ...pendingRequests.map(r => `req-${r.id}`)
         ];
         const newDismissed = new Set([...dismissedNotifications, ...allIds]);
@@ -144,6 +164,32 @@ export function NotificationBell() {
                         </div>
                     ) : (
                         <div className="divide-y-2 divide-brand-black/10">
+                            {/* Low DSL Products - Highest Priority */}
+                            {activeLowDSL.map(item => (
+                                <div
+                                    key={`dsl-${item.product.id}`}
+                                    className="p-3 hover:bg-red-50 transition-colors cursor-pointer relative group border-l-4 border-red-500 bg-red-50"
+                                    onClick={() => handleNotificationClick('dsl', item.product.id)}
+                                >
+                                    <div className="flex items-start gap-2">
+                                        <Timer className="w-4 h-4 text-red-600 mt-1 flex-shrink-0" />
+                                        <div className="flex-1">
+                                            <p className="text-sm font-bold text-red-600 font-mono">Segera Habis!</p>
+                                            <p className="text-sm font-bold text-brand-black">{item.product.name}</p>
+                                            <p className="text-xs text-muted-foreground font-mono">
+                                                {item.dsl ? item.dsl.toFixed(1) : 'N/A'} hari lagi • Akan habis segera!
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={(e) => dismissNotification(`dsl-${item.product.id}`, e)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+                                            title="Tutup notifikasi"
+                                        >
+                                            <X className="w-4 h-4 text-red-600" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                             {activeOutOfStock.map(product => (
                                 <div
                                     key={`stock-${product.id}`}

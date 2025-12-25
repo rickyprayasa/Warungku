@@ -62,8 +62,8 @@ export async function testDuitkuConnection(data: DuitkuTestRequest): Promise<Dui
           quantity: 1
         }
       ],
-      callbackUrl: `${process.env.SUPABASE_URL}/functions/v1/duitku-payment/callback`,
-      returnUrl: `${process.env.SUPABASE_URL}/dashboard`,
+      callbackUrl: 'https://omzetin.web.id/functions/v1/duitku-payment/callback',
+      returnUrl: 'https://omzetin.web.id/dashboard',
       signature,
       expiryPeriod: 5 // 5 menit untuk testing
     };
