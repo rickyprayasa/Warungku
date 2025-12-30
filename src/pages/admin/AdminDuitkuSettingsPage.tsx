@@ -452,3 +452,5 @@ export function AdminDuitkuSettingsPage() {
     </div>
   );
 }
+
+export default AdminDuitkuSettingsPage;
