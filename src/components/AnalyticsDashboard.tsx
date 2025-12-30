@@ -37,6 +37,10 @@ export function AnalyticsDashboard() {
     to: endOfDay(new Date()),
   });
 
+  // State for product insights filtering and sorting
+  const [productFilter, setProductFilter] = useState('all');
+  const [productSort, setProductSort] = useState('rank');
+
   // Preset filters
   const setPresetRange = (preset: 'today' | 'yesterday' | '7days' | '30days' | 'month') => {
     const now = new Date();
@@ -619,9 +623,54 @@ export function AnalyticsDashboard() {
           {/* Combined Product Insights Section */}
           <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             <CardHeader className="pb-2 px-3 pt-3">
-              <CardTitle className="font-display text-base md:text-lg flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                Wawasan Produk
+              <CardTitle className="font-display text-base md:text-lg flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Wawasan Produk
+                </div>
+                {/* Filter Controls */}
+                <div className="flex gap-2">
+                  <Select
+                    value={productFilter}
+                    onValueChange={setProductFilter}
+                    className="w-[140px] h-8 rounded-none border-2 border-brand-black text-xs font-mono"
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Filter" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none border-2 border-brand-black">
+                      <SelectItem value="all">Semua Produk</SelectItem>
+                      <SelectItem value="bestseller">Terlaris</SelectItem>
+                      <SelectItem value="fastmoving">Perputaran Cepat</SelectItem>
+                      <SelectItem value="restock">Perlu Restock Segera</SelectItem>
+                      <SelectItem value="outofstock">Stok Habis</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={productSort}
+                    onValueChange={setProductSort}
+                    className="w-[160px] h-8 rounded-none border-2 border-brand-black text-xs font-mono"
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Urutkan" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-none border-2 border-brand-black">
+                      <SelectItem value="rank">Urutkan Berdasarkan Rank</SelectItem>
+                      <SelectItem value="name">Nama Produk (A-Z)</SelectItem>
+                      <SelectItem value="sold-desc">Terjual (Tertinggi)</SelectItem>
+                      <SelectItem value="sold-asc">Terjual (Terendah)</SelectItem>
+                      <SelectItem value="velocity-desc">Kecepatan Jual (Tertinggi)</SelectItem>
+                      <SelectItem value="velocity-asc">Kecepatan Jual (Terendah)</SelectItem>
+                      <SelectItem value="revenue-desc">Pendapatan (Tertinggi)</SelectItem>
+                      <SelectItem value="revenue-asc">Pendapatan (Terendah)</SelectItem>
+                      <SelectItem value="stock-desc">Stok (Tertinggi)</SelectItem>
+                      <SelectItem value="stock-asc">Stok (Terendah)</SelectItem>
+                      <SelectItem value="dsl-desc">Habis dalam (Tercepat)</SelectItem>
+                      <SelectItem value="dsl-asc">Habis dalam (Terlama)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="px-3 pb-3">
@@ -629,13 +678,91 @@ export function AnalyticsDashboard() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b-2 border-brand-black">
-                      <th className="text-left p-2 font-mono font-bold text-xs">Rank</th>
-                      <th className="text-left p-2 font-mono font-bold text-xs">Produk</th>
-                      <th className="text-center p-2 font-mono font-bold text-xs">Terjual</th>
-                      <th className="text-center p-2 font-mono font-bold text-xs">Kecepatan Jual</th>
-                      <th className="text-center p-2 font-mono font-bold text-xs">Habis dalam</th>
-                      <th className="text-center p-2 font-mono font-bold text-xs">Stok</th>
-                      <th className="text-right p-2 font-mono font-bold text-xs">Pendapatan</th>
+                      <th className="text-left p-2 font-mono font-bold text-xs">Rank
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 ml-1"
+                          onClick={() => {
+                            // Toggle between rank and rank-asc/rank-desc
+                            setProductSort(prev => prev === 'rank' ? 'rank-desc' : 'rank');
+                          }}
+                        >
+                          {productSort.includes('rank') ? (productSort.includes('desc') ? '↓' : '↑') : '↕️'}
+                        </Button>
+                      </th>
+                      <th className="text-left p-2 font-mono font-bold text-xs">Produk
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 ml-1"
+                          onClick={() => {
+                            setProductSort(prev => prev === 'name' ? 'name-asc' : 'name');
+                          }}
+                        >
+                          {productSort.includes('name') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                        </Button>
+                      </th>
+                      <th className="text-center p-2 font-mono font-bold text-xs">Terjual
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 ml-1"
+                          onClick={() => {
+                            setProductSort(prev => prev === 'sold-desc' ? 'sold-asc' : 'sold-desc');
+                          }}
+                        >
+                          {productSort.includes('sold') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                        </Button>
+                      </th>
+                      <th className="text-center p-2 font-mono font-bold text-xs">Kecepatan Jual
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 ml-1"
+                          onClick={() => {
+                            setProductSort(prev => prev === 'velocity-desc' ? 'velocity-asc' : 'velocity-desc');
+                          }}
+                        >
+                          {productSort.includes('velocity') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                        </Button>
+                      </th>
+                      <th className="text-center p-2 font-mono font-bold text-xs">Habis dalam
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 ml-1"
+                          onClick={() => {
+                            setProductSort(prev => prev === 'dsl-desc' ? 'dsl-asc' : 'dsl-desc');
+                          }}
+                        >
+                          {productSort.includes('dsl') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                        </Button>
+                      </th>
+                      <th className="text-center p-2 font-mono font-bold text-xs">Stok
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 ml-1"
+                          onClick={() => {
+                            setProductSort(prev => prev === 'stock-desc' ? 'stock-asc' : 'stock-desc');
+                          }}
+                        >
+                          {productSort.includes('stock') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                        </Button>
+                      </th>
+                      <th className="text-right p-2 font-mono font-bold text-xs">Pendapatan
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 ml-1"
+                          onClick={() => {
+                            setProductSort(prev => prev === 'revenue-desc' ? 'revenue-asc' : 'revenue-desc');
+                          }}
+                        >
+                          {productSort.includes('revenue') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                        </Button>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -722,21 +849,71 @@ export function AnalyticsDashboard() {
                         }
                       });
 
-                      // Convert map to array and sort by category priority and relevance
-                      const combinedList = Array.from(productMap.values())
-                        .sort((a, b) => {
-                          // Sort by category priority and then by individual metrics
-                          const categoryPriority = { bestseller: 1, fastmoving: 2, lowdsl: 3 };
-                          if (categoryPriority[a.category] !== categoryPriority[b.category]) {
-                            return categoryPriority[a.category] - categoryPriority[b.category];
-                          }
-                          // Within same category, sort by relevant metric
-                          if (a.category === 'bestseller') return (b.quantity || 0) - (a.quantity || 0);
-                          if (a.category === 'fastmoving') return (b.velocity || 0) - (a.velocity || 0);
-                          if (a.category === 'lowdsl') return (a.dsl || Infinity) - (b.dsl || Infinity);
-                          return 0;
-                        })
-                        .slice(0, 10); // Show top 10 combined items
+                      // Apply filtering based on selected filter
+                      let filteredList = Array.from(productMap.values());
+
+                      switch (productFilter) {
+                        case 'bestseller':
+                          filteredList = filteredList.filter(item => item.category === 'bestseller');
+                          break;
+                        case 'fastmoving':
+                          filteredList = filteredList.filter(item => item.category === 'fastmoving');
+                          break;
+                        case 'restock':
+                          filteredList = filteredList.filter(item => item.category === 'lowdsl');
+                          break;
+                        case 'outofstock':
+                          filteredList = filteredList.filter(item => (item.product?.totalStock || 0) === 0);
+                          break;
+                        default:
+                          // 'all' - no filtering
+                          break;
+                      }
+
+                      // Apply sorting based on selected sort option
+                      filteredList.sort((a, b) => {
+                        // Determine if we need to reverse the comparison for ascending order
+                        const multiplier = productSort.includes('-asc') ? 1 : (productSort.includes('-desc') ? -1 : -1);
+
+                        switch (productSort.replace('-asc', '').replace('-desc', '')) {
+                          case 'rank':
+                            // Maintain category priority but sort within categories
+                            const categoryPriority = { bestseller: 1, fastmoving: 2, lowdsl: 3 };
+                            if (categoryPriority[a.category] !== categoryPriority[b.category]) {
+                              return (categoryPriority[a.category] - categoryPriority[b.category]) * multiplier;
+                            }
+                            // Within same category, sort by relevant metric
+                            if (a.category === 'bestseller') return ((b.quantity || 0) - (a.quantity || 0)) * multiplier;
+                            if (a.category === 'fastmoving') return ((b.velocity || 0) - (a.velocity || 0)) * multiplier;
+                            if (a.category === 'lowdsl') return ((a.dsl || Infinity) - (b.dsl || Infinity)) * multiplier;
+                            return 0;
+                          case 'name':
+                            const comparison = a.product?.name.localeCompare(b.product?.name);
+                            return productSort.includes('asc') ? comparison : -comparison;
+                          case 'sold':
+                            return ((b.quantity || 0) - (a.quantity || 0)) * multiplier;
+                          case 'velocity':
+                            return ((b.velocity || 0) - (a.velocity || 0)) * multiplier;
+                          case 'revenue':
+                            return ((b.revenue || 0) - (a.revenue || 0)) * multiplier;
+                          case 'stock':
+                            return ((b.product?.totalStock || 0) - (a.product?.totalStock || 0)) * multiplier;
+                          case 'dsl':
+                            return ((a.dsl || Infinity) - (b.dsl || Infinity)) * multiplier;
+                          default:
+                            // Default sorting (rank) - same as 'rank' case
+                            const defaultPriority = { bestseller: 1, fastmoving: 2, lowdsl: 3 };
+                            if (defaultPriority[a.category] !== defaultPriority[b.category]) {
+                              return (defaultPriority[a.category] - defaultPriority[b.category]) * multiplier;
+                            }
+                            if (a.category === 'bestseller') return ((b.quantity || 0) - (a.quantity || 0)) * multiplier;
+                            if (a.category === 'fastmoving') return ((b.velocity || 0) - (a.velocity || 0)) * multiplier;
+                            if (a.category === 'lowdsl') return ((a.dsl || Infinity) - (b.dsl || Infinity)) * multiplier;
+                            return 0;
+                        }
+                      });
+
+                      const combinedList = filteredList.slice(0, 10); // Show top 10 items after filtering and sorting
 
                       if (combinedList.length === 0) {
                         return (
