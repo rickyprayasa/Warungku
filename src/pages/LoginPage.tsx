@@ -53,7 +53,12 @@ export function LoginPage() {
       }
     };
 
-    checkAndRedirect();
+    // Delay the redirect check to prevent race conditions with auth state initialization
+    const timer = setTimeout(() => {
+      checkAndRedirect();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [isAuthenticated, store, navigate, setCurrentStoreId, checkAdminAccess]);
 
   const handleLogin = async (e: React.FormEvent) => {
