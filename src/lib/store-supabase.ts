@@ -42,6 +42,7 @@ interface WarungActions {
   fetchInitialBalance: () => Promise<void>;
   fetchStoreProfile: () => Promise<void>;
   fetchOpnameMode: () => Promise<void>;
+  preloadDashboardData: () => Promise<void>;
   setInitialBalance: (balance: number) => Promise<void>;
   updateStoreProfile: (profile: WarungState['storeProfile']) => Promise<void>;
   updateOpnameMode: (mode: 'retail' | 'display' | 'terpadu') => Promise<void>;

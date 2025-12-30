@@ -9,13 +9,15 @@ import { FinancialChart } from "./FinancialChart";
 import { exportToCSV } from "@/lib/csv-export";
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { CardGridSkeleton, FormSkeleton } from '@/components/ui/skeleton';
 export function FinanceDashboard() {
-  const { sales, initialBalance, setInitialBalance, purchases } = useWarungStore(
+  const { sales, initialBalance, setInitialBalance, purchases, isLoading } = useWarungStore(
     useShallow((state) => ({
       sales: state.sales,
       initialBalance: state.initialBalance,
       setInitialBalance: state.setInitialBalance,
       purchases: state.purchases,
+      isLoading: state.isLoading,
     }))
   );
   const [balanceInput, setBalanceInput] = useState(initialBalance.toString());
@@ -85,6 +87,21 @@ export function FinanceDashboard() {
     { title: "Laba Bersih", value: formatCurrency(netProfit), icon: Landmark },
     { title: "Margin Laba", value: `${profitMargin.toFixed(2)}%`, icon: Percent },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+        <CardGridSkeleton cols={4} />
+        <div className="border-2 border-gray-200 rounded-lg p-3 h-64 animate-pulse"></div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="border-2 border-gray-200 rounded-lg p-3 h-48 animate-pulse"></div>
+          <FormSkeleton />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">

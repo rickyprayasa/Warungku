@@ -3,6 +3,8 @@ import { useWarungStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DashboardSkeleton } from '@/components/ui/skeleton';
 import {
   TrendingUp,
   TrendingDown,
@@ -302,14 +304,7 @@ export function AnalyticsDashboard() {
   }, [sales, purchases, products, dateRange]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-black border-t-transparent mx-auto mb-4"></div>
-          <p className="font-mono text-muted-foreground">Memuat data analytics...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -628,14 +623,13 @@ export function AnalyticsDashboard() {
                   <Package className="w-4 h-4" />
                   Wawasan Produk
                 </div>
-                {/* Filter Controls */}
+                 {/* Filter Controls */}
                 <div className="flex gap-2">
                   <Select
                     value={productFilter}
                     onValueChange={setProductFilter}
-                    className="w-[140px] h-8 rounded-none border-2 border-brand-black text-xs font-mono"
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-[140px] h-8 rounded-none border-2 border-brand-black text-xs font-mono">
                       <SelectValue placeholder="Filter" />
                     </SelectTrigger>
                     <SelectContent className="rounded-none border-2 border-brand-black">
@@ -650,9 +644,8 @@ export function AnalyticsDashboard() {
                   <Select
                     value={productSort}
                     onValueChange={setProductSort}
-                    className="w-[160px] h-8 rounded-none border-2 border-brand-black text-xs font-mono"
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-[160px] h-8 rounded-none border-2 border-brand-black text-xs font-mono">
                       <SelectValue placeholder="Urutkan" />
                     </SelectTrigger>
                     <SelectContent className="rounded-none border-2 border-brand-black">

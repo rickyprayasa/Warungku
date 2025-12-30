@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReconciliationTerpadu } from '@/components/ReconciliationTerpadu';
 import type { CashEntry, Product } from '@shared/types';
+import { CardGridSkeleton, FormSkeleton } from '@/components/ui/skeleton';
 
 type OpnameMode = 'display' | 'retail' | 'terpadu';
 
@@ -17,6 +18,7 @@ export function OpnamePage() {
     const purchases = useWarungStore((state) => state.purchases);
     const products = useWarungStore((state) => state.products);
     const initialBalance = useWarungStore((state) => state.initialBalance);
+    const isLoading = useWarungStore((state) => state.isLoading);
     const fetchSales = useWarungStore((state) => state.fetchSales);
     const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
     const fetchProducts = useWarungStore((state) => state.fetchProducts);
@@ -218,6 +220,16 @@ export function OpnamePage() {
     // Show Terpadu mode
     if (opnameMode === 'terpadu') {
         return <ReconciliationTerpadu />;
+    }
+
+    if (isLoading) {
+        return (
+            <div className="space-y-4">
+                <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+                <CardGridSkeleton cols={2} />
+                <FormSkeleton />
+            </div>
+        );
     }
 
     return (

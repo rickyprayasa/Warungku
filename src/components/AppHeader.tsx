@@ -37,7 +37,7 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
       <NavLink to="/" className={navLinkClass} onClick={() => setMenuOpen(false)}>
         Menu
       </NavLink>
-      <NavLink to="/dashboard" className={navLinkClass} onClick={() => setMenuOpen(false)}>
+      <NavLink to="/dashboard?tab=analytics" className={navLinkClass} onClick={() => setMenuOpen(false)}>
         Dasbor
       </NavLink>
     </>

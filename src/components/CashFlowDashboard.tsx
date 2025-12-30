@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger
 } from "@/components/ui/dialog";
+import { CardGridSkeleton, TableRowSkeleton, TableHeaderSkeleton } from '@/components/ui/skeleton';
 
 interface Transaction {
   id: string;
@@ -24,6 +25,7 @@ interface Transaction {
 export function CashFlowDashboard() {
   const sales = useWarungStore((state) => state.sales);
   const purchases = useWarungStore((state) => state.purchases);
+  const isLoading = useWarungStore((state) => state.isLoading);
   const { cashIn, cashOut, netFlow } = useMemo(() => {
     const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
     const totalPurchases = purchases.reduce((sum, purchase) => sum + purchase.totalCost, 0);
@@ -182,6 +184,18 @@ export function CashFlowDashboard() {
       </Dialog>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+        <CardGridSkeleton cols={3} />
+        <h4 className="text-xl font-display font-bold text-brand-black mb-4">Transaksi Terkini</h4>
+        <TableHeaderSkeleton />
+        <TableRowSkeleton rows={5} />
+      </div>
+    );
+  }
 
   return (
     <div>
