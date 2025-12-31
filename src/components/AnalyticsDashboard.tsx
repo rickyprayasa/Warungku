@@ -821,11 +821,71 @@ export function AnalyticsDashboard() {
                           <tr className="border-b-2 border-brand-black">
                             <th className="text-left p-2 font-mono font-bold text-xs">Rank</th>
                             <th className="text-left p-2 font-mono font-bold text-xs">Produk</th>
-                            <th className="text-center p-2 font-mono font-bold text-xs">Terjual</th>
-                            <th className="text-center p-2 font-mono font-bold text-xs">Kecepatan Jual</th>
-                            <th className="text-center p-2 font-mono font-bold text-xs">Habis dalam</th>
-                            <th className="text-center p-2 font-mono font-bold text-xs">Stok</th>
-                            <th className="text-right p-2 font-mono font-bold text-xs">Pendapatan</th>
+                            <th className="text-center p-2 font-mono font-bold text-xs">
+                              Terjual
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 ml-1"
+                                onClick={() => {
+                                  setProductSort(prev => prev === 'sold-desc' ? 'sold-asc' : 'sold-desc');
+                                }}
+                              >
+                                {productSort.includes('sold') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                              </Button>
+                            </th>
+                            <th className="text-center p-2 font-mono font-bold text-xs">
+                              Kecepatan Jual
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 ml-1"
+                                onClick={() => {
+                                  setProductSort(prev => prev === 'velocity-desc' ? 'velocity-asc' : 'velocity-desc');
+                                }}
+                              >
+                                {productSort.includes('velocity') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                              </Button>
+                            </th>
+                            <th className="text-center p-2 font-mono font-bold text-xs">
+                              Habis dalam
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 ml-1"
+                                onClick={() => {
+                                  setProductSort(prev => prev === 'dsl-desc' ? 'dsl-asc' : 'dsl-desc');
+                                }}
+                              >
+                                {productSort.includes('dsl') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                              </Button>
+                            </th>
+                            <th className="text-center p-2 font-mono font-bold text-xs">
+                              Stok
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 ml-1"
+                                onClick={() => {
+                                  setProductSort(prev => prev === 'stock-desc' ? 'stock-asc' : 'stock-desc');
+                                }}
+                              >
+                                {productSort.includes('stock') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                              </Button>
+                            </th>
+                            <th className="text-right p-2 font-mono font-bold text-xs">
+                              Pendapatan
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto p-0 ml-1"
+                                onClick={() => {
+                                  setProductSort(prev => prev === 'revenue-desc' ? 'revenue-asc' : 'revenue-desc');
+                                }}
+                              >
+                                {productSort.includes('revenue') ? (productSort.includes('asc') ? '↑' : '↓') : '↕️'}
+                              </Button>
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
