@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal } from 'lucide-react';
+import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal, Tags } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWarungStore } from '@/lib/store';
 
@@ -8,9 +8,11 @@ const moreTabs = [
     { value: "purchases", label: "Beli", icon: ShoppingCart, path: "/dashboard?tab=purchases" },
     { value: "suppliers", label: "Pemasok", icon: Truck, path: "/dashboard?tab=suppliers" },
     { value: "requests", label: "Request", icon: Inbox, path: "/dashboard?tab=requests" },
+    { value: "price-reference", label: "Ref Harga", icon: Tags, path: "/dashboard?tab=price-reference" },
     { value: "cashflow", label: "Kas", icon: ArrowRightLeft, path: "/dashboard?tab=cashflow" },
     { value: "finance", label: "Finance", icon: Banknote, path: "/dashboard?tab=finance" },
-    { value: "analytics", label: "Analytics", icon: BarChart3, path: "/dashboard?tab=analytics" },
+    { value: "analytics", label: "Dashboard", icon: BarChart3, path: "/dashboard?tab=analytics" },
+    { value: "store", label: "Lihat Toko", icon: Store, path: "/store" },
 ];
 
 export function MobileBottomNav() {

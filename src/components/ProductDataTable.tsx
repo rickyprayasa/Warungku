@@ -319,39 +319,38 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
                 }}
               />
               <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start">
-                  <div
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setDetailDialogOpen(true);
-                    }}
-                  >
-                    <h3 className="font-bold text-lg leading-tight truncate">{product.name}</h3>
-                    <span className="text-xs font-mono bg-brand-orange/20 px-1 py-0.5 border border-brand-black/20 mt-1 inline-block">
-                      {product.category}
-                    </span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" className="h-8 w-8 border-2 border-brand-black rounded-none hover:bg-brand-orange" onClick={() => handleEdit(product)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 border-2 border-brand-black rounded-none text-destructive hover:bg-destructive/10" onClick={() => handleDelete(product)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div
+                  className="cursor-pointer hover:opacity-80 transition-opacity mb-3"
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setDetailDialogOpen(true);
+                  }}
+                >
+                  <h3 className="font-bold text-base leading-tight truncate mb-1">{product.name}</h3>
+                  <span className="text-xs font-mono bg-brand-orange/20 px-1.5 py-0.5 border border-brand-black/20 inline-block">
+                    {product.category}
+                  </span>
                 </div>
 
-                <div className="mt-3 flex justify-between items-end">
+                <div className="flex justify-between items-end">
                   <div>
                     <p className="text-xs text-muted-foreground font-mono">Stok</p>
-                    <p className="font-bold font-mono text-lg">{product.totalStock || 0}</p>
+                    <p className="font-bold font-mono text-base">{product.totalStock || 0}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground font-mono">Harga</p>
-                    <p className="font-bold font-mono text-brand-orange text-lg">{formatCurrency(product.price)}</p>
+                    <p className="font-bold font-mono text-brand-orange text-base">{formatCurrency(product.price)}</p>
                   </div>
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-1 shrink-0 ml-1">
+                <Button size="icon" variant="ghost" className="h-8 w-8 border-2 border-brand-black rounded-none hover:bg-brand-orange" onClick={() => handleEdit(product)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 border-2 border-brand-black rounded-none text-destructive hover:bg-destructive/10" onClick={() => handleDelete(product)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
