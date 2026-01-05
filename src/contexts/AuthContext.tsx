@@ -59,12 +59,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (memberError) {
         console.error('[AuthContext] Error fetching store member:', memberError);
+        // If error is "Row not found", it means user has no store. This is valid for new users.
+        if (memberError.code === 'PGRST116') {
+          setStore(null);
+          useWarungStore.getState().setCurrentStoreId(null);
+        }
         return null;
       }
 
       if (!memberData?.store_id) {
         console.warn('[AuthContext] No store_id found in member data');
         return null;
+      }
+
+      // SECURITY CHECK: Verify again that this user is a member of this store
+      // This prevents any potential caching issues or race conditions
+      if (userId) {
+        const { data: verify, error: verifyError } = await supabase
+          .from('store_members')
+          .select('id')
+          .eq('store_id', memberData.store_id)
+          .eq('user_id', userId)
+          .single();
+
+        if (verifyError || !verify) {
+          console.error('[SECURITY ALERT] User mismatch for store access!', { userId, storeId: memberData.store_id });
+          setStore(null);
+          useWarungStore.getState().setCurrentStoreId(null);
+          return null;
+        }
       }
 
       const { data: storeData, error: storeError } = await withTimeout(
@@ -74,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq('id', memberData.store_id)
           .single(),
         10000 // 10s timeout
-      );
+      ) as any;
 
       console.warn('[AuthContext] Store query result:', JSON.stringify({ storeData: storeData?.id, storeError }));
 
@@ -86,6 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storeData) {
         console.warn('[AuthContext] Setting store:', storeData.name);
         setStore(storeData as Store);
+        // SYNC: Update global store state
+        useWarungStore.getState().setCurrentStoreId(storeData.id);
         return storeData as Store;
       }
 
@@ -141,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else if (event === 'SIGNED_OUT') {
           setStore(null);
+          useWarungStore.getState().setCurrentStoreId(null);
         } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           // Make sure store is still associated with user
           if (session?.user) {
@@ -262,6 +288,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setStore(storeData as Store);
+      useWarungStore.getState().setCurrentStoreId(storeData.id);
       return {};
     } catch (err: any) {
       return { error: err.message || 'Signup failed' };
@@ -303,6 +330,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       // Always clear local state
       useWarungStore.getState().resetStore();
+      useWarungStore.getState().setCurrentStoreId(null);
       setUser(null);
       setSession(null);
       setStore(null);
