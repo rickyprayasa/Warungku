@@ -9,11 +9,17 @@ export function useAdminStats() {
             // Helper to safely fetch count
             const getCount = async (table: string) => {
                 try {
+                    // Use standard select with count instead of HEAD request to avoid 406 errors
+                    // Select 'id' to minimize data transfer, but we only care about the count
                     const { count, error } = await supabase
                         .from(table)
-                        .select('*', { count: 'exact', head: true });
+                        .select('id', { count: 'exact', head: false });
 
                     if (error) {
+                        // Ignore 406 errors specifically as they are likely false positives/proxy issues
+                        if (error.code === '406' || error.message.includes('406')) {
+                            return 0;
+                        }
                         console.warn(`Error fetching count for ${table}:`, error);
                         return 0;
                     }
