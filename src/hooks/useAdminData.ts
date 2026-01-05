@@ -6,25 +6,44 @@ export function useAdminStats() {
     return useQuery({
         queryKey: ['admin', 'stats'],
         queryFn: async () => {
-            // Fetch all stats in parallel
-            const [storeResult, productResult, salesResult, userResult] = await Promise.all([
-                supabase.from('stores').select('*', { count: 'exact', head: true }),
-                supabase.from('products').select('*', { count: 'exact', head: true }),
-                supabase.from('sales').select('*', { count: 'exact', head: true }),
-                supabase.from('store_members').select('*', { count: 'exact', head: true }),
+            // Helper to safely fetch count
+            const getCount = async (table: string) => {
+                try {
+                    const { count, error } = await supabase
+                        .from(table)
+                        .select('*', { count: 'exact', head: true });
+
+                    if (error) {
+                        console.warn(`Error fetching count for ${table}:`, error);
+                        return 0;
+                    }
+                    return count || 0;
+                } catch (err) {
+                    console.warn(`Exception fetching count for ${table}:`, err);
+                    return 0;
+                }
+            };
+
+            // Fetch all stats in parallel, handling errors individually
+            const [storeCount, productCount, salesCount, userCount] = await Promise.all([
+                getCount('stores'),
+                getCount('products'),
+                getCount('sales'),
+                getCount('store_members')
             ]);
 
             return {
-                totalUsers: userResult.count || 0,
-                totalStores: storeResult.count || 0,
-                totalProducts: productResult.count || 0,
-                totalSales: salesResult.count || 0,
+                totalUsers: userCount,
+                totalStores: storeCount,
+                totalProducts: productCount,
+                totalSales: salesCount,
                 activeStoresToday: 0,
                 newUsersThisWeek: 0,
             };
         },
         staleTime: 1000 * 60 * 5, // 5 minutes
         gcTime: 1000 * 60 * 10, // 10 minutes cache
+        retry: false, // Don't retry stats if they fail, just show what we have
     });
 }
 

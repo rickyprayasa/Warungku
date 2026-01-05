@@ -8,17 +8,17 @@ export function handleQueryError(error: unknown) {
       toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
       return;
     }
-    
+
     if (error.message.includes('timeout') || error.message.includes('Koneksi lambat')) {
       toast.error('Koneksi lambat. Mencoba lagi...');
       return;
     }
-    
+
     if (error.message.includes('network')) {
       toast.error('Tidak ada koneksi internet. Periksa koneksi Anda.');
       return;
     }
-    
+
     // Generic error
     toast.error(`Terjadi kesalahan: ${error.message}`);
   } else {
@@ -30,10 +30,10 @@ export function handleQueryError(error: unknown) {
 export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
   // Don't retry more than 2 times
   if (failureCount >= 2) return false;
-  
+
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    
+
     // Retry on network/timeout errors
     if (
       message.includes('timeout') ||
@@ -43,13 +43,21 @@ export function shouldRetryQuery(failureCount: number, error: unknown): boolean 
     ) {
       return true;
     }
-    
-    // Don't retry on auth errors
-    if (message.includes('jwt') || message.includes('auth')) {
+
+    // Don't retry on auth errors or client errors (4xx)
+    if (
+      message.includes('jwt') ||
+      message.includes('auth') ||
+      message.includes('406') || // Not Acceptable
+      message.includes('404') || // Not Found
+      message.includes('400') || // Bad Request
+      message.includes('401') || // Unauthorized
+      message.includes('403')    // Forbidden
+    ) {
       return false;
     }
   }
-  
+
   // Default: don't retry
   return false;
 }
@@ -64,7 +72,7 @@ export function getRetryDelay(attemptIndex: number): number {
 export function isRecoverableError(error: unknown): boolean {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
-    
+
     // These errors are NOT recoverable (don't show retry)
     if (
       message.includes('not found') ||
@@ -75,7 +83,7 @@ export function isRecoverableError(error: unknown): boolean {
       return false;
     }
   }
-  
+
   // Default: error is recoverable
   return true;
 }
@@ -84,7 +92,7 @@ export function isRecoverableError(error: unknown): boolean {
 export function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const message = error.message;
-    
+
     // Map technical errors to user-friendly messages
     if (message.includes('JWT')) {
       return 'Sesi Anda telah berakhir';
@@ -101,9 +109,9 @@ export function formatErrorMessage(error: unknown): string {
     if (message.includes('foreign key')) {
       return 'Data tidak dapat dihapus karena masih digunakan';
     }
-    
+
     return message;
   }
-  
+
   return 'Terjadi kesalahan yang tidak diketahui';
 }
