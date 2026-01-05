@@ -8,8 +8,11 @@ import { KeyRound, Loader2, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+import { useAuth } from '@/contexts/AuthContext';
+
 export function UpdatePasswordPage() {
     const navigate = useNavigate();
+    const { signOut } = useAuth();
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -70,17 +73,15 @@ export function UpdatePasswordPage() {
             toast.success('Kata sandi berhasil diperbarui');
 
             // Sign out to force re-login with new password
-            await supabase.auth.signOut();
+            // Use context signOut to ensure hard reset of all state
+            await signOut();
 
             // Redirect to login
-            setTimeout(() => {
-                navigate('/login');
-            }, 1000);
+            // No need for timeout as signOut does a hard reload/redirect
 
         } catch (err: any) {
             console.error('Error updating password:', err);
             setError(err.message || 'Gagal memperbarui kata sandi');
-        } finally {
             setIsLoading(false);
         }
     };

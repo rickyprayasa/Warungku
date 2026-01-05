@@ -282,6 +282,31 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         return;
       }
 
+      // SECURITY: Double check if user is member of this store
+      // This is critical because RLS for products is public (for storefront)
+      // but dashboard access should be restricted.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Check if we are in public store mode (url starts with /store/)
+        // If so, skip this check as public access is allowed
+        const isPublicStore = typeof window !== 'undefined' && window.location.pathname.startsWith('/store/');
+
+        if (!isPublicStore) {
+          const { data: member, error } = await supabase
+            .from('store_members')
+            .select('id')
+            .eq('store_id', storeId)
+            .eq('user_id', user.id)
+            .maybeSingle(); // Use maybeSingle to avoid error if not found
+
+          if (!member) {
+            console.error('[SECURITY ALERT] User attempted to fetch products from a store they are not a member of!', { userId: user.id, storeId });
+            set({ products: [] });
+            return;
+          }
+        }
+      }
+
       try {
         // Use withTimeout to prevent hanging indefinitely
         const { data, error } = await withTimeout(
