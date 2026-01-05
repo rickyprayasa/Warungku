@@ -45,6 +45,16 @@ Setelah domain terverifikasi di ZeptoMail (bisa butuh waktu 1-24 jam untuk propa
 
 ## Troubleshooting
 
+### 1. Link Reset Password Expired / Error "otp_expired"
+Jika Anda mendapatkan error bahwa link sudah kadaluarsa saat diklik pertama kali, ini disebabkan oleh fitur **Link Tracking** dari ZeptoMail. ZeptoMail mengubah link asli menjadi link tracking, yang menyebabkan token Supabase rusak atau dianggap sudah diklik oleh scanner email.
+
+**Solusi:**
+1.  Masuk ke ZeptoMail Console.
+2.  Pergi ke **Email Settings** atau **Domains**.
+3.  Cari opsi **Click Tracking** dan **Open Tracking**.
+4.  **Matikan (Disable)** kedua fitur tersebut.
+
+### 2. Masih Masuk Spam
 Jika masih masuk spam:
 1.  Buka email di Gmail (di folder Spam).
 2.  Klik titik tiga di pojok kanan atas email -> **Show original**.

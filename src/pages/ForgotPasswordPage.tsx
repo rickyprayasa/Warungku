@@ -21,8 +21,14 @@ export function ForgotPasswordPage() {
         setError('');
 
         try {
+            // Determine redirect URL
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const redirectUrl = isLocalhost
+                ? `${window.location.origin}/update-password`
+                : 'https://omzetin.web.id/update-password';
+
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/update-password`,
+                redirectTo: redirectUrl,
             });
 
             if (error) throw error;

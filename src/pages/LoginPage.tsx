@@ -53,6 +53,25 @@ export function LoginPage() {
       }
     };
 
+    // Check for error hash in URL (e.g. from expired reset link)
+    const hash = window.location.hash;
+    if (hash && hash.includes('error=')) {
+      const params = new URLSearchParams(hash.substring(1)); // remove #
+      const errorDescription = params.get('error_description');
+      const errorCode = params.get('error_code');
+
+      if (errorDescription) {
+        // Translate common errors
+        let message = errorDescription.replace(/\+/g, ' ');
+        if (errorCode === 'otp_expired') {
+          message = 'Link reset password sudah kadaluarsa atau sudah digunakan. Silakan minta link baru.';
+        }
+        setError(message);
+        // Clear hash to prevent showing error on refresh
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
+
     // Delay the redirect check to prevent race conditions with auth state initialization
     const timer = setTimeout(() => {
       checkAndRedirect();
