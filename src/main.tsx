@@ -47,10 +47,11 @@ if (storedVersion !== APP_VERSION) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 30, // 30 seconds
-      gcTime: 1000 * 60 * 5, // 5 minutes (formerly cacheTime)
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
+      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh longer
+      gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch when tab regains focus
+      refetchOnReconnect: false, // Don't refetch on reconnect
+      refetchOnMount: false, // Don't refetch on every mount if data exists
       retry: shouldRetryQuery,
       retryDelay: getRetryDelay,
       // Network mode: online only (don't try to fetch if offline)

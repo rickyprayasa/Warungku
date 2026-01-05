@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useAdminStats, useAdminRecentStores } from '@/hooks/useAdminData';
 import {
     Users,
     Store,
@@ -10,93 +9,30 @@ import {
     Package,
     TrendingUp,
     Activity,
-    Calendar
+    Calendar,
+    RefreshCw
 } from 'lucide-react';
-
-interface PlatformStats {
-    totalUsers: number;
-    totalStores: number;
-    totalProducts: number;
-    totalSales: number;
-    activeStoresToday: number;
-    newUsersThisWeek: number;
-}
+import { Button } from '@/components/ui/button';
 
 export function AdminDashboardPage() {
     const { adminRole } = useAdmin();
-    const [stats, setStats] = useState<PlatformStats>({
-        totalUsers: 0,
-        totalStores: 0,
-        totalProducts: 0,
-        totalSales: 0,
-        activeStoresToday: 0,
-        newUsersThisWeek: 0,
-    });
-    const [isLoading, setIsLoading] = useState(true);
-    const [recentStores, setRecentStores] = useState<any[]>([]);
 
-    useEffect(() => {
-        fetchPlatformStats();
-        fetchRecentStores();
-    }, []);
+    // Use React Query hooks with caching
+    const { data: stats, isLoading: isLoadingStats, refetch: refetchStats } = useAdminStats();
+    const { data: recentStores = [], isLoading: isLoadingStores, refetch: refetchStores } = useAdminRecentStores(5);
 
-    const fetchPlatformStats = async () => {
-        setIsLoading(true);
-        try {
-            // Fetch total stores
-            const { count: storeCount } = await supabase
-                .from('stores')
-                .select('*', { count: 'exact', head: true });
+    const isLoading = isLoadingStats || isLoadingStores;
 
-            // Fetch total products
-            const { count: productCount } = await supabase
-                .from('products')
-                .select('*', { count: 'exact', head: true });
-
-            // Fetch total sales
-            const { count: salesCount } = await supabase
-                .from('sales')
-                .select('*', { count: 'exact', head: true });
-
-            // Fetch store members (users)
-            const { count: userCount } = await supabase
-                .from('store_members')
-                .select('*', { count: 'exact', head: true });
-
-            setStats({
-                totalUsers: userCount || 0,
-                totalStores: storeCount || 0,
-                totalProducts: productCount || 0,
-                totalSales: salesCount || 0,
-                activeStoresToday: 0, // Would need more complex query
-                newUsersThisWeek: 0, // Would need more complex query
-            });
-        } catch (error) {
-            console.error('Error fetching platform stats:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const fetchRecentStores = async () => {
-        try {
-            const { data } = await supabase
-                .from('stores')
-                .select('id, name, slug, created_at, plan')
-                .order('created_at', { ascending: false })
-                .limit(5);
-
-            setRecentStores(data || []);
-        } catch (error) {
-            console.error('Error fetching recent stores:', error);
-        }
+    const handleRefresh = () => {
+        refetchStats();
+        refetchStores();
     };
 
     const statCards = [
-        { title: 'Total Stores', value: stats.totalStores, icon: Store, color: 'bg-blue-500' },
-        { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'bg-green-500' },
-        { title: 'Total Products', value: stats.totalProducts, icon: Package, color: 'bg-purple-500' },
-        { title: 'Total Sales', value: stats.totalSales, icon: ShoppingCart, color: 'bg-orange-500' },
+        { title: 'Total Stores', value: stats?.totalStores || 0, icon: Store, color: 'bg-blue-500' },
+        { title: 'Total Users', value: stats?.totalUsers || 0, icon: Users, color: 'bg-green-500' },
+        { title: 'Total Products', value: stats?.totalProducts || 0, icon: Package, color: 'bg-purple-500' },
+        { title: 'Total Sales', value: stats?.totalSales || 0, icon: ShoppingCart, color: 'bg-orange-500' },
     ];
 
     const formatDate = (dateString: string) => {
@@ -119,9 +55,21 @@ export function AdminDashboardPage() {
                         Overview statistik dan aktivitas platform OMZETIN
                     </p>
                 </div>
-                <Badge className="rounded-none bg-brand-orange text-brand-black font-mono uppercase">
-                    {adminRole}
-                </Badge>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRefresh}
+                        disabled={isLoading}
+                        className="rounded-none border-2 border-brand-black font-mono hover:bg-brand-orange hover:text-brand-black"
+                    >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </Button>
+                    <Badge className="rounded-none bg-brand-orange text-brand-black font-mono uppercase">
+                        {adminRole}
+                    </Badge>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -162,7 +110,7 @@ export function AdminDashboardPage() {
                             </p>
                         ) : (
                             <div className="divide-y-2 divide-brand-black">
-                                {recentStores.map((store) => (
+                                {recentStores.map((store: any) => (
                                     <div key={store.id} className="p-4 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center justify-between">
                                             <div>

@@ -25,112 +25,40 @@ interface SettingRow {
   value: string;
 }
 
+import { useAdminDuitkuSettings } from '@/hooks/useAdminData';
+
 export function AdminDuitkuSettingsPage() {
+  const { data: serverSettings, isLoading: isFetching, refetch } = useAdminDuitkuSettings();
+
   const [settings, setSettings] = useState({
     duitkuEnabled: false,
     merchantCode: '',
     apiKey: '',
     sandboxMode: true,
-    webhookUrl: '',
-    callbackUrl: '',
-    returnUrl: '',
+    webhookUrl: 'https://omzetin.web.id/functions/v1/duitku-payment/callback',
+    callbackUrl: 'https://omzetin.web.id/functions/v1/duitku-payment/callback',
+    returnUrl: 'https://omzetin.web.id/dashboard?tab=billing&status=success',
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Load settings from database
+  // Sync server settings to local state when loaded
   useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      setIsLoading(true);
-
-      // Check if user is admin
-      const { data: userData, error: userError } = await supabase.rpc('is_admin');
-
-      if (userError) {
-        console.error('Error checking admin status:', userError);
-        toast.error('Gagal memeriksa akses admin');
-        return;
-      }
-
-      if (!userData) {
-        toast.error('Anda tidak memiliki akses ke halaman ini');
-        return;
-      }
-
-      // Try to fetch from platform_settings table first (new schema)
-      let { data, error } = await supabase
-        .from('platform_settings')
-        .select('key, value')
-        .in('key', [
-          'duitku_enabled',
-          'duitku_merchant_code',
-          'duitku_api_key',
-          'duitku_sandbox_mode',
-          'duitku_callback_url',
-          'duitku_return_url'
-        ]);
-
-      // If platform_settings doesn't exist, try the RPC function
-      if (error && error.code === '42P01') {
-        console.log('platform_settings table not found, trying RPC...');
-        const { data: rpcData, error: rpcError } = await supabase.rpc('get_duitku_settings');
-
-        if (rpcError) {
-          console.error('RPC error:', rpcError);
-          // Fall back to settings table as last resort
-          const { data: oldData, error: oldError } = await supabase
-            .from('settings')
-            .select('key, value')
-            .in('key', [
-              'duitku_enabled',
-              'duitku_merchant_code',
-              'duitku_api_key',
-              'duitku_sandbox_mode',
-              'duitku_callback_url',
-              'duitku_return_url'
-            ]);
-
-          if (!oldError) {
-            data = oldData;
-          }
-        } else {
-          data = rpcData;
-        }
-      } else if (error) {
-        console.error('Error fetching settings:', error);
-        // Don't throw, just use defaults
-      }
-
-      const settingsMap: Record<string, string> = {};
-      data?.forEach((item: any) => {
-        if (item && typeof item === 'object' && 'key' in item && 'value' in item) {
-          settingsMap[item.key] = item.value;
-        }
-      });
-
-      setSettings({
-        duitkuEnabled: settingsMap['duitku_enabled'] === 'true',
-        merchantCode: settingsMap['duitku_merchant_code'] || '',
-        apiKey: settingsMap['duitku_api_key'] || '',
-        sandboxMode: settingsMap['duitku_sandbox_mode'] !== 'false',
-        webhookUrl: 'https://omzetin.web.id/functions/v1/duitku-payment/callback',
-        callbackUrl: settingsMap['duitku_callback_url'] || 'https://omzetin.web.id/functions/v1/duitku-payment/callback',
-        returnUrl: settingsMap['duitku_return_url'] || 'https://omzetin.web.id/dashboard?tab=billing&status=success',
-      });
-    } catch (error: any) {
-      console.error('Error fetching Duitku settings:', error);
-      toast.error('Gagal memuat pengaturan Duitku');
-    } finally {
-      setIsLoading(false);
+    if (serverSettings) {
+      setSettings(prev => ({
+        ...prev,
+        duitkuEnabled: serverSettings.duitkuEnabled,
+        merchantCode: serverSettings.merchantCode,
+        apiKey: serverSettings.apiKey,
+        sandboxMode: serverSettings.sandboxMode,
+        // Keep default URLs if not set
+        callbackUrl: serverSettings.callbackUrl || prev.callbackUrl,
+        returnUrl: serverSettings.returnUrl || prev.returnUrl,
+      }));
     }
-  };
+  }, [serverSettings]);
 
   const handleChange = (field: keyof typeof settings, value: string | boolean) => {
     setSettings(prev => ({ ...prev, [field]: value }));
@@ -171,7 +99,7 @@ export function AdminDuitkuSettingsPage() {
       toast.success('Pengaturan Duitku berhasil disimpan!');
 
       // Refresh settings after save
-      await fetchSettings();
+      await refetch();
     } catch (error: any) {
       console.error('Error saving Duitku settings:', error);
       console.error('Error details:', error.message, error.code, error.hint);
@@ -297,7 +225,7 @@ export function AdminDuitkuSettingsPage() {
     }).format(amount);
   };
 
-  if (isLoading) {
+  if (isFetching) {
     return (
       <div className="container mx-auto py-8 px-4 flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
@@ -311,11 +239,23 @@ export function AdminDuitkuSettingsPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="bg-brand-orange p-2 rounded-none">
-            <CreditCard className="w-6 h-6 text-brand-black" />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="bg-brand-orange p-2 rounded-none">
+              <CreditCard className="w-6 h-6 text-brand-black" />
+            </div>
+            <h1 className="text-3xl font-display font-bold text-brand-black">Pengaturan Duitku Payment Gateway</h1>
           </div>
-          <h1 className="text-3xl font-display font-bold text-brand-black">Pengaturan Duitku Payment Gateway</h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="rounded-none border-2 border-brand-black font-mono hover:bg-brand-orange hover:text-brand-black"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
         <p className="text-muted-foreground font-mono">
           Konfigurasi integrasi pembayaran Duitku untuk upgrade plan
