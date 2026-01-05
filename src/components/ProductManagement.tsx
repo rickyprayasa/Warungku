@@ -21,13 +21,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type StockMethod = 'FIFO' | 'LIFO';
 
 export function ProductManagement() {
+  const { user } = useAuth();
   const products = useWarungStore((state) => state.products);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const isLoading = useWarungStore((state) => state.isLoading);
+  const currentStoreId = useWarungStore((state) => state.currentStoreId);
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const [stockMethod, setStockMethod] = useState<StockMethod>(() => {
     return (localStorage.getItem('stockMethod') as StockMethod) || 'FIFO';
@@ -66,6 +69,13 @@ export function ProductManagement() {
 
   return (
     <div className="space-y-8">
+      {/* DEBUG INFO - REMOVE LATER */}
+      <div className="bg-red-100 p-2 border border-red-500 text-xs font-mono mb-4 break-all">
+        DEBUG INFO: <br />
+        User ID: {user?.id} <br />
+        Store ID: {currentStoreId}
+      </div>
+
       {/* Header Section */}
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 bg-brand-white border-2 border-brand-black rounded-lg p-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
         <div className="space-y-2">
