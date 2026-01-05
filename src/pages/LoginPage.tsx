@@ -103,7 +103,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const result = await signIn('demo@omzetin.com', 'omzetindemo');
+      const result = await signIn('ryussquall@gmail.com', 'omzetindemo');
       if (result.error) {
         setError(result.error);
       }

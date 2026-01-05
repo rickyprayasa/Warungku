@@ -82,8 +82,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq('user_id', userId)
           .single();
 
-        if (verifyError || !verify) {
-          console.error('[SECURITY ALERT] User mismatch for store access!', { userId, storeId: memberData.store_id });
+        if (verifyError) {
+          console.error('[SECURITY ALERT] User mismatch for store access!', { userId, storeId: memberData.store_id, verifyError });
+          setStore(null);
+          useWarungStore.getState().setCurrentStoreId(null);
+          return null;
+        }
+        if (!verify) {
+          console.error('[SECURITY ALERT] User is not a member of the store found in store_members!', {
+            userId,
+            storeId: memberData.store_id,
+            memberData
+          });
+          // Force clear store to prevent leakage
           setStore(null);
           useWarungStore.getState().setCurrentStoreId(null);
           return null;
