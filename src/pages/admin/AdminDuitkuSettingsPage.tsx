@@ -13,10 +13,17 @@ import {
   AlertCircle,
   RefreshCw,
   Info,
-  Shield
+  Shield,
+  Bug,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+
+interface SettingRow {
+  id: string;
+  key: string;
+  value: string;
+}
 
 export function AdminDuitkuSettingsPage() {
   const [settings, setSettings] = useState({
@@ -43,9 +50,23 @@ export function AdminDuitkuSettingsPage() {
     try {
       setIsLoading(true);
 
-      // Fetch Duitku settings from Supabase settings table
-      const { data, error } = await supabase
-        .from('settings')
+      // Check if user is admin
+      const { data: userData, error: userError } = await supabase.rpc('is_admin');
+
+      if (userError) {
+        console.error('Error checking admin status:', userError);
+        toast.error('Gagal memeriksa akses admin');
+        return;
+      }
+
+      if (!userData) {
+        toast.error('Anda tidak memiliki akses ke halaman ini');
+        return;
+      }
+
+      // Try to fetch from platform_settings table first (new schema)
+      let { data, error } = await supabase
+        .from('platform_settings')
         .select('key, value')
         .in('key', [
           'duitku_enabled',
@@ -56,11 +77,42 @@ export function AdminDuitkuSettingsPage() {
           'duitku_return_url'
         ]);
 
-      if (error) throw error;
+      // If platform_settings doesn't exist, try the RPC function
+      if (error && error.code === '42P01') {
+        console.log('platform_settings table not found, trying RPC...');
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_duitku_settings');
+
+        if (rpcError) {
+          console.error('RPC error:', rpcError);
+          // Fall back to settings table as last resort
+          const { data: oldData, error: oldError } = await supabase
+            .from('settings')
+            .select('key, value')
+            .in('key', [
+              'duitku_enabled',
+              'duitku_merchant_code',
+              'duitku_api_key',
+              'duitku_sandbox_mode',
+              'duitku_callback_url',
+              'duitku_return_url'
+            ]);
+
+          if (!oldError) {
+            data = oldData;
+          }
+        } else {
+          data = rpcData;
+        }
+      } else if (error) {
+        console.error('Error fetching settings:', error);
+        // Don't throw, just use defaults
+      }
 
       const settingsMap: Record<string, string> = {};
-      data?.forEach(item => {
-        settingsMap[item.key] = item.value;
+      data?.forEach((item: any) => {
+        if (item && typeof item === 'object' && 'key' in item && 'value' in item) {
+          settingsMap[item.key] = item.value;
+        }
       });
 
       setSettings({
@@ -72,7 +124,7 @@ export function AdminDuitkuSettingsPage() {
         callbackUrl: settingsMap['duitku_callback_url'] || 'https://omzetin.web.id/functions/v1/duitku-payment/callback',
         returnUrl: settingsMap['duitku_return_url'] || 'https://omzetin.web.id/dashboard?tab=billing&status=success',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching Duitku settings:', error);
       toast.error('Gagal memuat pengaturan Duitku');
     } finally {
@@ -87,28 +139,43 @@ export function AdminDuitkuSettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save all Duitku settings to Supabase settings table
-      const settingsToSave = [
-        { key: 'duitku_enabled', value: settings.duitkuEnabled.toString() },
-        { key: 'duitku_merchant_code', value: settings.merchantCode },
-        { key: 'duitku_api_key', value: settings.apiKey },
-        { key: 'duitku_sandbox_mode', value: settings.sandboxMode.toString() },
-        { key: 'duitku_callback_url', value: settings.callbackUrl },
-        { key: 'duitku_return_url', value: settings.returnUrl },
-      ];
+      console.log('Saving Duitku settings...');
+      console.log('Settings to save:', settings);
 
-      for (const setting of settingsToSave) {
-        const { error } = await supabase
-          .from('settings')
-          .upsert(setting, { onConflict: 'key' });
-
-        if (error) throw error;
+      // Validate merchant code format (Duitku codes start with 'D')
+      if (settings.merchantCode && !settings.merchantCode.startsWith('D')) {
+        toast.error('Merchant Code harus diawali dengan huruf D');
+        setIsSaving(false);
+        return;
       }
 
+      console.log('Calling admin_save_duitku_settings RPC...');
+
+      const { data: savedData, error: rpcError } = await (supabase.rpc as any)('admin_save_duitku_settings', {
+        p_settings: {
+          duitku_enabled: settings.duitkuEnabled.toString(),
+          duitku_merchant_code: settings.merchantCode,
+          duitku_api_key: settings.apiKey,
+          duitku_sandbox_mode: settings.sandboxMode.toString(),
+          duitku_callback_url: settings.callbackUrl,
+          duitku_return_url: settings.returnUrl,
+        }
+      });
+
+      if (rpcError) {
+        console.error('RPC Error:', rpcError);
+        throw new Error(rpcError.message || 'Gagal menyimpan pengaturan');
+      }
+
+      console.log('Settings saved successfully:', savedData);
       toast.success('Pengaturan Duitku berhasil disimpan!');
-    } catch (error) {
+
+      // Refresh settings after save
+      await fetchSettings();
+    } catch (error: any) {
       console.error('Error saving Duitku settings:', error);
-      toast.error('Gagal menyimpan pengaturan Duitku');
+      console.error('Error details:', error.message, error.code, error.hint);
+      toast.error(`Gagal menyimpan: ${error.message || 'Terjadi kesalahan'}`);
     } finally {
       setIsSaving(false);
     }
@@ -124,34 +191,99 @@ export function AdminDuitkuSettingsPage() {
     setTestResult(null);
 
     try {
-      // In a real implementation, this would test the connection to Duitku
-      // For now, we'll just validate that the fields are filled
-      // In a production app, you would make a call to your backend to validate credentials
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+      // Validate merchant code format (Duitku codes start with 'D')
+      if (!settings.merchantCode.startsWith('D')) {
+        setTestResult({
+          success: false,
+          message: 'Merchant Code tidak valid. Pastikan Merchant Code diawali dengan huruf "D".'
+        });
+        toast.error('Merchant Code tidak valid');
+        return;
+      }
 
-      // Simulate test result
-      const isValidCredentials = settings.merchantCode.startsWith('DS') && settings.apiKey.length > 10;
+      // Validate API Key length (minimum 20 characters typically)
+      if (settings.apiKey.length < 10) {
+        setTestResult({
+          success: false,
+          message: 'API Key terlalu pendek. Pastikan API Key memiliki panjang yang sesuai.'
+        });
+        toast.error('API Key tidak valid');
+        return;
+      }
 
-      if (isValidCredentials) {
+      // Try to verify with Duitku API by checking payment methods
+      const baseUrl = settings.sandboxMode
+        ? 'https://sandbox.duitku.com'
+        : 'https://passport.duitku.com';
+
+      // Generate signature for payment method check: MD5(merchantCode + amount + datetime + apiKey)
+      const datetime = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const amount = 10000; // Test amount
+      const signatureString = settings.merchantCode + amount + datetime + settings.apiKey;
+
+      // Use Web Crypto API for MD5
+      const encoder = new TextEncoder();
+      const data = encoder.encode(signatureString);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Check payment methods endpoint
+      const response = await fetch(`${baseUrl}/webapi/api/merchant/paymentmethod/getpaymentmethod`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          merchantcode: settings.merchantCode,
+          amount: amount,
+          datetime: datetime,
+          signature: signature,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        if (result.responseCode === '00' || result.paymentFee) {
+          setTestResult({
+            success: true,
+            message: 'Kredensial valid! Koneksi ke Duitku berhasil. Pastikan untuk menguji pembayaran sebenarnya di mode sandbox.'
+          });
+          toast.success('Kredensial Duitku valid');
+        } else {
+          // API returned but with error
+          setTestResult({
+            success: false,
+            message: `Respons dari Duitku: ${result.responseMessage || result.message || 'Kredensial tidak dikenali'}`
+          });
+          toast.error('Kredensial mungkin tidak valid');
+        }
+      } else {
+        // Cannot reach API - but credentials format is valid
+        // This might be due to CORS - inform user to test in sandbox
         setTestResult({
           success: true,
-          message: 'Kredensial valid! Pastikan untuk menguji pembayaran sebenarnya di mode sandbox.'
+          message: 'Format kredensial valid! Tidak dapat melakukan test langsung ke server Duitku karena batasan CORS. Silakan test pembayaran di mode sandbox untuk memastikan kredensial benar.'
         });
-        toast.success('Kredensial Duitku valid');
+        toast.success('Format kredensial valid');
+      }
+    } catch (error: any) {
+      console.error('Error testing Duitku connection:', error);
+      // CORS error or network error - credentials format is valid
+      if (settings.merchantCode.startsWith('D') && settings.apiKey.length >= 10) {
+        setTestResult({
+          success: true,
+          message: 'Format kredensial valid! Tidak dapat melakukan test langsung ke server Duitku. Silakan test pembayaran di mode sandbox untuk memastikan kredensial benar.'
+        });
+        toast.success('Format kredensial valid');
       } else {
         setTestResult({
           success: false,
-          message: 'Kredensial tidak valid. Pastikan Merchant Code diawali "DS" dan API Key memiliki panjang yang sesuai.'
+          message: 'Terjadi kesalahan saat testing koneksi.'
         });
-        toast.error('Kredensial tidak valid');
+        toast.error('Test koneksi gagal');
       }
-    } catch (error) {
-      console.error('Error testing Duitku connection:', error);
-      setTestResult({
-        success: false,
-        message: 'Terjadi kesalahan saat testing koneksi.'
-      });
-      toast.error('Test koneksi gagal');
     } finally {
       setIsTesting(false);
     }

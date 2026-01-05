@@ -50,25 +50,50 @@ serve(async (req) => {
 
             if (storeError || !store) throw new Error('Store not found')
 
-            // Config
-            const merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'DS12345' // Replace with your Merchant Code
-            const apiKey = Deno.env.get('DUITKU_API_KEY') || 'YOUR_API_KEY' // Replace with your API Key
+            // Fetch Duitku settings from platform_settings table
+            let merchantCode = Deno.env.get('DUITKU_MERCHANT_CODE') || 'DS12345'
+            let apiKey = Deno.env.get('DUITKU_API_KEY') || 'YOUR_API_KEY'
+            let sandboxMode = true
+            let callbackUrl = `https://omzetin.web.id/functions/v1/duitku-payment/callback`
+
+            // Try to get settings from database
+            const { data: platformSettings } = await supabaseClient
+                .from('platform_settings')
+                .select('key, value')
+                .in('key', ['duitku_merchant_code', 'duitku_api_key', 'duitku_sandbox_mode', 'duitku_callback_url'])
+
+            if (platformSettings && platformSettings.length > 0) {
+                platformSettings.forEach((setting: any) => {
+                    if (setting.key === 'duitku_merchant_code' && setting.value) {
+                        merchantCode = setting.value
+                    }
+                    if (setting.key === 'duitku_api_key' && setting.value) {
+                        apiKey = setting.value
+                    }
+                    if (setting.key === 'duitku_sandbox_mode') {
+                        sandboxMode = setting.value === 'true'
+                    }
+                    if (setting.key === 'duitku_callback_url' && setting.value) {
+                        callbackUrl = setting.value
+                    }
+                })
+            }
+
             const merchantOrderId = `INV-${Date.now()}-${store_id.substring(0, 8)}`
             const amount = plan.price
-            const callbackUrl = `https://omzetin.web.id/functions/v1/duitku-payment/callback`
             // Validate origin header to prevent open redirect attacks
             const origin = req.headers.get('origin');
             const allowedOrigins = [
-              'https://omzetin.web.id', // Production domain
-              'https://omzetin-main-rsquare.pages.dev', // Cloudflare Pages deployment domain
-              'http://localhost:3000', // For development
-              'http://localhost:5173'  // For development
+                'https://omzetin.web.id', // Production domain
+                'https://omzetin-main-rsquare.pages.dev', // Cloudflare Pages deployment domain
+                'http://localhost:3000', // For development
+                'http://localhost:5173'  // For development
             ];
 
             // Only use the origin if it's in the allowed list
             let validatedOrigin = 'https://omzetin.web.id'; // Default to production domain
             if (origin && allowedOrigins.includes(origin)) {
-              validatedOrigin = origin;
+                validatedOrigin = origin;
             }
 
             const returnUrl = `${validatedOrigin}/dashboard?tab=billing&status=success`
