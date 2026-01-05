@@ -129,7 +129,17 @@ export function LoginPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="font-mono font-bold text-sm">Kata Sandi</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="font-mono font-bold text-sm">Kata Sandi</Label>
+              <Button
+                variant="link"
+                className="p-0 h-auto font-mono text-xs text-brand-orange hover:text-brand-black"
+                onClick={() => navigate('/forgot-password')}
+                type="button"
+              >
+                Lupa Password?
+              </Button>
+            </div>
             <Input
               id="password"
               type="password"

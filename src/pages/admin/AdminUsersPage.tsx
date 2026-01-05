@@ -26,7 +26,8 @@ import {
     Eye,
     Store,
     Package,
-    ShoppingCart
+    ShoppingCart,
+    KeyRound
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,6 +36,7 @@ interface UserWithStore {
     user_id: string;
     role: string;
     created_at: string;
+    email: string; // Added email
     store: {
         id: string;
         name: string;
@@ -59,6 +61,7 @@ export function AdminUsersPage() {
     const [rowsPerPage] = useState(10);
     const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
     const [isDetailOpen, setDetailOpen] = useState(false);
+    const [isResetting, setIsResetting] = useState<string | null>(null);
 
     useEffect(() => {
         fetchUsers();
@@ -67,31 +70,52 @@ export function AdminUsersPage() {
     const fetchUsers = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('store_members')
-                .select(`
-          id,
-          user_id,
-          role,
-          created_at,
-          store:stores(id, name, slug, plan, created_at)
-        `)
-                .order('created_at', { ascending: false });
+            // Use RPC to get users with email
+            const { data, error } = await supabase.rpc('get_users_with_email');
 
             if (error) throw error;
 
-            // Flatten the data
-            const flatData = (data || []).map((item: any) => ({
-                ...item,
-                store: item.store,
+            // Map RPC result to UserWithStore interface
+            const mappedData = (data || []).map((item: any) => ({
+                id: item.id,
+                user_id: item.user_id,
+                role: item.role,
+                created_at: item.created_at,
+                email: item.email,
+                store: {
+                    id: item.store_id,
+                    name: item.store_name,
+                    slug: item.store_slug,
+                    plan: item.store_plan,
+                    created_at: item.store_created_at,
+                },
             }));
 
-            setUsers(flatData);
+            setUsers(mappedData);
         } catch (error) {
             console.error('Error fetching users:', error);
             toast.error('Gagal memuat data users');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleResetPassword = async (email: string, userId: string) => {
+        if (!confirm(`Kirim link reset password ke ${email}?`)) return;
+
+        setIsResetting(userId);
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/update-password`,
+            });
+
+            if (error) throw error;
+            toast.success(`Link reset password dikirim ke ${email}`);
+        } catch (error: any) {
+            console.error('Error resetting password:', error);
+            toast.error(`Gagal mengirim link: ${error.message}`);
+        } finally {
+            setIsResetting(null);
         }
     };
 
@@ -102,7 +126,8 @@ export function AdminUsersPage() {
             (u) =>
                 u.store?.name?.toLowerCase().includes(query) ||
                 u.store?.slug?.toLowerCase().includes(query) ||
-                u.role?.toLowerCase().includes(query)
+                u.role?.toLowerCase().includes(query) ||
+                u.email?.toLowerCase().includes(query)
         );
     }, [users, searchQuery]);
 
@@ -118,19 +143,19 @@ export function AdminUsersPage() {
             // Fetch product count
             const { count: productCount } = await supabase
                 .from('products')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'exact', head: false }) // Use safer count query
                 .eq('store_id', user.store.id);
 
             // Fetch sales count
             const { count: salesCount } = await supabase
                 .from('sales')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'exact', head: false })
                 .eq('store_id', user.store.id);
 
             // Fetch purchases count
             const { count: purchasesCount } = await supabase
                 .from('purchases')
-                .select('*', { count: 'exact', head: true })
+                .select('id', { count: 'exact', head: false })
                 .eq('store_id', user.store.id);
 
             setSelectedUser({
@@ -187,7 +212,7 @@ export function AdminUsersPage() {
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <Input
-                            placeholder="Cari nama store atau slug..."
+                            placeholder="Cari nama, email, atau slug..."
                             value={searchQuery}
                             onChange={(e) => {
                                 setSearchQuery(e.target.value);
@@ -218,7 +243,7 @@ export function AdminUsersPage() {
                                 <TableHeader>
                                     <TableRow className="border-b-2 border-brand-black bg-gray-50">
                                         <TableHead className="font-mono font-bold">Store</TableHead>
-                                        <TableHead className="font-mono font-bold">Slug</TableHead>
+                                        <TableHead className="font-mono font-bold">Email</TableHead>
                                         <TableHead className="font-mono font-bold">Role</TableHead>
                                         <TableHead className="font-mono font-bold">Plan</TableHead>
                                         <TableHead className="font-mono font-bold">Joined</TableHead>
@@ -228,10 +253,11 @@ export function AdminUsersPage() {
                                 <TableBody>
                                     {paginatedUsers.map((user) => (
                                         <TableRow key={user.id} className="border-b-2 border-brand-black last:border-b-0">
-                                            <TableCell className="font-mono font-bold">{user.store?.name || '-'}</TableCell>
-                                            <TableCell className="font-mono text-sm text-muted-foreground">
-                                                /{user.store?.slug || '-'}
+                                            <TableCell className="font-mono font-bold">
+                                                {user.store?.name || '-'}
+                                                <div className="text-xs text-muted-foreground font-normal">/{user.store?.slug || '-'}</div>
                                             </TableCell>
+                                            <TableCell className="font-mono text-sm">{user.email}</TableCell>
                                             <TableCell>
                                                 <Badge variant="outline" className="rounded-none font-mono uppercase text-xs">
                                                     {user.role}
@@ -246,14 +272,31 @@ export function AdminUsersPage() {
                                                 {formatDate(user.created_at)}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="rounded-none border-2 border-brand-black"
-                                                    onClick={() => viewUserDetails(user)}
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </Button>
+                                                <div className="flex justify-end gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="rounded-none border-2 border-brand-black"
+                                                        onClick={() => handleResetPassword(user.email, user.id)}
+                                                        disabled={isResetting === user.id}
+                                                        title="Kirim link reset password"
+                                                    >
+                                                        {isResetting === user.id ? (
+                                                            <div className="animate-spin h-4 w-4 border-2 border-brand-black border-t-transparent rounded-full" />
+                                                        ) : (
+                                                            <KeyRound className="w-4 h-4" />
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="rounded-none border-2 border-brand-black"
+                                                        onClick={() => viewUserDetails(user)}
+                                                        title="Lihat detail"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
