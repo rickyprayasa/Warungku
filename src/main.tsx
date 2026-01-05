@@ -211,22 +211,6 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "forgot-password",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <ForgotPasswordPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "update-password",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <UpdatePasswordPage />
-          </Suspense>
-        ),
-      },
-      {
         path: "checkout",
         element: (
           <Suspense fallback={<PageLoader />}>
@@ -245,6 +229,22 @@ const router = createBrowserRouter([
         ),
       },
     ]
+  },
+  {
+    path: "/forgot-password",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ForgotPasswordPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/update-password",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <UpdatePasswordPage />
+      </Suspense>
+    ),
   },
   {
     path: "/store/:slug",
