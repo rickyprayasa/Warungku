@@ -335,10 +335,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setStore(null);
 
-      // Clear any stored session data
-      localStorage.removeItem('login_failed_attempts');
-      localStorage.removeItem('login_last_attempt');
-      localStorage.removeItem('last_activity');
+      // Clear ALL storage to prevent data leakage
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Force reload to clear in-memory state and React Query cache
+      window.location.href = '/login';
     }
   };
 

@@ -467,7 +467,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .eq('key', 'initial_balance')
           .single() as any;
 
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error) {
+          // Ignore 406 errors
+          if (error.code === '406' || error.message?.includes('406')) {
+            set({ initialBalance: 0 });
+            return;
+          }
+          if (error.code !== 'PGRST116') throw error;
+        }
+
         const balance = data ? parseFloat(data.value) || 0 : 0;
         set({ initialBalance: balance });
       } catch (error) {
@@ -519,7 +527,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .eq('key', 'opname_mode')
           .single() as any;
 
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error) {
+          // Ignore 406 errors
+          if (error.code === '406' || error.message?.includes('406')) {
+            set({ opnameMode: 'retail' });
+            return;
+          }
+          if (error.code !== 'PGRST116') throw error;
+        }
+
         const mode = (data?.value as 'retail' | 'display' | 'terpadu') || 'retail';
         set({ opnameMode: mode });
       } catch (error) {
