@@ -1,5 +1,8 @@
 import { Hono } from 'hono';
-import type { Env } from '../types';
+
+interface Env {
+    DB: any;
+}
 
 const settingsRouter = new Hono<{ Bindings: Env }>();
 

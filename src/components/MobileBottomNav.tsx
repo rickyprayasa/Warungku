@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal, Tags } from 'lucide-react';
+import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal, Tags, QrCode } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWarungStore } from '@/lib/store';
 
@@ -12,6 +12,7 @@ const moreTabs = [
     { value: "cashflow", label: "Kas", icon: ArrowRightLeft, path: "/dashboard?tab=cashflow" },
     { value: "finance", label: "Finance", icon: Banknote, path: "/dashboard?tab=finance" },
     { value: "analytics", label: "Dashboard", icon: BarChart3, path: "/dashboard?tab=analytics" },
+    { value: "qris", label: "Setup QRIS", icon: QrCode, path: "/dashboard?tab=qris" },
     { value: "store", label: "Lihat Toko", icon: Store, path: "/store" },
 ];
 

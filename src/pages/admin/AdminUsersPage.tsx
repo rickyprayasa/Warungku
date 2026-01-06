@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Table,
     TableBody,
@@ -27,7 +28,12 @@ import {
     Store,
     Package,
     ShoppingCart,
-    KeyRound
+    KeyRound,
+    Plus,
+    Mail,
+    Building2,
+    Shield,
+    Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,6 +68,15 @@ export function AdminUsersPage() {
     const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
     const [isDetailOpen, setDetailOpen] = useState(false);
     const [isResetting, setIsResetting] = useState<string | null>(null);
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isCreatingUser, setIsCreatingUser] = useState(false);
+    const [newUserEmail, setNewUserEmail] = useState('');
+    const [newUserPassword, setNewUserPassword] = useState('');
+    const [newUserName, setNewName] = useState('');
+    const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState<UserWithStore | null>(null);
+    const [newRole, setNewRole] = useState('admin');
+    const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
     useEffect(() => {
         fetchUsers();
@@ -122,6 +137,92 @@ export function AdminUsersPage() {
             toast.error(`Gagal mengirim link: ${error.message}`);
         } finally {
             setIsResetting(null);
+        }
+    };
+
+    const handleCreateUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!newUserEmail || !newUserPassword) {
+            toast.error('Email dan password wajib diisi');
+            return;
+        }
+
+        if (newUserPassword.length < 6) {
+            toast.error('Password minimal 6 karakter');
+            return;
+        }
+
+        setIsCreatingUser(true);
+        try {
+            // Create user in Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: newUserEmail,
+                password: newUserPassword,
+            });
+
+            if (authError) throw authError;
+
+            if (!authData.user) {
+                throw new Error('User creation failed');
+            }
+
+            // Create store for the new user using RPC
+            const { data: storeResult, error: storeError } = await (supabase.rpc as any)('create_store_for_user', {
+                p_user_id: authData.user.id,
+                p_store_name: newUserName || 'New Store',
+                p_plan: 'demo',
+            });
+
+            if (storeError) {
+                console.error('RPC error:', storeError);
+                throw new Error(storeError.message || 'Failed to create store');
+            }
+
+            const storeData = storeResult?.[0];
+            if (!storeData || !storeData.success) {
+                throw new Error(storeData?.message || 'Failed to create store');
+            }
+
+            toast.success('User baru berhasil dibuat!');
+            setNewUserEmail('');
+            setNewUserPassword('');
+            setNewName('');
+            setIsCreateDialogOpen(false);
+            fetchUsers();
+        } catch (error: any) {
+            console.error('Error creating user:', error);
+            toast.error(`Gagal membuat user: ${error.message}`);
+        } finally {
+            setIsCreatingUser(false);
+        }
+    };
+
+    const handleEditRole = (user: UserWithStore) => {
+        setEditingUser(user);
+        setNewRole(user.role);
+        setIsEditRoleOpen(true);
+    };
+
+    const handleUpdateRole = async () => {
+        if (!editingUser) return;
+
+        setIsUpdatingRole(true);
+        try {
+            const { error } = await (supabase.from('store_members') as any)
+                .update({ role: newRole })
+                .eq('user_id', editingUser.user_id);
+
+            if (error) throw error;
+
+            toast.success(`Role berhasil diubah ke ${newRole}`);
+            setIsEditRoleOpen(false);
+            fetchUsers();
+        } catch (error: any) {
+            console.error('Error updating role:', error);
+            toast.error(`Gagal mengubah role: ${error.message}`);
+        } finally {
+            setIsUpdatingRole(false);
         }
     };
 
@@ -212,20 +313,29 @@ export function AdminUsersPage() {
                 </p>
             </div>
 
-            {/* Search */}
+            {/* Search & Actions */}
             <Card className="border-4 border-brand-black rounded-none shadow-hard">
                 <CardContent className="p-4">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <Input
-                            placeholder="Cari nama, email, atau slug..."
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setPage(0);
-                            }}
-                            className="pl-10 rounded-none border-2 border-brand-black"
-                        />
+                    <div className="flex gap-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <Input
+                                placeholder="Cari nama, email, atau slug..."
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setPage(0);
+                                }}
+                                className="pl-10 rounded-none border-2 border-brand-black"
+                            />
+                        </div>
+                        <Button
+                            onClick={() => setIsCreateDialogOpen(true)}
+                            className="bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white border-2 border-brand-black rounded-none font-mono font-bold uppercase whitespace-nowrap"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Tambah User
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
@@ -279,6 +389,15 @@ export function AdminUsersPage() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="rounded-none border-2 border-brand-black"
+                                                        onClick={() => handleEditRole(user)}
+                                                        title="Edit role"
+                                                    >
+                                                        <Shield className="w-4 h-4" />
+                                                    </Button>
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -389,6 +508,142 @@ export function AdminUsersPage() {
                                 <p className="text-xs font-mono text-muted-foreground">Joined</p>
                                 <p className="font-mono">{formatDate(selectedUser.user.created_at)}</p>
                             </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Create User Dialog */}
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogContent className="border-4 border-brand-black rounded-none max-w-md">
+                    <DialogHeader className="border-b-2 border-brand-black pb-4">
+                        <DialogTitle className="font-display text-xl flex items-center gap-2">
+                            <Plus className="w-6 h-6" />
+                            Tambah User Baru
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <form onSubmit={handleCreateUser} className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="store-name">Nama Toko</Label>
+                            <Input
+                                id="store-name"
+                                value={newUserName}
+                                onChange={(e) => setNewName(e.target.value)}
+                                className="rounded-none border-2 border-brand-black"
+                                placeholder="Contoh: Warung Berkah"
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={newUserEmail}
+                                    onChange={(e) => setNewUserEmail(e.target.value)}
+                                    className="pl-10 rounded-none border-2 border-brand-black"
+                                    placeholder="email@contoh.com"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={newUserPassword}
+                                onChange={(e) => setNewUserPassword(e.target.value)}
+                                className="rounded-none border-2 border-brand-black"
+                                placeholder="Minimal 6 karakter"
+                                required
+                            />
+                        </div>
+
+                        <Button
+                            type="submit"
+                            disabled={isCreatingUser}
+                            className="w-full bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white border-2 border-brand-black rounded-none font-mono font-bold uppercase"
+                        >
+                            {isCreatingUser ? (
+                                <>
+                                    <Building2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Membuat User...
+                                </>
+                            ) : (
+                                <>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Buat User Baru
+                                </>
+                            )}
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Role Dialog */}
+            <Dialog open={isEditRoleOpen} onOpenChange={setIsEditRoleOpen}>
+                <DialogContent className="border-4 border-brand-black rounded-none max-w-md">
+                    <DialogHeader className="border-b-2 border-brand-black pb-4">
+                        <DialogTitle className="font-display text-xl flex items-center gap-2">
+                            <Shield className="w-6 h-6" />
+                            Edit Role User
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    {editingUser && (
+                        <div className="space-y-4 py-4">
+                            <div className="p-3 bg-gray-50 border-2 border-gray-200">
+                                <p className="text-xs font-mono text-muted-foreground">User</p>
+                                <p className="font-bold font-mono">{editingUser.email}</p>
+                                <p className="text-xs text-muted-foreground font-mono mt-1">{editingUser.store?.name}</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="role">Role</Label>
+                                <select
+                                    id="role"
+                                    value={newRole}
+                                    onChange={(e) => setNewRole(e.target.value)}
+                                    className="w-full border-2 border-brand-black p-2 font-mono rounded-none"
+                                >
+                                    <option value="admin">Admin</option>
+                                    <option value="editor">Editor</option>
+                                    <option value="viewer">Viewer</option>
+                                </select>
+                            </div>
+
+                            <div className="p-3 bg-blue-50 border-2 border-blue-200">
+                                <p className="text-xs font-mono text-blue-800">
+                                    <strong>Role:</strong><br />
+                                    • Admin: Full access to all features<br />
+                                    • Editor: Can manage products and sales<br />
+                                    • Viewer: Read-only access
+                                </p>
+                            </div>
+
+                            <Button
+                                onClick={handleUpdateRole}
+                                disabled={isUpdatingRole}
+                                className="w-full bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white border-2 border-brand-black rounded-none font-mono font-bold uppercase"
+                            >
+                                {isUpdatingRole ? (
+                                    <>
+                                        <Building2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Mengupdate...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-4 h-4 mr-2" />
+                                        Simpan Perubahan
+                                    </>
+                                )}
+                            </Button>
                         </div>
                     )}
                 </DialogContent>

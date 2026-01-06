@@ -39,14 +39,13 @@ export function LoginPage() {
             return;
           }
 
-          // Only redirect to dashboard if store exists
+          // Redirect to dashboard for all authenticated users
+          // If they don't have a store, the dashboard should handle the "Create Store" flow
+          console.log('[LoginPage] Redirecting to /dashboard');
           if (store) {
-            console.log('[LoginPage] Redirecting to /dashboard');
             setCurrentStoreId(store.id);
-            navigate('/dashboard');
-          } else {
-            console.log('[LoginPage] No store found, staying on login page (unless admin)');
           }
+          navigate('/dashboard');
         } catch (e) {
           console.error('[LoginPage] Error checking admin access:', e);
         }

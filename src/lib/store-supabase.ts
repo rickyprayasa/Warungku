@@ -20,6 +20,7 @@ interface WarungState {
     logoUrl?: string;
     qrisCode?: string;
     cartEnabled?: boolean;
+    paymentMethods?: string[];
   };
   opnameMode: 'retail' | 'display' | 'terpadu';
   isLoading: boolean;
@@ -524,6 +525,23 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         if (error) throw error;
 
         if (store) {
+          // Fetch payment methods from settings
+          const { data: pmData } = await supabase
+            .from('settings')
+            .select('value')
+            .eq('store_id', storeId)
+            .eq('key', 'payment_methods')
+            .single() as any;
+
+          let paymentMethods: string[] = [];
+          if (pmData?.value) {
+            try {
+              paymentMethods = JSON.parse(pmData.value);
+            } catch (e) {
+              console.error('Failed to parse payment methods:', e);
+            }
+          }
+
           set({
             storeProfile: {
               name: store.name,
@@ -532,6 +550,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               logoUrl: store.logo_url || '',
               qrisCode: store.qris_code || '',
               cartEnabled: store.cart_enabled !== false,
+              paymentMethods,
             }
           });
         }
@@ -608,6 +627,20 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .eq('id', storeId);
 
         if (error) throw error;
+
+        // Save payment methods to settings if present
+        if (profile.paymentMethods) {
+          const { error: pmError } = await supabase
+            .from('settings')
+            .upsert({
+              store_id: storeId,
+              key: 'payment_methods',
+              value: JSON.stringify(profile.paymentMethods),
+            }, { onConflict: 'store_id,key' } as any);
+
+          if (pmError) console.error('Failed to save payment methods:', pmError);
+        }
+
         set({ storeProfile: profile });
       } catch (error) {
         console.error('Failed to save store profile:', error);

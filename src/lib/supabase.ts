@@ -51,7 +51,7 @@ export const supabase = createClient<Database>(
         return fetch(url, {
           ...options,
           // Increase timeout for slower connections
-          signal: options.signal || AbortSignal.timeout(30000)
+          signal: (options as any).signal || ('AbortSignal' in window && 'timeout' in (AbortSignal as any) ? (AbortSignal as any).timeout(30000) : undefined)
         });
       }
     },

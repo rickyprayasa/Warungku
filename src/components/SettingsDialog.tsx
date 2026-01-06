@@ -11,11 +11,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Settings, Trash2, Database, Download, Info, AlertTriangle, Package, ShoppingCart, LogOut } from 'lucide-react';
+import { Settings, Trash2, Database, Download, Info, AlertTriangle, Package, ShoppingCart, LogOut, KeyRound } from 'lucide-react';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCartStore } from '@/lib/cart-store';
 import { toast } from 'sonner';
+import { ChangePasswordDialog } from './ChangePasswordDialog';
 
 export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -435,11 +436,25 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                     </div>
 
                     {/* Account Section */}
-                    <div className="border-2 border-brand-black p-4 space-y-3 bg-red-50">
-                        <h3 className="font-mono font-bold flex items-center gap-2 text-red-900">
+                    {/* Account Section */}
+                    <div className="border-2 border-brand-black p-4 space-y-3 bg-gray-50">
+                        <h3 className="font-mono font-bold flex items-center gap-2">
                             <LogOut className="w-4 h-4" />
-                            Akun
+                            Akun & Keamanan
                         </h3>
+
+                        <ChangePasswordDialog
+                            trigger={
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                >
+                                    <KeyRound className="w-4 h-4 mr-2" />
+                                    Ganti Password
+                                </Button>
+                            }
+                        />
+
                         <Button
                             onClick={async () => {
                                 if (window.confirm('Apakah Anda yakin ingin keluar?')) {

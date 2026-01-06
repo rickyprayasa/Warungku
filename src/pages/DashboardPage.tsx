@@ -11,7 +11,8 @@ import { JajananRequestsDashboard } from "@/components/JajananRequestsDashboard"
 import { OpnameDashboard } from "@/components/OpnameDashboard";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { PriceReferenceTab } from "@/components/PriceReferenceTab";
-import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag } from "lucide-react";
+import { QRISSetupContent } from "@/components/QRISSetupContent";
+import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag, QrCode } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useWarungStore } from "@/lib/store";
 
@@ -73,6 +74,7 @@ export function DashboardPage() {
     { value: "requests", label: "Request Masuk", icon: Inbox, color: "pink" },
     { value: "cashflow", label: "Arus Kas", icon: ArrowRightLeft, color: "violet" },
     { value: "finance", label: "Keuangan", icon: Banknote, color: "green" },
+    { value: "qris", label: "Setup QRIS", icon: QrCode, color: "orange" },
   ];
 
   const getTabStyles = (tabValue: string, isActive: boolean) => {
@@ -234,6 +236,17 @@ export function DashboardPage() {
             <div className={activeTab === 'finance' ? 'block' : 'hidden'}>
               <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
                 <FinanceDashboard />
+              </motion.div>
+            </div>
+            <div className={activeTab === 'qris' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <div className="max-w-2xl mx-auto bg-white border-4 border-brand-black p-6 shadow-hard">
+                  <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
+                    <QrCode className="w-8 h-8" />
+                    Setup QRIS & Pembayaran
+                  </h2>
+                  <QRISSetupContent />
+                </div>
               </motion.div>
             </div>
           </div>
