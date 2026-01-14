@@ -31,7 +31,7 @@ export function AdminLayout() {
 
     const navItems = [
         { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-        { to: '/admin/stores', icon: Store, label: 'Stores' },
+        { to: '/admin/users', icon: Users, label: 'Users' },
         { to: '/admin/subscription-plans', icon: Package, label: 'Subscription Plans' },
         { to: '/admin/transactions', icon: Banknote, label: 'Transactions' },
         { to: '/admin/duitku-settings', icon: CreditCard, label: 'Duitku Settings' },

@@ -1,24 +1,68 @@
 import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Users, Store, ShoppingCart, Package, TrendingUp, Activity, Calendar, DollarSign } from 'lucide-react';
+import { BarChart3, Users, Store, ShoppingCart, Package, TrendingUp, Activity, Calendar, DollarSign, RefreshCw } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminData';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface TimeRange {
-    value: '7d' | '30d' | '90d' | 'all';
+    value: '7d' | '30d' | '90d';
     label: string;
+    days: number;
+}
+
+interface AnalyticsData {
+    total_revenue: number;
+    revenue_growth: number;
+    active_users: number;
+    user_growth: number;
+    total_transactions: number;
+    transaction_growth: number;
+    avg_order_value: number;
+    order_value_growth: number;
+    top_stores: any[];
+    revenue_by_plan: any[];
+    user_activity: any[];
+    signups_trend: any[];
 }
 
 export function AdminAnalyticsPage() {
-    const { data: stats, isLoading, refetch } = useAdminStats();
+    const { data: stats, isLoading: statsLoading, refetch } = useAdminStats();
     const [timeRange, setTimeRange] = useState<TimeRange['value']>('30d');
+    const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const timeRanges: TimeRange[] = [
-        { value: '7d', label: '7 Hari' },
-        { value: '30d', label: '30 Hari' },
-        { value: '90d', label: '90 Hari' },
-        { value: 'all', label: 'Semua' },
+        { value: '7d', label: '7 Hari', days: 7 },
+        { value: '30d', label: '30 Hari', days: 30 },
+        { value: '90d', label: '90 Hari', days: 90 },
     ];
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, [timeRange]);
+
+    const fetchAnalytics = async () => {
+        setIsLoading(true);
+        try {
+            const days = timeRanges.find(tr => tr.value === timeRange)?.days || 30;
+            const { data, error } = await (supabase.rpc as any)('get_analytics_data', {
+                p_days_range: days,
+            });
+
+            if (error) throw error;
+
+            if (data && data[0]) {
+                setAnalyticsData(data[0] as AnalyticsData);
+            }
+        } catch (error: any) {
+            console.error('Error fetching analytics:', error);
+            toast.error('Gagal memuat data analitik');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
@@ -26,39 +70,6 @@ export function AdminAnalyticsPage() {
             month: 'short',
             year: 'numeric',
         });
-    };
-
-    // Mock data for demonstration - replace with real API calls
-    const analyticsData = {
-        totalRevenue: 150000000,
-        revenueGrowth: 23.5,
-        activeUsers: 156,
-        userGrowth: 12.3,
-        totalTransactions: 2456,
-        transactionGrowth: 18.7,
-        avgOrderValue: 61000,
-        orderValueGrowth: 8.2,
-        topStores: [
-            { name: 'Warung Berkah', slug: 'warung-berkah', revenue: 25000000, transactions: 410 },
-            { name: 'Toko Sejahtera', slug: 'toko-sejahtera', revenue: 18500000, transactions: 320 },
-            { name: 'Minimarket Jaya', slug: 'minimarket-jaya', revenue: 15600000, transactions: 280 },
-            { name: 'Toko Pagi', slug: 'toko-pagi', revenue: 12000000, transactions: 210 },
-            { name: 'Warung Mamah', slug: 'warung-mamah', revenue: 9500000, transactions: 185 },
-        ],
-        revenueByPlan: [
-            { plan: 'Pro', value: 85000000, percentage: 57 },
-            { plan: 'Trial', value: 45000000, percentage: 30 },
-            { plan: 'Demo', value: 20000000, percentage: 13 },
-        ],
-        userActivity: [
-            { date: '2025-01-01', active: 120, signups: 5 },
-            { date: '2025-01-02', active: 135, signups: 8 },
-            { date: '2025-01-03', active: 142, signups: 3 },
-            { date: '2025-01-04', active: 128, signups: 6 },
-            { date: '2025-01-05', active: 156, signups: 12 },
-            { date: '2025-01-06', active: 148, signups: 4 },
-            { date: '2025-01-07', active: 152, signups: 7 },
-        ],
     };
 
     return (
@@ -74,28 +85,32 @@ export function AdminAnalyticsPage() {
                         Statistik dan analitik platform OMZETIN
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    {timeRanges.map((range) => (
-                        <Button
-                            key={range.value}
-                            variant={timeRange === range.value ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setTimeRange(range.value)}
-                            className={timeRange === range.value ? 'bg-brand-orange text-brand-black border-2 border-brand-black' : 'border-2 border-brand-black'}
-                        >
-                            {range.label}
-                        </Button>
-                    ))}
+            <div className="flex gap-2">
+                {timeRanges.map((range) => (
                     <Button
-                        variant="outline"
+                        key={range.value}
+                        variant={timeRange === range.value ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => refetch()}
-                        disabled={isLoading}
-                        className="border-2 border-brand-black"
+                        onClick={() => setTimeRange(range.value)}
+                        className={timeRange === range.value ? 'bg-brand-orange text-brand-black border-2 border-brand-black' : 'border-2 border-brand-black'}
                     >
-                        Refresh
+                        {range.label}
                     </Button>
-                </div>
+                ))}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        refetch();
+                        fetchAnalytics();
+                    }}
+                    disabled={isLoading || statsLoading}
+                    className="border-2 border-brand-black"
+                >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isLoading || statsLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                </Button>
+            </div>
             </div>
 
             {/* Key Metrics */}
@@ -106,11 +121,17 @@ export function AdminAnalyticsPage() {
                             <div>
                                 <p className="text-sm font-mono text-muted-foreground">Total Revenue</p>
                                 <p className="text-2xl font-bold font-mono mt-1">
-                                    Rp {analyticsData.totalRevenue.toLocaleString('id-ID')}
+                                    Rp {(analyticsData?.total_revenue || 0).toLocaleString('id-ID')}
                                 </p>
                                 <div className="flex items-center gap-1 mt-2">
-                                    <TrendingUp className="w-3 h-3 text-green-500" />
-                                    <span className="text-xs font-mono text-green-600">+{analyticsData.revenueGrowth}%</span>
+                                    {analyticsData?.revenue_growth && analyticsData.revenue_growth > 0 ? (
+                                        <TrendingUp className="w-3 h-3 text-green-500" />
+                                    ) : analyticsData?.revenue_growth && analyticsData.revenue_growth < 0 ? (
+                                        <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />
+                                    ) : null}
+                                    <span className={`text-xs font-mono ${analyticsData?.revenue_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {analyticsData?.revenue_growth >= 0 ? '+' : ''}{(analyticsData?.revenue_growth || 0).toFixed(1)}%
+                                    </span>
                                 </div>
                             </div>
                             <div className="w-12 h-12 bg-green-500 flex items-center justify-center">
@@ -126,11 +147,17 @@ export function AdminAnalyticsPage() {
                             <div>
                                 <p className="text-sm font-mono text-muted-foreground">Active Users</p>
                                 <p className="text-2xl font-bold font-mono mt-1">
-                                    {analyticsData.activeUsers}
+                                    {analyticsData?.active_users || 0}
                                 </p>
                                 <div className="flex items-center gap-1 mt-2">
-                                    <TrendingUp className="w-3 h-3 text-green-500" />
-                                    <span className="text-xs font-mono text-green-600">+{analyticsData.userGrowth}%</span>
+                                    {analyticsData?.user_growth && analyticsData.user_growth > 0 ? (
+                                        <TrendingUp className="w-3 h-3 text-green-500" />
+                                    ) : analyticsData?.user_growth && analyticsData.user_growth < 0 ? (
+                                        <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />
+                                    ) : null}
+                                    <span className={`text-xs font-mono ${analyticsData?.user_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {analyticsData?.user_growth >= 0 ? '+' : ''}{(analyticsData?.user_growth || 0).toFixed(1)}%
+                                    </span>
                                 </div>
                             </div>
                             <div className="w-12 h-12 bg-blue-500 flex items-center justify-center">
@@ -146,11 +173,17 @@ export function AdminAnalyticsPage() {
                             <div>
                                 <p className="text-sm font-mono text-muted-foreground">Transactions</p>
                                 <p className="text-2xl font-bold font-mono mt-1">
-                                    {analyticsData.totalTransactions}
+                                    {analyticsData?.total_transactions || 0}
                                 </p>
                                 <div className="flex items-center gap-1 mt-2">
-                                    <TrendingUp className="w-3 h-3 text-green-500" />
-                                    <span className="text-xs font-mono text-green-600">+{analyticsData.transactionGrowth}%</span>
+                                    {analyticsData?.transaction_growth && analyticsData.transaction_growth > 0 ? (
+                                        <TrendingUp className="w-3 h-3 text-green-500" />
+                                    ) : analyticsData?.transaction_growth && analyticsData.transaction_growth < 0 ? (
+                                        <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />
+                                    ) : null}
+                                    <span className={`text-xs font-mono ${analyticsData?.transaction_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {analyticsData?.transaction_growth >= 0 ? '+' : ''}{(analyticsData?.transaction_growth || 0).toFixed(1)}%
+                                    </span>
                                 </div>
                             </div>
                             <div className="w-12 h-12 bg-orange-500 flex items-center justify-center">
@@ -166,11 +199,17 @@ export function AdminAnalyticsPage() {
                             <div>
                                 <p className="text-sm font-mono text-muted-foreground">Avg Order Value</p>
                                 <p className="text-2xl font-bold font-mono mt-1">
-                                    Rp {analyticsData.avgOrderValue.toLocaleString('id-ID')}
+                                    Rp {(analyticsData?.avg_order_value || 0).toLocaleString('id-ID')}
                                 </p>
                                 <div className="flex items-center gap-1 mt-2">
-                                    <TrendingUp className="w-3 h-3 text-green-500" />
-                                    <span className="text-xs font-mono text-green-600">+{analyticsData.orderValueGrowth}%</span>
+                                    {analyticsData?.order_value_growth && analyticsData.order_value_growth > 0 ? (
+                                        <TrendingUp className="w-3 h-3 text-green-500" />
+                                    ) : analyticsData?.order_value_growth && analyticsData.order_value_growth < 0 ? (
+                                        <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />
+                                    ) : null}
+                                    <span className={`text-xs font-mono ${analyticsData?.order_value_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {analyticsData?.order_value_growth >= 0 ? '+' : ''}{(analyticsData?.order_value_growth || 0).toFixed(1)}%
+                                    </span>
                                 </div>
                             </div>
                             <div className="w-12 h-12 bg-purple-500 flex items-center justify-center">
@@ -192,24 +231,28 @@ export function AdminAnalyticsPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 space-y-3">
-                        {analyticsData.topStores.map((store, index) => (
-                            <div key={store.slug} className="flex items-center justify-between p-3 bg-gray-50 border-2 border-gray-200">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-brand-orange text-brand-black flex items-center justify-center font-bold font-mono rounded-none">
-                                        {index + 1}
+                        {(analyticsData?.top_stores || []).length === 0 ? (
+                            <p className="text-center font-mono text-muted-foreground p-4">Belum ada data</p>
+                        ) : (
+                            (analyticsData?.top_stores || []).map((store, index) => (
+                                <div key={store.slug} className="flex items-center justify-between p-3 bg-gray-50 border-2 border-gray-200">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-brand-orange text-brand-black flex items-center justify-center font-bold font-mono rounded-none">
+                                            {index + 1}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold font-mono">{store.name}</p>
+                                            <p className="text-xs text-muted-foreground font-mono">
+                                                /{store.slug} • {store.transactions} transactions
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-bold font-mono">{store.name}</p>
-                                        <p className="text-xs text-muted-foreground font-mono">
-                                            /{store.slug} • {store.transactions} transactions
-                                        </p>
+                                    <div className="text-right">
+                                        <p className="font-bold font-mono">Rp {store.revenue.toLocaleString('id-ID')}</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="font-bold font-mono">Rp {store.revenue.toLocaleString('id-ID')}</p>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </CardContent>
                 </Card>
 
@@ -222,21 +265,29 @@ export function AdminAnalyticsPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 space-y-4">
-                        {analyticsData.revenueByPlan.map((item) => (
-                            <div key={item.plan} className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="font-bold font-mono">{item.plan}</span>
-                                    <span className="font-mono">Rp {item.value.toLocaleString('id-ID')}</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-none border-2 border-brand-black h-4">
-                                    <div
-                                        className="bg-brand-orange h-full rounded-none border-2 border-brand-black"
-                                        style={{ width: `${item.percentage}%` }}
-                                    />
-                                </div>
-                                <p className="text-xs text-muted-foreground font-mono text-right">{item.percentage}%</p>
-                            </div>
-                        ))}
+                        {(analyticsData?.revenue_by_plan || []).length === 0 ? (
+                            <p className="text-center font-mono text-muted-foreground p-4">Belum ada data</p>
+                        ) : (
+                            (analyticsData?.revenue_by_plan || []).map((item, index) => {
+                                const totalRevenue = (analyticsData?.revenue_by_plan || []).reduce((sum: number, p: any) => sum + p.value, 0);
+                                const percentage = totalRevenue > 0 ? (item.value / totalRevenue) * 100 : 0;
+                                return (
+                                    <div key={index} className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold font-mono capitalize">{item.plan}</span>
+                                            <span className="font-mono">Rp {item.value.toLocaleString('id-ID')}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-none border-2 border-brand-black h-4">
+                                            <div
+                                                className="bg-brand-orange h-full rounded-none border-2 border-brand-black"
+                                                style={{ width: `${percentage}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-muted-foreground font-mono text-right">{percentage.toFixed(1)}%</p>
+                                    </div>
+                                );
+                            })
+                        )}
                     </CardContent>
                 </Card>
 
@@ -250,31 +301,39 @@ export function AdminAnalyticsPage() {
                     </CardHeader>
                     <CardContent className="p-4">
                         <div className="space-y-3">
-                            {analyticsData.userActivity.map((day) => (
-                                <div key={day.date} className="flex items-center gap-4">
-                                    <div className="w-24 text-sm font-mono">{formatDate(day.date)}</div>
-                                    <div className="flex-1 flex items-center gap-4">
-                                        <div className="flex-1">
-                                            <div className="text-xs font-mono text-muted-foreground mb-1">Active: {day.active}</div>
-                                            <div className="w-full bg-gray-200 rounded-none border-2 border-gray-300 h-3">
-                                                <div
-                                                    className="bg-blue-500 h-full rounded-none border-2 border-brand-black"
-                                                    style={{ width: `${(day.active / 160) * 100}%` }}
-                                                />
+                            {(analyticsData?.user_activity || []).length === 0 ? (
+                                <p className="text-center font-mono text-muted-foreground p-4">Belum ada data</p>
+                            ) : (
+                                (analyticsData?.user_activity || []).map((day, index) => {
+                                    const maxActive = Math.max(...(analyticsData?.user_activity || []).map((d: any) => d.active || 0));
+                                    const maxSignups = Math.max(...(analyticsData?.user_activity || []).map((d: any) => d.signups || 0));
+                                    return (
+                                        <div key={index} className="flex items-center gap-4">
+                                            <div className="w-24 text-sm font-mono">{formatDate(day.date)}</div>
+                                            <div className="flex-1 flex items-center gap-4">
+                                                <div className="flex-1">
+                                                    <div className="text-xs font-mono text-muted-foreground mb-1">Active: {day.active}</div>
+                                                    <div className="w-full bg-gray-200 rounded-none border-2 border-gray-300 h-3">
+                                                        <div
+                                                            className="bg-blue-500 h-full rounded-none border-2 border-brand-black"
+                                                            style={{ width: maxActive > 0 ? `${(day.active / maxActive) * 100}%` : '0%' }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="w-24">
+                                                    <div className="text-xs font-mono text-muted-foreground mb-1">Signups: {day.signups}</div>
+                                                    <div className="w-full bg-gray-200 rounded-none border-2 border-gray-300 h-3">
+                                                        <div
+                                                            className="bg-green-500 h-full rounded-none border-2 border-brand-black"
+                                                            style={{ width: maxSignups > 0 ? `${(day.signups / maxSignups) * 100}%` : '0%' }}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="w-24">
-                                            <div className="text-xs font-mono text-muted-foreground mb-1">Signups: {day.signups}</div>
-                                            <div className="w-full bg-gray-200 rounded-none border-2 border-gray-300 h-3">
-                                                <div
-                                                    className="bg-green-500 h-full rounded-none border-2 border-brand-black"
-                                                    style={{ width: `${(day.signups / 12) * 100}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                    );
+                                })
+                            )}
                         </div>
                     </CardContent>
                 </Card>

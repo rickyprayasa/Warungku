@@ -1,11 +1,10 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { QrCode, Save, Loader2, Upload, CheckCircle, AlertCircle, Printer, Trash2, CreditCard } from 'lucide-react';
+import { QrCode, Save, Loader2, Upload, CheckCircle, AlertCircle, Printer, Trash2, CreditCard, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateQRIS, getMerchantName, parseQRISInfo } from '@/lib/qris';
 import jsQR from 'jsqr';
@@ -13,16 +12,16 @@ import { QRCodeSVG } from 'qrcode.react';
 import { QRISDownloadButton } from './QRISDownload';
 
 const PAYMENT_METHODS = [
-    { id: 'gopay', label: 'GoPay' },
-    { id: 'ovo', label: 'OVO' },
-    { id: 'dana', label: 'Dana' },
-    { id: 'shopeepay', label: 'ShopeePay' },
-    { id: 'linkaja', label: 'LinkAja' },
-    { id: 'bca', label: 'BCA Mobile' },
-    { id: 'mandiri', label: 'Mandiri Livin' },
-    { id: 'bri', label: 'BRImo' },
-    { id: 'bni', label: 'BNI Mobile' },
-    { id: 'cash', label: 'Tunai (Cash)' },
+    { id: 'gopay', label: 'GoPay', type: 'wallet' },
+    { id: 'ovo', label: 'OVO', type: 'wallet' },
+    { id: 'dana', label: 'Dana', type: 'wallet' },
+    { id: 'shopeepay', label: 'ShopeePay', type: 'wallet' },
+    { id: 'linkaja', label: 'LinkAja', type: 'wallet' },
+    { id: 'bca', label: 'BCA Mobile', type: 'bank' },
+    { id: 'mandiri', label: 'Mandiri Livin', type: 'bank' },
+    { id: 'bri', label: 'BRImo', type: 'bank' },
+    { id: 'bni', label: 'BNI Mobile', type: 'bank' },
+    { id: 'cash', label: 'Tunai (Cash)', type: 'cash' },
 ];
 
 export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void }) {
@@ -34,6 +33,14 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
     const [isScanning, setIsScanning] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [validation, setValidation] = useState<{ valid: boolean; error?: string; merchantName?: string } | null>(null);
+    const [manualPaymentInfo, setManualPaymentInfo] = useState({
+        enabled: false,
+        bankName: (storeProfile as any).bankName || '',
+        accountNumber: (storeProfile as any).accountNumber || '',
+        accountName: (storeProfile as any).accountName || '',
+        phoneNumber: (storeProfile as any).phoneNumber || '',
+        walletName: '',
+    });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -144,6 +151,10 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
                 ...storeProfile,
                 qrisCode: qrisString.trim(),
                 paymentMethods: selectedMethods,
+                bankName: manualPaymentInfo.bankName.trim(),
+                accountNumber: manualPaymentInfo.accountNumber.trim(),
+                accountName: manualPaymentInfo.accountName.trim(),
+                phoneNumber: manualPaymentInfo.phoneNumber.trim(),
             });
             toast.success('Pengaturan pembayaran berhasil disimpan');
             onSaveSuccess?.();
@@ -181,27 +192,112 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Payment Methods Section */}
+            {/* Payment Methods Section with Inline Manual Info */}
             <div className="bg-white border-2 border-brand-black p-4 space-y-4">
                 <h3 className="font-mono font-bold uppercase text-sm flex items-center gap-2 border-b-2 border-brand-black pb-2">
                     <CreditCard className="w-4 h-4" />
                     Metode Pembayaran Diterima
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+
+                <div className="bg-blue-50 border-2 border-blue-200 p-3">
+                    <p className="font-mono text-xs text-blue-800">
+                        <strong>Info:</strong> Pilih metode pembayaran yang diterima dan isi informasi detail di bawahnya.
+                        Informasi ini akan tampil saat customer checkout.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {PAYMENT_METHODS.map((method) => (
-                        <div key={method.id} className="flex items-center space-x-2">
-                            <Checkbox
-                                id={`method-${method.id}`}
-                                checked={selectedMethods.includes(method.id)}
-                                onCheckedChange={() => handleMethodToggle(method.id)}
-                                className="border-2 border-brand-black rounded-none data-[state=checked]:bg-brand-orange data-[state=checked]:text-brand-black"
-                            />
-                            <Label
-                                htmlFor={`method-${method.id}`}
-                                className="font-mono text-xs cursor-pointer"
-                            >
-                                {method.label}
-                            </Label>
+                        <div
+                            key={method.id}
+                            className={`border-2 rounded-none p-3 space-y-2 ${selectedMethods.includes(method.id)
+                                    ? 'border-brand-orange bg-orange-50'
+                                    : 'border-gray-300 bg-white'
+                                }`}
+                        >
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    id={`method-${method.id}`}
+                                    checked={selectedMethods.includes(method.id)}
+                                    onCheckedChange={() => handleMethodToggle(method.id)}
+                                    className="border-2 border-brand-black rounded-none data-[state=checked]:bg-brand-orange data-[state=checked]:text-brand-black"
+                                />
+                                <Label
+                                    htmlFor={`method-${method.id}`}
+                                    className="font-mono text-sm font-bold cursor-pointer flex-1"
+                                >
+                                    {method.label}
+                                </Label>
+                            </div>
+
+                            {/* Inline Payment Info - Only show if selected */}
+                            {selectedMethods.includes(method.id) && method.type === 'wallet' && (
+                                <div className="pl-6 space-y-2 border-l-2 border-brand-orange">
+                                    <div className="space-y-1">
+                                        <Label htmlFor={`phone-${method.id}`} className="font-mono font-bold uppercase text-xs flex items-center gap-1">
+                                            <QrCode className="w-3 h-3" />
+                                            Nomor HP / E-Wallet
+                                        </Label>
+                                        <Input
+                                            id={`phone-${method.id}`}
+                                            value={selectedMethods.includes(method.id) ? manualPaymentInfo.phoneNumber : ''}
+                                            onChange={(e) => setManualPaymentInfo(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '') }))}
+                                            placeholder={method.id === 'gopay' ? '0812xxxxxxx' : '081234567890'}
+                                            className="border-2 border-brand-black rounded-none font-mono text-xs focus-visible:ring-2 focus-visible:ring-brand-orange"
+                                            maxLength={15}
+                                        />
+                                        <p className="text-xs text-muted-foreground font-mono">
+                                            Untuk pembayaran {method.label}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedMethods.includes(method.id) && method.type === 'bank' && (
+                                <div className="pl-6 space-y-3 border-l-2 border-brand-orange">
+                                    <div className="space-y-1">
+                                        <Label htmlFor={`bank-${method.id}`} className="font-mono font-bold uppercase text-xs flex items-center gap-1">
+                                            <Building2 className="w-3 h-3" />
+                                            Nama Bank
+                                        </Label>
+                                        <Input
+                                            id={`bank-${method.id}`}
+                                            value={selectedMethods.includes(method.id) ? manualPaymentInfo.bankName : ''}
+                                            onChange={(e) => setManualPaymentInfo(prev => ({ ...prev, bankName: e.target.value.toUpperCase() }))}
+                                            placeholder={method.id === 'bca' ? 'BCA' : method.id === 'mandiri' ? 'MANDIRI' : method.id === 'bri' ? 'BRI' : 'BNI'}
+                                            className="border-2 border-brand-black rounded-none font-mono text-xs focus-visible:ring-2 focus-visible:ring-brand-orange"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-1">
+                                            <Label htmlFor={`account-${method.id}`} className="font-mono font-bold uppercase text-xs">
+                                                No. Rekening
+                                            </Label>
+                                            <Input
+                                                id={`account-${method.id}`}
+                                                value={selectedMethods.includes(method.id) ? manualPaymentInfo.accountNumber : ''}
+                                                onChange={(e) => setManualPaymentInfo(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') }))}
+                                                placeholder="1234567890"
+                                                className="border-2 border-brand-black rounded-none font-mono text-xs focus-visible:ring-2 focus-visible:ring-brand-orange"
+                                                maxLength={20}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor={`owner-${method.id}`} className="font-mono font-bold uppercase text-xs">
+                                                a.n Pemilik
+                                            </Label>
+                                            <Input
+                                                id={`owner-${method.id}`}
+                                                value={selectedMethods.includes(method.id) ? manualPaymentInfo.accountName : ''}
+                                                onChange={(e) => setManualPaymentInfo(prev => ({ ...prev, accountName: e.target.value }))}
+                                                placeholder="Nama Pemilik"
+                                                className="border-2 border-brand-black rounded-none font-mono text-xs focus-visible:ring-2 focus-visible:ring-brand-orange"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -335,7 +431,9 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
                                         className="h-10 w-auto mb-2 object-contain"
                                     />
                                 ) : (
-                                    <p className="font-bold text-lg mb-2">{storeProfile.name}</p>
+                                    <div className="w-full h-10 flex items-center justify-center bg-gray-100 border border-gray-300 mb-2">
+                                        <span className="font-mono text-xs text-gray-500">{storeProfile.name}</span>
+                                    </div>
                                 )}
                                 <div className="border-2 border-brand-black p-2 bg-white">
                                     <QRCodeSVG

@@ -12,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signInWithGoogle: () => Promise<{ error?: string }>;
   signUp: (email: string, password: string, storeName: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshStore: () => Promise<void>;
@@ -250,44 +251,107 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        setLoading(false);
+        return { error: error.message };
+      }
+
+      return {};
+    } catch (err: any) {
+      console.error('Google SignIn error:', err);
+      setLoading(false);
+      return { error: err.message || 'Google login failed' };
+    }
+  };
+
   const signUp = async (email: string, password: string, storeName: string) => {
     try {
-      // 1. Create user
+      console.log('[AuthContext] Starting signup for:', email);
+
+      // 1. Create user (Supabase may send email confirmation if enabled)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            store_name: storeName,
+          },
+        },
+      });
+
+      console.log('[AuthContext] SignUp response:', {
+        user: authData?.user?.id,
+        session: !!authData?.session,
+        identities: authData?.user?.identities?.length,
+        confirmed: authData?.user?.email_confirmed_at,
+        error: authError
       });
 
       if (authError) {
-        return { error: authError.message };
+        console.error('[AuthContext] Auth error:', authError);
+
+        // Handle specific error cases
+        if (authError.message.includes('already registered')) {
+          return { error: 'Email sudah terdaftar. Silakan login atau gunakan email lain.' };
+        }
+        // Don't block on email sending errors - we'll handle verification later
+        if (authError.message.includes('SMTP') || authError.message.includes('email')) {
+          console.warn('[AuthContext] Email sending failed, but continuing with signup');
+          // Continue with signup even if email fails
+        } else {
+          return { error: authError.message };
+        }
       }
 
-      if (!authData.user) {
-        return { error: 'Failed to create user' };
+      if (!authData?.user) {
+        return { error: 'Gagal membuat akun. Silakan coba lagi.' };
       }
 
-      // 2. Create store
+      // Check if user already exists (identities array will be empty for existing unconfirmed users)
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        console.log('[AuthContext] User already exists (empty identities)');
+        return { error: 'Email sudah terdaftar. Silakan cek email untuk konfirmasi atau login.' };
+      }
+
+      console.log('[AuthContext] User created:', authData.user.id, 'confirmed:', authData.user.email_confirmed_at);
+
+      // 2. Create store immediately (regardless of email confirmation status)
       const slug = storeName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
-      const { data: storeData, error: storeError } = await supabase
-        .from('stores')
+      const { data: storeData, error: storeError } = await (supabase
+        .from('stores') as any)
         .insert({
           name: storeName,
           slug: `${slug}-${Date.now().toString(36)}`,
+          plan: 'free',
         })
         .select()
         .single();
 
       if (storeError) {
+        console.error('[AuthContext] Store error:', storeError);
         return { error: storeError.message };
       }
 
+      console.log('[AuthContext] Store created:', storeData.id);
+
       // 3. Add user as owner
-      const { error: memberError } = await supabase
-        .from('store_members')
+      const { error: memberError } = await (supabase
+        .from('store_members') as any)
         .insert({
           store_id: storeData.id,
           user_id: authData.user.id,
@@ -295,13 +359,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
       if (memberError) {
+        console.error('[AuthContext] Member error:', memberError);
         return { error: memberError.message };
       }
 
       setStore(storeData as Store);
       useWarungStore.getState().setCurrentStoreId(storeData.id);
-      return {};
+
+      // Return success - email verification will be handled in dashboard
+      return {
+        success: true,
+        needsEmailVerification: !authData.user.email_confirmed_at
+      };
     } catch (err: any) {
+      console.error('[AuthContext] Signup error:', err);
       return { error: err.message || 'Signup failed' };
     }
   };
@@ -349,6 +420,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Clear ALL storage to prevent data leakage
       localStorage.clear();
       sessionStorage.clear();
+
+      // Clear specific keys just in case
+      const keysToRemove = [
+        'warung-storage-v2',
+        'warung-storage-v3',
+        'sb-access-token',
+        'sb-refresh-token',
+        'supabase.auth.token',
+      ];
+      keysToRemove.forEach(key => localStorage.removeItem(key));
 
       // Force reload to clear in-memory state and React Query cache
       window.location.href = '/login';
@@ -409,6 +490,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     isAuthenticated: generalIsAuthenticated, // Use general auth status
     signIn,
+    signInWithGoogle,
     signUp,
     signOut,
     refreshStore,

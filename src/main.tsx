@@ -83,7 +83,6 @@ const AdminProtectedRoute = lazy(() => import('@/components/AdminProtectedRoute'
 const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
 const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })));
 const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage })));
-const AdminStoresPage = lazy(() => import('@/pages/admin/AdminStoresPage').then(m => ({ default: m.AdminStoresPage })));
 const AdminAnalyticsPage = lazy(() => import('@/pages/admin/AdminAnalyticsPage').then(m => ({ default: m.AdminAnalyticsPage })));
 const AdminTransactionsPage = lazy(() => import('@/pages/admin/AdminTransactionsPage').then(m => ({ default: m.AdminTransactionsPage })));
 const AdminDuitkuSettingsPage = lazy(() => import('@/pages/admin/AdminDuitkuSettingsPage').then(m => ({ default: m.AdminDuitkuSettingsPage })));
@@ -91,6 +90,8 @@ const AdminSubscriptionPlansPage = lazy(() => import('@/pages/admin/AdminSubscri
 const AdminAuditLogPage = lazy(() => import('@/pages/admin/AdminAuditLogPage').then(m => ({ default: m.AdminAuditLogPage })));
 
 const UpgradePlanPage = lazy(() => import('@/pages/UpgradePlanPage').then(m => ({ default: m.UpgradePlanPage })));
+const RegisterPage = lazy(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
+const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
 const UpdatePasswordPage = lazy(() => import('@/pages/UpdatePasswordPage').then(m => ({ default: m.UpdatePasswordPage })));
 
@@ -212,6 +213,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "register",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <RegisterPage />
+          </Suspense>
+        ),
+      },
+      {
         path: "checkout",
         element: (
           <Suspense fallback={<PageLoader />}>
@@ -244,6 +253,14 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoader />}>
         <UpdatePasswordPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/auth/callback",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <AuthCallbackPage />
       </Suspense>
     ),
   },
@@ -281,14 +298,6 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <AdminUsersPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "stores",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <AdminStoresPage />
           </Suspense>
         ),
       },

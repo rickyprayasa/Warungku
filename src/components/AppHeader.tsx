@@ -82,13 +82,22 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center gap-2">
                 {!isAuthenticated || isPublicMode ? (
-                  <Button
-                    onClick={() => navigate('/login')}
-                    variant="ghost"
-                    className="font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200 bg-brand-white text-brand-black hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm"
-                  >
-                    Masuk
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => navigate('/register')}
+                      variant="ghost"
+                      className="font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200 bg-brand-white text-brand-black hover:bg-brand-orange hover:text-brand-black hover:shadow-hard-sm"
+                    >
+                      Daftar
+                    </Button>
+                    <Button
+                      onClick={() => navigate('/login')}
+                      variant="ghost"
+                      className="font-mono uppercase font-bold text-sm px-4 py-2 border-2 border-brand-black rounded-none transition-all duration-200 bg-brand-white text-brand-black hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm"
+                    >
+                      Masuk
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <NotificationBell />

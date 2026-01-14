@@ -12,7 +12,10 @@ import { OpnameDashboard } from "@/components/OpnameDashboard";
 import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
 import { PriceReferenceTab } from "@/components/PriceReferenceTab";
 import { QRISSetupContent } from "@/components/QRISSetupContent";
-import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag, QrCode } from "lucide-react";
+import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
+import { PlanBadge } from "@/components/PlanBadge";
+import { SettingsDashboard } from "@/components/SettingsDashboard";
+import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag, QrCode, Crown, Settings } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useWarungStore } from "@/lib/store";
 
@@ -75,6 +78,7 @@ export function DashboardPage() {
     { value: "cashflow", label: "Arus Kas", icon: ArrowRightLeft, color: "violet" },
     { value: "finance", label: "Keuangan", icon: Banknote, color: "green" },
     { value: "qris", label: "Setup QRIS", icon: QrCode, color: "orange" },
+    { value: "settings", label: "Pengaturan", icon: Settings, color: "gray" },
   ];
 
   const getTabStyles = (tabValue: string, isActive: boolean) => {
@@ -88,6 +92,13 @@ export function DashboardPage() {
         activeBg: "bg-orange-500",
         activeText: "text-white",
         border: "border-orange-600"
+      },
+      gray: {
+        bg: "bg-gray-50",
+        hover: "hover:bg-gray-100 hover:border-gray-500",
+        activeBg: "bg-gray-800",
+        activeText: "text-white",
+        border: "border-gray-900"
       },
       emerald: {
         bg: "bg-emerald-50",
@@ -174,13 +185,19 @@ export function DashboardPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 md:pb-0">
       <div className="py-8 md:py-10 lg:py-12">
         <div className="mb-8">
-          <h2 className="text-3xl font-display font-bold text-brand-black">
-            Dasbor Omzetin
-          </h2>
+          <div className="flex flex-wrap items-center gap-3 mb-1">
+            <h2 className="text-3xl font-display font-bold text-brand-black">
+              Dasbor Omzetin
+            </h2>
+            <PlanBadge />
+          </div>
           <p className="font-mono text-muted-foreground">
             Kelola produk, penjualan, dan keuangan toko Anda.
           </p>
         </div>
+
+        {/* Email Verification Banner */}
+        <EmailVerificationBanner />
 
         {/* Desktop/Tablet Tabs - Hidden on Mobile */}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
@@ -247,6 +264,12 @@ export function DashboardPage() {
                   </h2>
                   <QRISSetupContent />
                 </div>
+              </motion.div>
+            </div>
+
+            <div className={activeTab === 'settings' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <SettingsDashboard />
               </motion.div>
             </div>
           </div>

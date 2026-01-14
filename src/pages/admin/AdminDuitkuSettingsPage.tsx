@@ -433,33 +433,16 @@ export function AdminDuitkuSettingsPage() {
         <div className="space-y-6">
           <Card className="border-2 border-brand-black rounded-none">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-display text-xl">
+              <CardTitle className="font-display text-xl flex items-center gap-2">
                 <Info className="w-5 h-5" />
-                Panduan Konfigurasi
+                Informasi Bank (Pembayaran Manual)
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3 font-mono text-sm">
-                <div className="flex items-start gap-2">
-                  <div className="bg-brand-orange text-brand-black rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">1</div>
-                  <p>Dapatkan Merchant Code dan API Key dari dashboard Duitku</p>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <div className="bg-brand-orange text-brand-black rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">2</div>
-                  <p>Atur Callback URL di dashboard Duitku ke URL di samping</p>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <div className="bg-brand-orange text-brand-black rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">3</div>
-                  <p>Gunakan mode sandbox untuk testing sebelum production</p>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <div className="bg-brand-orange text-brand-black rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold mt-0.5 flex-shrink-0">4</div>
-                  <p>Test koneksi untuk memastikan konfigurasi benar</p>
-                </div>
-              </div>
+            <CardContent className="space-y-3">
+              <p className="font-mono text-sm text-blue-800">
+                <strong>ℹ️ Catatan:</strong> Duitku Payment Gateway menangani semua pembayaran secara otomatis.
+                User tidak perlu melakukan transfer manual saat menggunakan metode pembayaran via Duitku.
+              </p>
             </CardContent>
           </Card>
 
@@ -500,22 +483,16 @@ export function AdminDuitkuSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display text-xl">
                 <Info className="w-5 h-5" />
-                Paket Harga
+                Informasi Integrasi
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-mono">Pro Monthly</span>
-                  <span className="font-mono font-bold">{formatCurrency(50000)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-mono">Pro Yearly</span>
-                  <span className="font-mono font-bold">{formatCurrency(500000)}</span>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground font-mono">
-                Harga di atas adalah harga yang ditampilkan di halaman upgrade plan
+              <p className="font-mono text-sm text-blue-800">
+                <strong>Duitku Payment Gateway</strong> akan menangani semua pembayaran secara otomatis.
+                User tidak perlu transfer manual saat menggunakan metode pembayaran via Duitku.
+              </p>
+              <p className="font-mono text-xs text-muted-foreground">
+                Pastikan Merchant Code dan API Key sudah benar sebelum diaktifkan di production.
               </p>
             </CardContent>
           </Card>

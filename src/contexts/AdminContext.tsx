@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 
 // Admin email whitelist - add more admins here
-const ADMIN_EMAILS = ['info@rsquareidea.my.id', 'admin@rsquareidea.my.id'];
+const ADMIN_EMAILS = ['info@rsquareidea.my.id', 'admin@rsquareidea.my.id', 'ryussquall@gmail.com'];
 
 type AdminRole = 'super_admin' | 'admin' | 'support' | null;
 
