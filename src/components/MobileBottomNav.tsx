@@ -35,9 +35,9 @@ export function MobileBottomNav() {
             value: "pos",
             label: "Kasir",
             icon: Store,
-            path: "/",
+            path: "/pos",
             submenu: [
-                { label: "Buka Kasir", action: "open-pos", path: "/" },
+                { label: "Buka Kasir", action: "open-pos", path: "/pos" },
                 { label: "Lihat Riwayat", action: "view-sales-history", path: "/dashboard?tab=sales" },
             ]
         },
@@ -86,7 +86,7 @@ export function MobileBottomNav() {
         const searchParams = new URLSearchParams(location.search);
         const tabParam = searchParams.get('tab');
 
-        if (path === '/') {
+        if (path === '/pos') {
             setActiveTab('pos');
         } else if (path === '/dashboard') {
             if (tabParam) {

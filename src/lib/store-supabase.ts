@@ -33,6 +33,10 @@ interface WarungState {
   // Store context for multi-tenant
   currentStoreId: string | null;
   setCurrentStoreId: (storeId: string | null) => void;
+
+  // UI State
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
 interface WarungActions {
@@ -224,35 +228,40 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     isLoading: false,
     error: null,
     currentStoreId: null,
+    sidebarCollapsed: false,
+
+    setSidebarCollapsed: (collapsed) => {
+      set({ sidebarCollapsed: collapsed });
+    },
 
     setCurrentStoreId: (storeId) => {
-        console.log('[STORE] Setting current store ID to:', storeId, 'previous:', get().currentStoreId);
-        // Reset store profile when switching stores to avoid cross-store data leakage
-        set({
-            currentStoreId: storeId,
-            storeProfile: {
-                name: 'Omzetin',
-                address: '',
-                phone: '',
-                logoUrl: undefined,
-                qrisCode: undefined,
-                cartEnabled: undefined,
-                paymentMethods: undefined,
-                bankName: undefined,
-                accountNumber: undefined,
-                accountName: undefined,
-                phoneNumber: undefined,
-            },
-            products: [],
-            sales: [],
-            purchases: [],
-            suppliers: [],
-            jajananRequests: [],
-            stockDetails: [],
-            reconciliations: [],
-        });
-        // Note: Data fetching is handled by components that listen to currentStoreId changes
-        // This prevents multiple parallel fetches and race conditions
+      console.log('[STORE] Setting current store ID to:', storeId, 'previous:', get().currentStoreId);
+      // Reset store profile when switching stores to avoid cross-store data leakage
+      set({
+        currentStoreId: storeId,
+        storeProfile: {
+          name: 'Omzetin',
+          address: '',
+          phone: '',
+          logoUrl: undefined,
+          qrisCode: undefined,
+          cartEnabled: undefined,
+          paymentMethods: undefined,
+          bankName: undefined,
+          accountNumber: undefined,
+          accountName: undefined,
+          phoneNumber: undefined,
+        },
+        products: [],
+        sales: [],
+        purchases: [],
+        suppliers: [],
+        jajananRequests: [],
+        stockDetails: [],
+        reconciliations: [],
+      });
+      // Note: Data fetching is handled by components that listen to currentStoreId changes
+      // This prevents multiple parallel fetches and race conditions
     },
 
     // Add a function to reset to public store mode

@@ -6,7 +6,6 @@ import { Toaster } from '@/components/ui/sonner';
 import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { FloatingNotification } from '@/components/FloatingNotification';
-import { FloatingClock } from '@/components/FloatingClock';
 import { CartSheet } from '@/components/CartSheet';
 import { FloatingCart } from '@/components/FloatingCart';
 import { DemoWatermark } from '@/components/DemoWatermark';
@@ -23,22 +22,7 @@ export function HomePage() {
   const currentStoreId = useWarungStore((state) => state.currentStoreId);
   const hasFetchedRef = useRef(false);
 
-  // Track sidebar collapse state
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebar-collapsed') === 'true';
-  });
-
-  // Listen for sidebar collapse changes
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'sidebar-collapsed') {
-        setSidebarCollapsed(e.newValue === 'true');
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  const sidebarCollapsed = useWarungStore((state) => state.sidebarCollapsed);
 
   // Set store ID and fetch data once auth is ready
   useEffect(() => {
@@ -118,7 +102,6 @@ export function HomePage() {
       {isAuthenticated && <Sidebar />}
 
       {/* Floating Components - Outside main content flow */}
-      {isAuthenticated && <FloatingClock />}
       {isAuthenticated && <FloatingNotification />}
       <FloatingCart />
       <CartSheet />
