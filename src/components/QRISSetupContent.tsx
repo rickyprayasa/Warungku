@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { QrCode, Save, Loader2, Upload, CheckCircle, AlertCircle, Printer, Trash2, CreditCard, Building2 } from 'lucide-react';
+import { QrCode, Save, Loader2, Upload, CheckCircle, AlertCircle, Printer, Trash2, CreditCard, Building2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { validateQRIS, getMerchantName, parseQRISInfo } from '@/lib/qris';
 import jsQR from 'jsqr';
 import { QRCodeSVG } from 'qrcode.react';
 import { QRISDownloadButton } from './QRISDownload';
+import { usePlan } from '@/contexts/PlanContext';
+import { PlanUpgradePrompt } from '@/components/PlanUpgradePrompt';
 
 const PAYMENT_METHODS = [
     { id: 'gopay', label: 'GoPay', type: 'wallet' },
@@ -25,6 +27,8 @@ const PAYMENT_METHODS = [
 ];
 
 export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void }) {
+    const { limits } = usePlan();
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const [qrisString, setQrisString] = useState(storeProfile.qrisCode || '');
@@ -42,6 +46,34 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
         walletName: '',
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Check if user can use QRIS
+    if (!limits.canUseQris) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="w-20 h-20 bg-brand-orange/10 border-4 border-brand-black flex items-center justify-center mb-6">
+                    <Lock className="w-10 h-10 text-brand-orange" />
+                </div>
+                <h2 className="text-2xl font-display font-bold text-brand-black mb-2">
+                    Fitur QRIS Tidak Tersedia
+                </h2>
+                <p className="font-mono text-sm text-muted-foreground text-center max-w-md mb-6">
+                    Fitur pembayaran QRIS hanya tersedia untuk plan Pro dan Enterprise. Terima pembayaran non-tunai dengan mudah.
+                </p>
+                <Button
+                    onClick={() => setUpgradeOpen(true)}
+                    className="bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white border-2 border-brand-black rounded-none font-mono font-bold uppercase"
+                >
+                    Upgrade ke Pro
+                </Button>
+                <PlanUpgradePrompt
+                    open={upgradeOpen}
+                    onClose={() => setUpgradeOpen(false)}
+                    feature="qris"
+                />
+            </div>
+        );
+    }
 
     useEffect(() => {
         if (storeProfile.qrisCode) {

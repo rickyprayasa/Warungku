@@ -3,7 +3,7 @@ import { useAuth } from './AuthContext';
 import { useWarungStore } from '@/lib/store-supabase';
 import { supabase } from '@/lib/supabase';
 
-export type PlanType = 'demo' | 'trial' | 'basic' | 'pro' | 'enterprise';
+export type PlanType = 'free' | 'pro' | 'enterprise' | 'demo';
 
 interface PlanLimits {
   maxProducts: number;
@@ -12,9 +12,23 @@ interface PlanLimits {
   canAccessReports: boolean;
   canMultiUser: boolean;
   showWatermark: boolean;
+  canAccessAnalytics: boolean;
+  canUseQris: boolean;
+  maxStores: number;
 }
 
 const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
+  free: {
+    maxProducts: 50,
+    maxTransactionsPerMonth: 100,
+    canExport: false,
+    canAccessReports: true,
+    canMultiUser: false,
+    showWatermark: true,
+    canAccessAnalytics: false,
+    canUseQris: false,
+    maxStores: 1,
+  },
   demo: {
     maxProducts: 20,
     maxTransactionsPerMonth: 50,
@@ -22,30 +36,20 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canAccessReports: false,
     canMultiUser: false,
     showWatermark: true,
-  },
-  trial: {
-    maxProducts: 20,
-    maxTransactionsPerMonth: 50,
-    canExport: false,
-    canAccessReports: true,
-    canMultiUser: false,
-    showWatermark: true,
-  },
-  basic: {
-    maxProducts: 100,
-    maxTransactionsPerMonth: 500,
-    canExport: true,
-    canAccessReports: true,
-    canMultiUser: false,
-    showWatermark: false,
+    canAccessAnalytics: false,
+    canUseQris: false,
+    maxStores: 1,
   },
   pro: {
-    maxProducts: 1000,
-    maxTransactionsPerMonth: 5000,
+    maxProducts: 500,
+    maxTransactionsPerMonth: 2000,
     canExport: true,
     canAccessReports: true,
     canMultiUser: true,
     showWatermark: false,
+    canAccessAnalytics: true,
+    canUseQris: true,
+    maxStores: 3,
   },
   enterprise: {
     maxProducts: Infinity,
@@ -54,6 +58,9 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canAccessReports: true,
     canMultiUser: true,
     showWatermark: false,
+    canAccessAnalytics: true,
+    canUseQris: true,
+    maxStores: Infinity,
   },
 };
 
@@ -91,12 +98,12 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
     const storePlan = (store as any)?.plan as string | undefined;
 
-    if (storePlan && ['demo', 'trial', 'basic', 'pro', 'enterprise'].includes(storePlan)) {
+    if (storePlan && ['free', 'pro', 'enterprise', 'demo'].includes(storePlan)) {
       return storePlan as PlanType;
     }
 
-    // No plan set - assume paid/enterprise (existing stores before plan feature)
-    return 'enterprise';
+    // No plan set - default to free for new stores
+    return 'free';
   }, [isAuthenticated, store, refreshTrigger]); // Add refreshTrigger to dependency array
 
   const refreshPlan = () => {
@@ -162,8 +169,8 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     ? 0 
     : Math.min(100, (currentMonthTransactionCount / limits.maxTransactionsPerMonth) * 100);
 
-  const isFreePlan = plan === 'demo' || plan === 'trial';
-  const isPaidPlan = plan === 'basic' || plan === 'pro' || plan === 'enterprise';
+  const isFreePlan = plan === 'free' || plan === 'demo';
+  const isPaidPlan = plan === 'pro' || plan === 'enterprise';
 
   const value: PlanContextType = {
     plan,

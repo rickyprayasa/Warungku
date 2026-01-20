@@ -191,14 +191,19 @@ export function AdminUsersPage() {
 
         setIsUpdatingPlan(true);
         try {
-            const { data, error } = await (supabase.from('stores') as any)
-                .update({ plan: newPlan })
-                .eq('id', storeId)
-                .select();
+            const { data, error } = await supabase.rpc('admin_update_store_plan', {
+                p_store_id: storeId,
+                p_new_plan: newPlan
+            });
 
             console.log('Update result:', { data, error });
 
             if (error) throw error;
+
+            // Check if the RPC call was successful
+            if (!data || (data as any).success !== true) {
+                throw new Error((data as any)?.message || 'Failed to update plan');
+            }
 
             toast.success(`Plan berhasil diubah ke ${newPlan}`);
             setIsEditRoleOpen(false);
@@ -218,22 +223,19 @@ export function AdminUsersPage() {
 
         setIsDeleting(user.user_id);
         try {
-            // Delete store first (cascade will delete store_members)
-            if (user.store?.id) {
-                const { error: storeError } = await supabase
-                    .from('stores')
-                    .delete()
-                    .eq('id', user.store.id);
+            // Use RPC function to delete user and store
+            const { data, error } = await supabase.rpc('admin_delete_user_and_store', {
+                p_user_id: user.user_id,
+                p_store_id: user.store?.id
+            });
 
-                if (storeError) throw storeError;
-            }
+            console.log('Delete result:', { data, error });
 
-            // Delete user from auth (requires admin privileges)
-            // Note: This might need a server-side function depending on your setup
-            const { error: authError } = await (supabase.auth.admin as any)?.deleteUser?.(user.user_id);
+            if (error) throw error;
 
-            if (authError) {
-                console.warn('Could not delete auth user (may need server-side function):', authError);
+            // Check if the RPC call was successful
+            if (!data || (data as any).success !== true) {
+                throw new Error((data as any)?.message || 'Failed to delete user');
             }
 
             toast.success(`User ${user.email} berhasil dihapus`);

@@ -18,15 +18,17 @@ import { setupRealtimeSync, cleanupRealtimeSync } from '@/lib/realtime-sync';
 const DEFAULT_STORE_ID = '6c65a321-3576-4a38-a834-19afa1c4d83e';
 
 export function HomePage() {
-  const { isAuthenticated, store, loading: authLoading } = useAuth();
+  const { isAuthenticated, store, loading: authLoading, user } = useAuth();
   const currentStoreId = useWarungStore((state) => state.currentStoreId);
   const hasFetchedRef = useRef(false);
+  const previousUserIdRef = useRef<string | null>(null);
+  const previousStoreIdRef = useRef<string | null>(null);
 
   const sidebarCollapsed = useWarungStore((state) => state.sidebarCollapsed);
 
   // Set store ID and fetch data once auth is ready
   useEffect(() => {
-    console.log('[HomePage] Auth state changed - authLoading:', authLoading, 'isAuthenticated:', isAuthenticated, 'currentStoreId:', currentStoreId);
+    console.log('[HomePage] Auth state changed - authLoading:', authLoading, 'isAuthenticated:', isAuthenticated, 'store:', store?.id, 'user:', user?.email);
 
     if (authLoading) return;
 
@@ -38,22 +40,59 @@ export function HomePage() {
     }
 
     const storeActions = useWarungStore.getState();
-    let targetStoreId: string;
+    const currentUserId = user?.id ?? null;
 
-    if (isAuthenticated && store) {
-      targetStoreId = store.id;
-      console.log('[HomePage] Authenticated user, using store ID:', targetStoreId);
+    // DETECT USER SWITCH: Clear data immediately when switching users
+    if (previousUserIdRef.current !== null && previousUserIdRef.current !== currentUserId) {
+      console.warn('[HomePage] USER SWITCH DETECTED - clearing all data to prevent leakage');
+      storeActions.setCurrentStoreId(null);
+      storeActions.resetStore();
+      hasFetchedRef.current = false;
+      previousUserIdRef.current = currentUserId;
+      previousStoreIdRef.current = null;
+      // Exit early and wait for next cycle with new user data
+      return;
+    }
+
+    // Update previous user ID
+    if (currentUserId && previousUserIdRef.current !== currentUserId) {
+      previousUserIdRef.current = currentUserId;
+    }
+
+    let targetStoreId: string | null = null;
+
+    if (isAuthenticated) {
+      if (store) {
+        // Authenticated user WITH a store - use their store
+        targetStoreId = store.id;
+        console.log('[HomePage] Authenticated user with store, using store ID:', targetStoreId);
+      } else {
+        // Authenticated user WITHOUT a store - CRITICAL SECURITY FIX
+        // DO NOT use DEFAULT_STORE_ID as it could belong to another user!
+        // Instead, clear the store ID and show no data
+        console.warn('[HomePage] Authenticated user has no store - clearing data to prevent cross-user data leakage');
+        storeActions.setCurrentStoreId(null);
+        storeActions.resetStore();
+        hasFetchedRef.current = false;
+        previousStoreIdRef.current = null;
+        return; // Exit early - don't fetch any data
+      }
     } else {
+      // Not authenticated - use DEFAULT_STORE_ID for demo/public access
       targetStoreId = DEFAULT_STORE_ID;
       console.log('[HomePage] Unauthenticated, using default store ID:', targetStoreId);
     }
 
-    // Only update if different
-    if (currentStoreId !== targetStoreId) {
-      console.log('[HomePage] Changing store ID from', currentStoreId, 'to', targetStoreId);
-      storeActions.setCurrentStoreId(targetStoreId);
+    // DETECT STORE CHANGE: Reset fetch flag when store actually changes
+    if (previousStoreIdRef.current !== null && previousStoreIdRef.current !== targetStoreId) {
+      console.log('[HomePage] STORE CHANGED - resetting fetch flag');
       hasFetchedRef.current = false;
     }
+    previousStoreIdRef.current = targetStoreId;
+
+    // Always sync currentStoreId with targetStoreId from AuthContext
+    // CRITICAL FIX: This ensures useWarungStore is always in sync with AuthContext
+    storeActions.setCurrentStoreId(targetStoreId);
 
     // Fetch data only once per store change
     if (!hasFetchedRef.current && targetStoreId) {
@@ -86,15 +125,17 @@ export function HomePage() {
         }
       });
     }
-  }, [authLoading, isAuthenticated, store, currentStoreId]);
+  }, [authLoading, isAuthenticated, store, user]); // Removed currentStoreId - we sync it in the effect above
 
   // Setup realtime sync only for authenticated users
   useEffect(() => {
-    if (currentStoreId && isAuthenticated) {
-      setupRealtimeSync(currentStoreId);
+    // CRITICAL FIX: Use store.id from AuthContext directly, not currentStoreId from useWarungStore
+    // This prevents timing issues where currentStoreId hasn't been updated yet
+    if (store?.id && isAuthenticated) {
+      setupRealtimeSync(store.id);
       return () => cleanupRealtimeSync();
     }
-  }, [currentStoreId, isAuthenticated]);
+  }, [store?.id, isAuthenticated]);
 
   return (
     <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden">

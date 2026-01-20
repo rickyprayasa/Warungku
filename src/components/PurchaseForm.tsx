@@ -64,10 +64,15 @@ export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
     let finalUnitCost = values.unitCost;
 
     if (isPackPurchase && values.packQuantity && values.unitsPerPack) {
-      finalQuantity = values.packQuantity * values.unitsPerPack;
+      // CRITICAL FIX: Round unitsPerPack to prevent floating point errors
+      const roundedUnitsPerPack = Math.round(values.unitsPerPack * 100) / 100;
+      finalQuantity = values.packQuantity * roundedUnitsPerPack;
+
       // If user entered total cost per pack, divide by units per pack to get unit cost
+      // CRITICAL FIX: Don't round unitCost - keep full precision to prevent totalCost errors
+      // Only round for DISPLAY, not for storage
       if (values.unitCost) {
-        finalUnitCost = values.unitCost / values.unitsPerPack;
+        finalUnitCost = values.unitCost / roundedUnitsPerPack;
       }
     }
 
@@ -123,14 +128,26 @@ export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
 
   const { quantity, unitCost, packQuantity, unitsPerPack } = form.watch();
 
-  // Calculate based on mode
+  // Calculate based on mode - CRITICAL FIX: Round unitsPerPack to prevent floating point errors
+  const roundedUnitsPerPack = (isPackPurchase && unitsPerPack)
+    ? Math.round(unitsPerPack * 100) / 100
+    : 1;
+
   const actualQuantity = isPackPurchase && packQuantity && unitsPerPack
-    ? packQuantity * unitsPerPack
+    ? packQuantity * roundedUnitsPerPack
     : (quantity || 0);
+
+  // For display: round to 2 decimal places
   const actualUnitCost = isPackPurchase && unitsPerPack && unitCost
-    ? unitCost / unitsPerPack
+    ? Math.round((unitCost / roundedUnitsPerPack) * 100) / 100
     : (unitCost || 0);
-  const totalCost = actualQuantity * actualUnitCost;
+
+  // CRITICAL FIX: Calculate totalCost from RAW values, not rounded ones!
+  // This prevents precision loss: 12 * (11000/12) = 11000, not 10999.92
+  const rawUnitCost = isPackPurchase && unitsPerPack && unitCost
+    ? (unitCost / roundedUnitsPerPack)
+    : (unitCost || 0);
+  const totalCost = Math.round(actualQuantity * rawUnitCost);
 
   return (
     <Form {...form}>

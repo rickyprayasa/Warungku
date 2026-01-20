@@ -16,7 +16,7 @@ export function DemoWatermark() {
     return null;
   }
 
-  const planLabel = plan === 'demo' ? 'DEMO' : 'TRIAL';
+  const planLabel = plan === 'demo' ? 'DEMO' : plan === 'free' ? 'FREE' : 'TRIAL';
 
   return (
     <>
