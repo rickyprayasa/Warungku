@@ -314,8 +314,9 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       console.log('[FETCH PRODUCTS] Called with storeId:', storeId);
       if (!storeId) {
-        console.log('[FETCH PRODUCTS] No storeId, setting empty products');
-        set({ products: [] });
+        console.log('[FETCH PRODUCTS] No storeId, skipping fetch (keeping existing data)');
+        // CRITICAL FIX: Don't clear products when storeId is null
+        // This prevents data from disappearing during store transitions
         return;
       }
 
@@ -392,7 +393,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     fetchSales: async () => {
       const storeId = get().currentStoreId;
       if (!storeId) {
-        set({ sales: [] });
+        // CRITICAL FIX: Don't clear sales when storeId is null
         return;
       }
 
@@ -442,7 +443,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     fetchPurchases: async () => {
       const storeId = get().currentStoreId;
       if (!storeId) {
-        set({ purchases: [] });
+        // CRITICAL FIX: Don't clear purchases when storeId is null
         return;
       }
 
@@ -463,7 +464,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     fetchSuppliers: async () => {
       const storeId = get().currentStoreId;
       if (!storeId) {
-        set({ suppliers: [] });
+        // CRITICAL FIX: Don't clear suppliers when storeId is null
         return;
       }
 
@@ -484,7 +485,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     fetchJajananRequests: async () => {
       const storeId = get().currentStoreId;
       if (!storeId) {
-        set({ jajananRequests: [] });
+        // CRITICAL FIX: Don't clear jajananRequests when storeId is null
         return;
       }
 
@@ -946,7 +947,18 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const product = get().products.find(p => p.id === purchaseData.productId);
       if (!product) throw new Error('Product not found');
 
-      const totalCost = purchaseData.quantity * purchaseData.unitCost;
+      // CRITICAL FIX: Calculate totalCost correctly
+      // In pack purchase mode: unitCost is already the per-unit cost (divided by unitsPerPack)
+      // In regular mode: unitCost is the per-unit cost directly
+      let totalCost: number;
+      if (purchaseData.packQuantity && purchaseData.unitsPerPack) {
+        // Pack purchase: unitCost is already calculated per unit
+        // totalCost = quantity (already in units) × unitCost (per unit)
+        totalCost = Math.round(purchaseData.quantity * purchaseData.unitCost);
+      } else {
+        // Regular unit purchase
+        totalCost = Math.round(purchaseData.quantity * purchaseData.unitCost);
+      }
 
       // Insert purchase
       const { data, error } = await withTimeout(
@@ -1068,7 +1080,19 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const oldQuantity = oldPurchase.quantity;
       const newQuantity = purchaseData.quantity;
       const quantityDiff = newQuantity - oldQuantity;
-      const totalCost = purchaseData.quantity * purchaseData.unitCost;
+
+      // CRITICAL FIX: Calculate totalCost correctly
+      // In pack purchase mode: unitCost is already the per-unit cost (divided by unitsPerPack)
+      // In regular mode: unitCost is the per-unit cost directly
+      let totalCost: number;
+      if (purchaseData.packQuantity && purchaseData.unitsPerPack) {
+        // Pack purchase: unitCost is already calculated per unit
+        // totalCost = quantity (already in units) × unitCost (per unit)
+        totalCost = Math.round(purchaseData.quantity * purchaseData.unitCost);
+      } else {
+        // Regular unit purchase
+        totalCost = Math.round(purchaseData.quantity * purchaseData.unitCost);
+      }
 
       // Update purchase
       const { data, error } = await withTimeout(
@@ -1376,7 +1400,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     fetchReconciliations: async () => {
       const storeId = get().currentStoreId;
       if (!storeId) {
-        set({ reconciliations: [], isLoading: false });
+        // CRITICAL FIX: Don't clear reconciliations when storeId is null
         return;
       }
 

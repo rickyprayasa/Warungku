@@ -1,7 +1,7 @@
 import { useWarungStore } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, TrendingDown, Scale, ArrowRight, ArrowLeft, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, ArrowRight, ArrowLeft, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Calendar, Filter, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Sale, Purchase } from '@shared/types';
 import {
@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CardGridSkeleton, TableRowSkeleton, TableHeaderSkeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Transaction {
   id: string;
@@ -31,18 +33,106 @@ export function CashFlowDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // Filter state
+  const [filterType, setFilterType] = useState<'all' | 'today' | 'week' | 'month' | 'year' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+
+  // Filter transactions based on date
+  const filteredSales = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    return sales.filter((sale) => {
+      const saleDate = new Date(sale.createdAt);
+
+      switch (filterType) {
+        case 'all':
+          return true;
+        case 'today':
+          return saleDate >= today;
+        case 'week': {
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return saleDate >= weekAgo;
+        }
+        case 'month': {
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return saleDate >= monthAgo;
+        }
+        case 'year': {
+          const yearAgo = new Date(today);
+          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+          return saleDate >= yearAgo;
+        }
+        case 'custom': {
+          if (!customStartDate || !customEndDate) return true;
+          const startDate = new Date(customStartDate);
+          startDate.setHours(0, 0, 0, 0);
+          const endDate = new Date(customEndDate);
+          endDate.setHours(23, 59, 59, 999);
+          return saleDate >= startDate && saleDate <= endDate;
+        }
+        default:
+          return true;
+      }
+    });
+  }, [sales, filterType, customStartDate, customEndDate]);
+
+  const filteredPurchases = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    return purchases.filter((purchase) => {
+      const purchaseDate = new Date(purchase.createdAt);
+
+      switch (filterType) {
+        case 'all':
+          return true;
+        case 'today':
+          return purchaseDate >= today;
+        case 'week': {
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return purchaseDate >= weekAgo;
+        }
+        case 'month': {
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return purchaseDate >= monthAgo;
+        }
+        case 'year': {
+          const yearAgo = new Date(today);
+          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+          return purchaseDate >= yearAgo;
+        }
+        case 'custom': {
+          if (!customStartDate || !customEndDate) return true;
+          const startDate = new Date(customStartDate);
+          startDate.setHours(0, 0, 0, 0);
+          const endDate = new Date(customEndDate);
+          endDate.setHours(23, 59, 59, 999);
+          return purchaseDate >= startDate && purchaseDate <= endDate;
+        }
+        default:
+          return true;
+      }
+    });
+  }, [purchases, filterType, customStartDate, customEndDate]);
+
   const { cashIn, cashOut, netFlow } = useMemo(() => {
-    const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0);
-    const totalPurchases = purchases.reduce((sum, purchase) => sum + purchase.totalCost, 0);
+    const totalSales = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
+    const totalPurchases = filteredPurchases.reduce((sum, purchase) => sum + purchase.totalCost, 0);
     return {
       cashIn: totalSales,
       cashOut: totalPurchases,
       netFlow: totalSales - totalPurchases,
     };
-  }, [sales, purchases]);
+  }, [filteredSales, filteredPurchases]);
 
   const combinedTransactions = useMemo(() => {
-    const saleTransactions: Transaction[] = sales.map(s => ({
+    const saleTransactions: Transaction[] = filteredSales.map(s => ({
       id: s.id,
       type: 'Sale',
       date: s.createdAt,
@@ -50,7 +140,7 @@ export function CashFlowDashboard() {
       description: `${s.items.length} item terjual`,
       details: s
     }));
-    const purchaseTransactions: Transaction[] = purchases.map(p => ({
+    const purchaseTransactions: Transaction[] = filteredPurchases.map(p => ({
       id: p.id,
       type: 'Purchase',
       date: p.createdAt,
@@ -59,7 +149,7 @@ export function CashFlowDashboard() {
       details: p
     }));
     return [...saleTransactions, ...purchaseTransactions].sort((a, b) => b.date - a.date);
-  }, [sales, purchases]);
+  }, [filteredSales, filteredPurchases]);
 
   const totalPages = Math.ceil(combinedTransactions.length / itemsPerPage);
   const paginatedTransactions = useMemo(() => {
@@ -80,6 +170,29 @@ export function CashFlowDashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const resetFilters = () => {
+    setFilterType('all');
+    setCustomStartDate('');
+    setCustomEndDate('');
+    setCurrentPage(1);
+  };
+
+  const getFilterLabel = () => {
+    switch (filterType) {
+      case 'all': return 'Semua Waktu';
+      case 'today': return 'Hari Ini';
+      case 'week': return '7 Hari Terakhir';
+      case 'month': return '30 Hari Terakhir';
+      case 'year': return '1 Tahun Terakhir';
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return `${customStartDate} s/d ${customEndDate}`;
+        }
+        return 'Kustom';
+      default: return 'Semua Waktu';
+    }
   };
 
   const kpiData = [
@@ -203,8 +316,158 @@ export function CashFlowDashboard() {
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h3 className="text-2xl font-display font-bold text-brand-black mb-2">Laporan Arus Kas</h3>
-        <p className="font-mono text-sm text-muted-foreground">Analisis pergerakan uang masuk dan keluar.</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h3 className="text-2xl font-display font-bold text-brand-black mb-2">Laporan Arus Kas</h3>
+            <p className="font-mono text-sm text-muted-foreground">Analisis pergerakan uang masuk dan keluar.</p>
+          </div>
+        </div>
+
+        {/* Filter Section */}
+        <div className="border-2 border-brand-black bg-white p-4 rounded-lg">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-brand-black" />
+              <Label className="font-mono font-bold text-sm">Filter:</Label>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filterType === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setFilterType('all'); setCurrentPage(1); }}
+                className={filterType === 'all'
+                  ? 'bg-brand-orange text-brand-black border-2 border-brand-black hover:bg-brand-black hover:text-brand-white'
+                  : 'rounded-none border-2 border-brand-black font-mono text-xs'}
+              >
+                Semua
+              </Button>
+              <Button
+                variant={filterType === 'today' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setFilterType('today'); setCurrentPage(1); }}
+                className={filterType === 'today'
+                  ? 'bg-brand-orange text-brand-black border-2 border-brand-black hover:bg-brand-black hover:text-brand-white'
+                  : 'rounded-none border-2 border-brand-black font-mono text-xs'}
+              >
+                Hari Ini
+              </Button>
+              <Button
+                variant={filterType === 'week' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setFilterType('week'); setCurrentPage(1); }}
+                className={filterType === 'week'
+                  ? 'bg-brand-orange text-brand-black border-2 border-brand-black hover:bg-brand-black hover:text-brand-white'
+                  : 'rounded-none border-2 border-brand-black font-mono text-xs'}
+              >
+                7 Hari
+              </Button>
+              <Button
+                variant={filterType === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setFilterType('month'); setCurrentPage(1); }}
+                className={filterType === 'month'
+                  ? 'bg-brand-orange text-brand-black border-2 border-brand-black hover:bg-brand-black hover:text-brand-white'
+                  : 'rounded-none border-2 border-brand-black font-mono text-xs'}
+              >
+                30 Hari
+              </Button>
+              <Button
+                variant={filterType === 'year' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setFilterType('year'); setCurrentPage(1); }}
+                className={filterType === 'year'
+                  ? 'bg-brand-orange text-brand-black border-2 border-brand-black hover:bg-brand-black hover:text-brand-white'
+                  : 'rounded-none border-2 border-brand-black font-mono text-xs'}
+              >
+                1 Tahun
+              </Button>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={filterType === 'custom' ? 'default' : 'outline'}
+                    size="sm"
+                    className={filterType === 'custom'
+                      ? 'bg-brand-orange text-brand-black border-2 border-brand-black hover:bg-brand-black hover:text-brand-white'
+                      : 'rounded-none border-2 border-brand-black font-mono text-xs'}
+                  >
+                    <Calendar className="w-3 h-3 mr-1" />
+                    Kustom
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto rounded-none border-2 border-brand-black p-4">
+                  <div className="space-y-3">
+                    <h4 className="font-mono font-bold text-sm">Filter Tanggal Kustom</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <Label className="font-mono text-xs">Dari Tanggal:</Label>
+                        <input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          className="w-full border-2 border-brand-black rounded px-2 py-1 font-mono text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label className="font-mono text-xs">Sampai Tanggal:</Label>
+                        <input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          className="w-full border-2 border-brand-black rounded px-2 py-1 font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => { setFilterType('custom'); setCurrentPage(1); }}
+                        className="flex-1 bg-brand-orange text-brand-black border-2 border-brand-black hover:bg-brand-black hover:text-brand-white rounded-none font-mono text-xs"
+                        disabled={!customStartDate || !customEndDate}
+                      >
+                        Terapkan
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setCustomStartDate(''); setCustomEndDate(''); }}
+                        className="rounded-none border-2 border-brand-black font-mono text-xs"
+                      >
+                        Reset
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {filterType !== 'all' && (
+              <div className="ml-auto flex items-center gap-2">
+                <span className="font-mono text-xs text-muted-foreground">
+                  Filter: <span className="font-bold text-brand-black">{getFilterLabel()}</span>
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={resetFilters}
+                  className="h-7 w-7 p-0 rounded-none border-2 border-brand-black hover:bg-red-500 hover:text-white"
+                  title="Hapus Filter"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {filterType !== 'all' && (
+            <div className="mt-2 pt-2 border-t-2 border-dashed border-brand-black">
+              <p className="font-mono text-xs text-muted-foreground">
+                Menampilkan {filteredSales.length + filteredPurchases.length} transaksi dari {sales.length + purchases.length} total transaksi
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">

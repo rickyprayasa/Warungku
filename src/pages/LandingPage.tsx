@@ -134,7 +134,7 @@ export function LandingPage() {
                             <div className="flex-1 flex justify-center">
                                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-md bg-gray-800/50 text-xs font-mono text-gray-400 border border-gray-700/50 w-full max-w-md justify-center">
                                     <span className="text-gray-500">🔒</span>
-                                    app.omzetin.com/dashboard
+                                    www.omzetin.web.id/dashboard
                                 </div>
                             </div>
                         </div>
@@ -164,8 +164,8 @@ export function LandingPage() {
                                         key={idx}
                                         onClick={() => setCurrentScreenshot(idx)}
                                         className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentScreenshot
-                                                ? "bg-brand-orange w-6"
-                                                : "bg-white/50 hover:bg-white"
+                                            ? "bg-brand-orange w-6"
+                                            : "bg-white/50 hover:bg-white"
                                             }`}
                                     />
                                 ))}

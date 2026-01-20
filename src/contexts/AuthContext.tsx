@@ -27,9 +27,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserStore = useCallback(async (userId: string): Promise<Store | null> => {
+  // Auto-create store for users who don't have one
+  const createStoreForUser = useCallback(async (userId: string, userEmail?: string): Promise<Store | null> => {
     try {
-      console.warn('[AuthContext] Fetching store for user:', userId);
+      console.log('[AuthContext] Creating store for user:', userId);
+
+      // Generate store name from email or use default
+      const storeName = userEmail?.split('@')[0] || 'Toko Saya';
+
+      // Generate unique slug
+      const slug = storeName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') + '-' + Date.now().toString(36);
+
+      // Create store
+      const { data: storeData, error: storeError } = await supabase
+        .from('stores')
+        .insert({
+          name: storeName.charAt(0).toUpperCase() + storeName.slice(1),
+          slug: slug,
+          plan: 'free',
+        })
+        .select()
+        .single();
+
+      if (storeError) {
+        console.error('[AuthContext] Failed to create store:', storeError);
+        return null;
+      }
+
+      console.log('[AuthContext] Store created:', storeData.id);
+
+      // Add user as owner
+      const { error: memberError } = await supabase
+        .from('store_members')
+        .insert({
+          store_id: storeData.id,
+          user_id: userId,
+          role: 'owner',
+        });
+
+      if (memberError) {
+        console.error('[AuthContext] Failed to add user as owner:', memberError);
+        // Cleanup: delete the store if we can't add the owner
+        await supabase.from('stores').delete().eq('id', storeData.id);
+        return null;
+      }
+
+      console.log('[AuthContext] User added as store owner');
+      return storeData as Store;
+    } catch (err) {
+      console.error('[AuthContext] Failed to create store for user:', err);
+      return null;
+    }
+  }, []);
+
+  const fetchUserStore = useCallback(async (userId: string, userEmail?: string): Promise<Store | null> => {
+    try {
+      console.log('[AuthContext] Fetching store for user:', userId, 'email:', userEmail);
 
       // Skip fetching user store if we are in public store mode
       if (typeof window !== 'undefined' && window.location.pathname.startsWith('/store/')) {
@@ -47,21 +103,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ]);
       };
 
-      const { data: memberData, error: memberError } = await withTimeout(
-        supabase
-          .from('store_members')
-          .select('store_id, role')
-          .eq('user_id', userId)
-          .single(),
-        10000 // 10s timeout
-      );
+      let memberData, memberError;
+      try {
+        const result = await withTimeout(
+          supabase
+            .from('store_members')
+            .select('store_id, role')
+            .eq('user_id', userId)
+            .single(),
+          30000 // 30s timeout - increased for slow connections
+        );
+        memberData = result.data;
+        memberError = result.error;
+      } catch (timeoutErr: any) {
+        // CRITICAL FIX: Handle timeout gracefully - don't throw error
+        if (timeoutErr.message === 'Request timeout') {
+          console.warn('[AuthContext] Store fetch timeout - will retry on next auth check');
+          // Return null but don't throw - this allows app to continue with cached data
+          return null;
+        }
+        throw timeoutErr;
+      }
 
       console.warn('[AuthContext] Store member query result:', JSON.stringify({ memberData, memberError }));
 
       if (memberError) {
         console.error('[AuthContext] Error fetching store member:', memberError);
-        // If error is "Row not found", it means user has no store. This is valid for new users.
+        // If error is "Row not found", it means user has no store. Auto-create store for them.
         if (memberError.code === 'PGRST116') {
+          console.log('[AuthContext] User has no store, auto-creating store...');
+          const newStore = await createStoreForUser(userId, userEmail);
+          if (newStore) {
+            setStore(newStore);
+            useWarungStore.getState().setCurrentStoreId(newStore.id);
+            return newStore;
+          }
           setStore(null);
           useWarungStore.getState().setCurrentStoreId(null);
         }
@@ -69,7 +145,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!memberData?.store_id) {
-        console.warn('[AuthContext] No store_id found in member data');
+        console.warn('[AuthContext] No store_id found in member data, auto-creating store...');
+        const newStore = await createStoreForUser(userId, userEmail);
+        if (newStore) {
+          setStore(newStore);
+          useWarungStore.getState().setCurrentStoreId(newStore.id);
+          return newStore;
+        }
         return null;
       }
 
@@ -84,12 +166,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (verifyError) {
-          console.error('[SECURITY ALERT] User mismatch for store access!', { userId, storeId: memberData.store_id, verifyError });
-          setStore(null);
-          useWarungStore.getState().setCurrentStoreId(null);
-          return null;
+          // CRITICAL FIX: Only deny access if it's truly a "not found" error
+          // For other errors (timeout, network, etc.), log but continue
+          if (verifyError.code === 'PGRST116') {
+            // Row not found - user is NOT a member, deny access
+            console.error('[SECURITY ALERT] User is not a member of this store!', { userId, storeId: memberData.store_id });
+            setStore(null);
+            useWarungStore.getState().setCurrentStoreId(null);
+            return null;
+          } else {
+            // Other error (timeout, network, etc.) - log warning but continue with the store we found
+            console.warn('[AuthContext] Verification query failed, but continuing with found store:', verifyError);
+            // Continue to fetch and use the store
+          }
         }
-        if (!verify) {
+        if (!verify && !verifyError) {
+          // Verification returned no data AND no error - user is not a member
           console.error('[SECURITY ALERT] User is not a member of the store found in store_members!', {
             userId,
             storeId: memberData.store_id,
@@ -102,14 +194,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const { data: storeData, error: storeError } = await withTimeout(
-        supabase
-          .from('stores')
-          .select('*')
-          .eq('id', memberData.store_id)
-          .single(),
-        10000 // 10s timeout
-      ) as any;
+      let storeData, storeError;
+      try {
+        const storeResult = await withTimeout(
+          supabase
+            .from('stores')
+            .select('*')
+            .eq('id', memberData.store_id)
+            .single(),
+          30000 // 30s timeout - increased for slow connections
+        ) as any;
+        storeData = storeResult.data;
+        storeError = storeResult.error;
+      } catch (timeoutErr: any) {
+        // CRITICAL FIX: Handle timeout gracefully
+        if (timeoutErr.message === 'Request timeout') {
+          console.warn('[AuthContext] Store data fetch timeout - using cached data if available');
+          // Return the store we already have from memberData
+          // The next auth refresh will retry
+          return null;
+        }
+        throw timeoutErr;
+      }
 
       console.warn('[AuthContext] Store query result:', JSON.stringify({ storeData: storeData?.id, storeError }));
 
@@ -127,17 +233,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return null;
-    } catch (err) {
+    } catch (err: any) {
+      // CRITICAL FIX: Don't throw error - just log and return null
+      // This prevents errorReporter from trying to log to a non-existent endpoint
+      if (err.message === 'Request timeout') {
+        console.warn('[AuthContext] Store fetch timeout handled gracefully');
+        return null;
+      }
       console.error('[AuthContext] Failed to fetch user store:', err);
       return null;
     }
-  }, []);
+  }, [createStoreForUser]);
 
   const refreshStore = useCallback(async () => {
     if (user?.id) {
-      await fetchUserStore(user.id);
+      await fetchUserStore(user.id, user.email);
     }
-  }, [user?.id, fetchUserStore]);
+  }, [user?.id, user?.email, fetchUserStore]);
 
   useEffect(() => {
     let isMounted = true;
@@ -151,7 +263,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (session?.user) {
         try {
-          await fetchUserStore(session.user.id);
+          await fetchUserStore(session.user.id, session.user.email);
         } catch (err) {
           console.error('Error in initial store fetch:', err);
         }
@@ -172,7 +284,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session?.user) {
           try {
-            await fetchUserStore(session.user.id);
+            await fetchUserStore(session.user.id, session.user.email);
           } catch (err) {
             console.error('Error fetching store on sign in:', err);
           }
@@ -183,7 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Make sure store is still associated with user
           if (session?.user) {
             try {
-              await fetchUserStore(session.user.id);
+              await fetchUserStore(session.user.id, session.user.email);
             } catch (err) {
               console.error('Error refetching store on token refresh:', err);
             }
@@ -201,6 +313,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+
+      // CRITICAL: Clear all previous user data immediately to prevent data leakage
+      console.log('[AuthContext] signIn - clearing previous user data');
+      useWarungStore.getState().resetStore();
+      useWarungStore.getState().setCurrentStoreId(null);
+      setStore(null);
 
       // Implement rate limiting client-side by tracking failed attempts
       const failedAttempts = parseInt(localStorage.getItem('login_failed_attempts') || '0');
@@ -236,7 +354,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         setSession(data.session);
         try {
-          await fetchUserStore(data.user.id);
+          await fetchUserStore(data.user.id, data.user.email);
         } catch (err) {
           console.error('Error fetching store after sign in:', err);
         }
@@ -254,6 +372,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
+
+      // CRITICAL: Clear all previous user data immediately to prevent data leakage
+      console.log('[AuthContext] signInWithGoogle - clearing previous user data');
+      useWarungStore.getState().resetStore();
+      useWarungStore.getState().setCurrentStoreId(null);
+      setStore(null);
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

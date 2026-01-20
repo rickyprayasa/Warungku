@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,8 +8,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { usePlan } from '@/contexts/PlanContext';
-import { Crown, Check, Mail, MessageCircle, Zap, Package, BarChart3, Users, Download } from 'lucide-react';
+import { Crown, Check, Mail, MessageCircle, Zap, Package, BarChart3, Users, Download, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface UpgradeDialogProps {
   open: boolean;
@@ -20,50 +22,129 @@ interface UpgradeDialogProps {
 const CONTACT_EMAIL = 'cs.kontak@rsquareidea.my.id';
 const WHATSAPP_NUMBER = '6281234567890'; // Ganti dengan nomor WA yang benar
 
-const plans = [
-  {
-    name: 'Basic',
-    price: 'Rp 99.000',
-    period: '/bulan',
-    features: [
-      '100 Produk',
-      '500 Transaksi/bulan',
-      'Export Data',
-      'Laporan Lengkap',
-    ],
-    recommended: false,
-  },
-  {
-    name: 'Pro',
-    price: 'Rp 199.000',
-    period: '/bulan',
-    features: [
-      '1.000 Produk',
-      '5.000 Transaksi/bulan',
-      'Export Data',
-      'Laporan Lengkap',
-      'Multi User',
-      'Priority Support',
-    ],
-    recommended: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: '',
-    features: [
-      'Unlimited Produk',
-      'Unlimited Transaksi',
-      'Semua Fitur Pro',
-      'Custom Integration',
-      'Dedicated Support',
-    ],
-    recommended: false,
-  },
-];
+interface DatabasePlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  yearly_price: number;
+  duration_days: number;
+  features: string[];
+  is_active: boolean;
+  plan_type: string;
+  max_products?: number;
+  max_users?: number;
+}
+
+interface DisplayPlan {
+  name: string;
+  price: string;
+  period: string;
+  features: string[];
+  recommended: boolean;
+  monthlyPrice: number;
+  yearlyPrice: number;
+}
 
 export function UpgradeDialog({ open, onOpenChange, trigger = 'general' }: UpgradeDialogProps) {
   const { plan, limits, currentProductCount, currentMonthTransactionCount } = usePlan();
+  const [plans, setPlans] = useState<DisplayPlan[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [pricePeriod, setPricePeriod] = useState<'monthly' | 'yearly'>('monthly');
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const fetchPlans = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .in('name', ['Free', 'Pro', 'Enterprise'])
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      // Map database plans to display format
+      const displayPlans: DisplayPlan[] = (data || []).map((dbPlan: DatabasePlan) => ({
+        name: dbPlan.name,
+        price: dbPlan.price === 0 ? 'Gratis' : formatCurrency(dbPlan.price),
+        period: dbPlan.price === 0 ? '' : '/bulan',
+        features: dbPlan.features || [],
+        recommended: dbPlan.plan_type === 'pro',
+        monthlyPrice: dbPlan.price,
+        yearlyPrice: dbPlan.yearly_price || 0,
+      }));
+
+      setPlans(displayPlans);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+      // Fallback to default plans if fetch fails
+      setPlans([
+        {
+          name: 'Free',
+          price: 'Gratis',
+          period: '',
+          features: ['50 Produk', '100 Transaksi/bulan', 'Laporan Dasar'],
+          recommended: false,
+          monthlyPrice: 0,
+          yearlyPrice: 0,
+        },
+        {
+          name: 'Pro',
+          price: 'Rp 199.000',
+          period: '/bulan',
+          features: [
+            '500 Produk',
+            '2.000 Transaksi/bulan',
+            'Export Data (CSV/Excel)',
+            'Analytics Lengkap',
+            'Pembayaran QRIS',
+            'Multi-User (5 team)',
+            'Hingga 3 Toko',
+            'Priority Support',
+          ],
+          recommended: true,
+          monthlyPrice: 199000,
+          yearlyPrice: 500000,
+        },
+        {
+          name: 'Enterprise',
+          price: 'Custom',
+          period: '',
+          features: [
+            'Unlimited Produk',
+            'Unlimited Transaksi',
+            'Export Data',
+            'Analytics Lengkap',
+            'Pembayaran QRIS',
+            'Multi-User Unlimited',
+            'Multiple Toko Unlimited',
+            'Custom Integration',
+            'Dedicated Support',
+          ],
+          recommended: false,
+          monthlyPrice: 0,
+          yearlyPrice: 0,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Empty deps as fetchPlans doesn't depend on any external values
+
+  // Fetch plans from database when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchPlans();
+    }
+  }, [open, fetchPlans]);
 
   const getTriggerMessage = () => {
     switch (trigger) {
@@ -139,9 +220,30 @@ Mohon info lebih lanjut.`);
             </div>
           </div>
 
+          {/* Price Period Toggle */}
+          <div className="mb-6 flex items-center justify-center gap-3 p-3 bg-muted/30 border-2 border-brand-black">
+            <span className={`font-mono text-sm ${pricePeriod === 'monthly' ? 'font-bold' : 'text-muted-foreground'}`}>
+              Bulanan
+            </span>
+            <Switch
+              checked={pricePeriod === 'yearly'}
+              onCheckedChange={(checked) => setPricePeriod(checked ? 'yearly' : 'monthly')}
+            />
+            <span className={`font-mono text-sm ${pricePeriod === 'yearly' ? 'font-bold' : 'text-muted-foreground'}`}>
+              Tahunan
+              <span className="ml-1 text-xs text-green-600 font-bold">(Hemat 20%)</span>
+            </span>
+          </div>
+
           {/* Plans */}
-          <div className="grid md:grid-cols-3 gap-4 mb-6">
-            {plans.map((p) => (
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-brand-orange" />
+              <span className="ml-3 font-mono text-sm text-muted-foreground">Memuat paket...</span>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-4 mb-6">
+              {plans.map((p) => (
               <div
                 key={p.name}
                 className={`relative p-4 border-2 border-brand-black ${
@@ -155,8 +257,21 @@ Mohon info lebih lanjut.`);
                 )}
                 <h3 className="font-display font-bold text-lg mb-1">{p.name}</h3>
                 <div className="mb-4">
-                  <span className="font-bold text-2xl">{p.price}</span>
-                  <span className="font-mono text-sm text-muted-foreground">{p.period}</span>
+                  {p.name === 'Enterprise' ? (
+                    <span className="font-bold text-2xl">Custom</span>
+                  ) : p.monthlyPrice === 0 ? (
+                    <span className="font-bold text-2xl">Gratis</span>
+                  ) : pricePeriod === 'monthly' ? (
+                    <>
+                      <span className="font-bold text-2xl">{formatCurrency(p.monthlyPrice)}</span>
+                      <span className="font-mono text-sm text-muted-foreground">/bulan</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-bold text-2xl">{formatCurrency(p.yearlyPrice)}</span>
+                      <span className="font-mono text-sm text-muted-foreground">/tahun</span>
+                    </>
+                  )}
                 </div>
                 <ul className="space-y-2">
                   {p.features.map((feature, i) => (
@@ -168,7 +283,8 @@ Mohon info lebih lanjut.`);
                 </ul>
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
           {/* Features comparison */}
           <div className="mb-6 p-4 border-2 border-dashed border-brand-black/30">

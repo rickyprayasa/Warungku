@@ -16,6 +16,7 @@ import {
   Calendar,
   ArrowRightLeft,
   Timer,
+  Lock,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -26,12 +27,44 @@ import { RevenueTrendChart } from '@/components/charts/RevenueTrendChart';
 import { TopProductsChart } from '@/components/charts/TopProductsChart';
 import { CategoryPieChart } from '@/components/charts/CategoryPieChart';
 import { getFastMovingProducts, getLowDSLProducts } from '@/lib/stock-analysis';
+import { usePlan } from '@/contexts/PlanContext';
+import { PlanUpgradePrompt } from '@/components/PlanUpgradePrompt';
 
 export function AnalyticsDashboard() {
+  const { limits } = usePlan();
   const products = useWarungStore((state) => state.products);
   const sales = useWarungStore((state) => state.sales);
   const purchases = useWarungStore((state) => state.purchases);
   const isLoading = useWarungStore((state) => state.isLoading);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // Check if user can access analytics
+  if (!limits.canAccessAnalytics) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4">
+        <div className="w-20 h-20 bg-brand-orange/10 border-4 border-brand-black flex items-center justify-center mb-6">
+          <Lock className="w-10 h-10 text-brand-orange" />
+        </div>
+        <h2 className="text-2xl font-display font-bold text-brand-black mb-2">
+          Analytics Tidak Tersedia
+        </h2>
+        <p className="font-mono text-sm text-muted-foreground text-center max-w-md mb-6">
+          Fitur analytics dan laporan detail hanya tersedia untuk plan Pro dan Enterprise.
+        </p>
+        <Button
+          onClick={() => setUpgradeOpen(true)}
+          className="bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white border-2 border-brand-black rounded-none font-mono font-bold uppercase"
+        >
+          Upgrade ke Pro
+        </Button>
+        <PlanUpgradePrompt
+          open={upgradeOpen}
+          onClose={() => setUpgradeOpen(false)}
+          feature="analytics"
+        />
+      </div>
+    );
+  }
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfDay(subDays(new Date(), 29)),
