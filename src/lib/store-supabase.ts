@@ -331,9 +331,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       // but dashboard access should be restricted.
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Check if we are in public store mode (url starts with /store/)
-        // If so, skip this check as public access is allowed
-        const isPublicStore = typeof window !== 'undefined' && window.location.pathname.startsWith('/store/');
+        // Check if we are in public store mode
+        // Public store URLs are anything that's NOT in internalRoutes
+        const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
+        const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
+        const isPublicStore = !isInternalRoute && window.location.pathname !== '/';
 
         if (!isPublicStore) {
           const { data: member, error } = await supabase
