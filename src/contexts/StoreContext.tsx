@@ -217,7 +217,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // For public store routes, we should consider it public mode regardless of authentication status
   // Check if current path is NOT an internal route
-  const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback', '/warungku'];
+  const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
   const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
   const isPublicMode = manualIsPublicMode || !isInternalRoute;
   console.log('[StoreContext] isPublicMode:', isPublicMode, 'isAuthenticated:', isAuthenticated, 'publicStore:', publicStore, 'current path:', window.location.pathname);
