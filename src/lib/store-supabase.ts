@@ -289,7 +289,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         opnameMode: 'retail',
         isLoading: false,
         error: null,
-        currentStoreId: null,
+        // NOTE: Don't reset currentStoreId - it will be set after loading the store
+        // currentStoreId: null,
       });
     },
 
