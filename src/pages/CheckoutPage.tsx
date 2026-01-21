@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '@/lib/cart-store';
-import { useWarungStore } from '@/lib/store';
+import { useWarungStore } from '@/lib/store-supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import type { SaleFormValues } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { QRCodeSVG } from 'qrcode.react';
@@ -12,6 +13,7 @@ import { motion } from 'framer-motion';
 import { QRISDownloadButton } from '@/components/QRISDownload';
 import { usePlan } from '@/contexts/PlanContext';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
+import { PaymentConfirmDialog } from '@/components/PaymentConfirmDialog';
 
 const PAYMENT_TIMEOUT = 15 * 60; // 15 minutes in seconds
 
@@ -20,11 +22,14 @@ export function CheckoutPage() {
   const { items, getTotal, clearCart } = useCartStore();
   const storeProfile = useWarungStore((state) => state.storeProfile);
   const addSale = useWarungStore((state) => state.addSale);
+  const addPublicSale = useWarungStore((state) => state.addPublicSale);
+  const { isAuthenticated } = useAuth();
   const [timeLeft, setTimeLeft] = useState(PAYMENT_TIMEOUT);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'expired'>('pending');
   const [dynamicQRIS, setDynamicQRIS] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   
   const { canAddTransaction, transactionLimitReached, limits } = usePlan();
 
@@ -81,36 +86,20 @@ export function CheckoutPage() {
     }
   };
 
-  const handleConfirmPayment = async () => {
+  const handleConfirmPayment = () => {
     if (isProcessing) return;
-    
+
     // Check transaction limit
     if (!canAddTransaction) {
       setUpgradeDialogOpen(true);
       return;
     }
-    
-    // Double confirmation to prevent accidental confirmation
-    const confirmed = window.confirm(
-      `KONFIRMASI PEMBAYARAN\n\n` +
-      `Total: ${formatCurrency(total)}\n\n` +
-      `Apakah Anda SUDAH MEMBAYAR via QRIS?\n\n` +
-      `Klik OK hanya jika pembayaran sudah berhasil di aplikasi e-wallet/mobile banking Anda.`
-    );
-    
-    if (!confirmed) return;
-    
-    // Second confirmation
-    const doubleConfirm = window.confirm(
-      `KONFIRMASI TERAKHIR\n\n` +
-      `Dengan mengklik OK, Anda menyatakan bahwa:\n` +
-      `1. Pembayaran sebesar ${formatCurrency(total)} SUDAH BERHASIL\n` +
-      `2. Anda sudah melihat notifikasi sukses di aplikasi pembayaran\n\n` +
-      `Lanjutkan?`
-    );
-    
-    if (!doubleConfirm) return;
-    
+
+    // Open custom confirmation dialog
+    setConfirmDialogOpen(true);
+  };
+
+  const processPayment = async () => {
     setIsProcessing(true);
     try {
       // Create sale to reduce stock
@@ -119,15 +108,22 @@ export function CheckoutPage() {
           productId: item.product.id,
           productName: item.product.name,
           quantity: item.quantity,
-          price: item.product.isPromo && item.product.promoPrice 
-            ? item.product.promoPrice 
+          price: item.product.isPromo && item.product.promoPrice
+            ? item.product.promoPrice
             : item.product.price,
         })),
         notes: 'Pembayaran via QRIS (Self-checkout)',
       };
 
-      await addSale(saleData);
+      // Use addPublicSale for unauthenticated users, addSale for authenticated users
+      if (isAuthenticated) {
+        await addSale(saleData);
+      } else {
+        await addPublicSale(saleData);
+      }
+
       setPaymentStatus('success');
+      setConfirmDialogOpen(false);
       toast.success('Pembayaran dikonfirmasi! Stok telah dikurangi.');
     } catch (error) {
       console.error('Failed to process payment:', error);
@@ -452,11 +448,19 @@ export function CheckoutPage() {
           Pastikan pembayaran berhasil sebelum konfirmasi
         </p>
       </div>
-      
-      <UpgradeDialog 
-        open={upgradeDialogOpen} 
-        onOpenChange={setUpgradeDialogOpen} 
-        trigger="transaction_limit" 
+
+      <PaymentConfirmDialog
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        onConfirm={processPayment}
+        total={formatCurrency(total)}
+        isProcessing={isProcessing}
+      />
+
+      <UpgradeDialog
+        open={upgradeDialogOpen}
+        onOpenChange={setUpgradeDialogOpen}
+        trigger="transaction_limit"
       />
     </div>
   );

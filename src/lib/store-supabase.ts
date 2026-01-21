@@ -60,6 +60,7 @@ interface WarungActions {
   updateProduct: (productId: string, productData: ProductFormValues) => Promise<Product>;
   deleteProduct: (productId: string) => Promise<void>;
   addSale: (saleData: SaleFormValues) => Promise<Sale>;
+  addPublicSale: (saleData: SaleFormValues) => Promise<any>;
   deleteSale: (saleId: string) => Promise<void>;
   addPurchase: (purchaseData: PurchaseFormValues) => Promise<Purchase>;
   updatePurchase: (purchaseId: string, purchaseData: PurchaseFormValues) => Promise<Purchase>;
@@ -901,6 +902,52 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       // Refresh products
       await get().fetchProducts();
       return newSale;
+    },
+
+    addPublicSale: async (saleData) => {
+      const storeId = get().currentStoreId;
+      if (!storeId) throw new Error('No store selected');
+
+      try {
+        // Call RPC function for public sale creation
+        const { data, error } = await supabase.rpc('create_public_sale', {
+          sale_data: {
+            store_id: storeId,
+            items: saleData.items.map(item => ({
+              productId: item.productId,
+              productName: item.productName,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+            notes: saleData.notes || '',
+          },
+        });
+
+        if (error) {
+          console.error('[addPublicSale] RPC error:', error);
+          throw error;
+        }
+
+        // Check if RPC returned an error
+        if (data && data.error) {
+          console.error('[addPublicSale] RPC returned error:', data.error);
+          throw new Error(data.error);
+        }
+
+        // Refresh products to get updated stock
+        await get().fetchProducts();
+
+        // Also refresh sales if authenticated
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await get().fetchSales();
+        }
+
+        return data;
+      } catch (err) {
+        console.error('[addPublicSale] Failed to create public sale:', err);
+        throw err;
+      }
     },
 
     deleteSale: async (saleId) => {
