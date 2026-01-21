@@ -49,8 +49,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setPublicStoreLoading(true);
     setPublicStoreError(null);
 
-    // Special handling for demo mode - /omzetin
-    if (slug === 'omzetin') {
+    // Special handling for demo mode - /warungku
+    if (slug === 'warungku') {
       console.log('[StoreContext] Demo mode detected, loading ricky.yusar store...');
 
       try {
@@ -99,17 +99,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Method 3: Try to find store with "omzetin" in name/slug
+        // Method 3: Try to find store with "warungku" in name/slug
         if (!demoStore) {
-          const { data: omzetinStore } = await supabase
+          const { data: warungkuStore } = await supabase
             .from('stores')
             .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
-            .or('slug.eq.omzetin,name.ilike.%omzetin%')
+            .or('slug.eq.warungku,name.ilike.%warungku%')
             .limit(1)
             .maybeSingle();
-          if (omzetinStore) {
-            console.log('[StoreContext] Found demo store by omzetin search:', omzetinStore);
-            demoStore = omzetinStore;
+          if (warungkuStore) {
+            console.log('[StoreContext] Found demo store by warungku search:', warungkuStore);
+            demoStore = warungkuStore;
           }
         }
 
@@ -217,7 +217,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // For public store routes, we should consider it public mode regardless of authentication status
   // Check if current path is NOT an internal route
-  const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback', '/omzetin'];
+  const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback', '/warungku'];
   const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
   const isPublicMode = manualIsPublicMode || !isInternalRoute;
   console.log('[StoreContext] isPublicMode:', isPublicMode, 'isAuthenticated:', isAuthenticated, 'publicStore:', publicStore, 'current path:', window.location.pathname);

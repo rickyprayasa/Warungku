@@ -83,7 +83,7 @@ export function LandingPage() {
                                 <Button
                                     size="lg"
                                     variant="outline"
-                                    onClick={() => navigate('/omzetin')}
+                                    onClick={() => navigate('/warungku')}
                                     className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-brand-black font-bold text-lg px-8 h-14 rounded-none transition-all"
                                 >
                                     Lihat Demo Toko
