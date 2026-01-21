@@ -49,6 +49,113 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setPublicStoreLoading(true);
     setPublicStoreError(null);
 
+    // Special handling for demo mode - /omzetin
+    if (slug === 'omzetin') {
+      console.log('[StoreContext] Demo mode detected, loading ricky.yusar store...');
+
+      try {
+        // For demo mode, try multiple methods to find ricky.yusar's store
+        let demoStore = null;
+
+        // Method 1: Try environment variable
+        const demoStoreId = import.meta.env.VITE_DEMO_STORE_ID || '';
+        const demoStoreSlug = import.meta.env.VITE_DEMO_STORE_SLUG || '';
+
+        if (demoStoreId) {
+          const { data: storeById } = await supabase
+            .from('stores')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .eq('id', demoStoreId)
+            .maybeSingle();
+          if (storeById) {
+            console.log('[StoreContext] Found demo store by ID:', storeById);
+            demoStore = storeById;
+          }
+        }
+
+        if (!demoStore && demoStoreSlug) {
+          const { data: storeBySlug } = await supabase
+            .from('stores')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .eq('slug', demoStoreSlug)
+            .maybeSingle();
+          if (storeBySlug) {
+            console.log('[StoreContext] Found demo store by slug:', storeBySlug);
+            demoStore = storeBySlug;
+          }
+        }
+
+        // Method 2: Try to find store with "ricky", "rsquare", or "yusar" in name/slug
+        if (!demoStore) {
+          const { data: storesByKeywords } = await supabase
+            .from('stores')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .or('slug.ilike.%ricky%,slug.ilike.%rsquare%,slug.ilike.%yusar%,name.ilike.%ricky%,name.ilike.%rsquare%,name.ilike.%yusar%')
+            .limit(1)
+            .maybeSingle();
+          if (storesByKeywords) {
+            console.log('[StoreContext] Found demo store by keywords:', storesByKeywords);
+            demoStore = storesByKeywords;
+          }
+        }
+
+        // Method 3: Try to find store with "omzetin" in name/slug
+        if (!demoStore) {
+          const { data: omzetinStore } = await supabase
+            .from('stores')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .or('slug.eq.omzetin,name.ilike.%omzetin%')
+            .limit(1)
+            .maybeSingle();
+          if (omzetinStore) {
+            console.log('[StoreContext] Found demo store by omzetin search:', omzetinStore);
+            demoStore = omzetinStore;
+          }
+        }
+
+        // Method 4: Get first available store as fallback
+        if (!demoStore) {
+          const { data: firstStore } = await supabase
+            .from('stores')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .limit(1)
+            .maybeSingle();
+          if (firstStore) {
+            console.log('[StoreContext] Using first available store as demo:', firstStore);
+            demoStore = firstStore;
+          }
+        }
+
+        if (demoStore) {
+          const store: PublicStore = {
+            id: demoStore.id,
+            name: demoStore.name,
+            slug: demoStore.slug,
+            address: demoStore.address || '',
+            phone: demoStore.phone || '',
+            logoUrl: demoStore.logo_url || '',
+            qrisCode: demoStore.qris_code || '',
+            cartEnabled: demoStore.cart_enabled !== false,
+          };
+          setPublicStore(store);
+          setCurrentStoreId(store.id);
+          setPublicStoreLoading(false);
+          return store;
+        } else {
+          console.error('[StoreContext] Demo mode: No stores found in database!');
+          setPublicStoreError('Demo toko tidak tersedia. Belum ada toko di sistem.');
+          setPublicStoreLoading(false);
+          return null;
+        }
+      } catch (err) {
+        console.error('[StoreContext] Demo mode error:', err);
+        setPublicStoreError('Gagal memuat demo toko: ' + (err as Error).message);
+        setPublicStoreLoading(false);
+        return null;
+      }
+    }
+
+    // Normal store loading (non-demo mode)
     try {
       // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
@@ -109,8 +216,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // For public store routes, we should consider it public mode regardless of authentication status
-  // For public store routes, we should consider it public mode regardless of authentication status
-  const isPublicMode = manualIsPublicMode || window.location.pathname.startsWith('/store/');
+  // Check if current path is NOT an internal route
+  const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback', '/omzetin'];
+  const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
+  const isPublicMode = manualIsPublicMode || !isInternalRoute;
   console.log('[StoreContext] isPublicMode:', isPublicMode, 'isAuthenticated:', isAuthenticated, 'publicStore:', publicStore, 'current path:', window.location.pathname);
 
   // For public store routes, use the public store ID regardless of authentication status

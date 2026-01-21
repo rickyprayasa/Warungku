@@ -177,7 +177,7 @@ export function Sidebar() {
                 {/* Link to Public Store */}
                 {store?.slug && (
                     <ExternalNavItem
-                        href={`/store/${store.slug}`}
+                        href={`/${store.slug}`}
                         icon={ExternalLink}
                         label="Lihat Toko"
                         collapsed={sidebarCollapsed}

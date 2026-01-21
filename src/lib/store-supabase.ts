@@ -25,6 +25,7 @@ interface WarungState {
     accountNumber?: string;
     accountName?: string;
     phoneNumber?: string;
+    slug?: string;
   };
   opnameMode: 'retail' | 'display' | 'terpadu';
   isLoading: boolean;
@@ -223,6 +224,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       name: 'Omzetin',
       address: '',
       phone: '',
+      slug: '',
     },
     opnameMode: 'retail',
     isLoading: false,
@@ -251,6 +253,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           accountNumber: undefined,
           accountName: undefined,
           phoneNumber: undefined,
+          slug: '',
         },
         products: [],
         sales: [],
@@ -280,6 +283,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           name: 'Omzetin',
           address: '',
           phone: '',
+          slug: '',
         },
         opnameMode: 'retail',
         isLoading: false,
@@ -302,6 +306,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           name: 'Omzetin',
           address: '',
           phone: '',
+          slug: '',
         },
         opnameMode: 'retail',
         isLoading: false,
@@ -588,6 +593,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               qrisCode: store.qris_code || '',
               cartEnabled: store.cart_enabled !== false,
               paymentMethods,
+              slug: store.slug || '',
             }
           });
         }
@@ -660,6 +666,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             logo_url: profile.logoUrl,
             qris_code: profile.qrisCode,
             cart_enabled: profile.cartEnabled,
+            slug: profile.slug,
           })
           .eq('id', storeId);
 

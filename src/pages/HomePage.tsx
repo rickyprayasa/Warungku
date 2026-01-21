@@ -33,7 +33,9 @@ export function HomePage() {
     if (authLoading) return;
 
     // Check if we're on a public store route - even if authenticated, we should let PublicStorePage handle it
-    const isPublicStoreRoute = window.location.pathname.startsWith('/store/');
+    const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback', '/omzetin'];
+    const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
+    const isPublicStoreRoute = !isInternalRoute && window.location.pathname !== '/';
     if (isPublicStoreRoute) {
       console.log('[HomePage] On public store route, not managing storeId here');
       return;
@@ -125,7 +127,7 @@ export function HomePage() {
         }
       });
     }
-  }, [authLoading, isAuthenticated, store, user]); // Removed currentStoreId - we sync it in the effect above
+  }, [authLoading, isAuthenticated, store?.id, user?.id]); // Use IDs instead of objects to prevent infinite loops
 
   // Setup realtime sync only for authenticated users
   useEffect(() => {

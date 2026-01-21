@@ -274,7 +274,16 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/store/:slug",
+    path: "/omzetin",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <PublicStorePage />
+      </Suspense>
+    ),
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/:slug",
     element: (
       <Suspense fallback={<PageLoader />}>
         <PublicStorePage />

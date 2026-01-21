@@ -66,6 +66,7 @@ export function POSPage() {
   const isLoading = useWarungStore((state) => state.isLoading);
   const error = useWarungStore((state) => state.error);
   const storeProfile = useWarungStore((state) => state.storeProfile);
+
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isRequestDialogOpen, setRequestDialogOpen] = useState(false);
@@ -74,12 +75,15 @@ export function POSPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
-  // Products are already fetched in HomePage, no need to fetch again
-
   const categories = useMemo(() => {
     const allCategories = products.map((p) => p.category);
     return ['All', ...Array.from(new Set(allCategories))];
   }, [products]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchTerm, sortOrder]);
 
   const filteredProducts = useMemo(() => {
     let filtered = products;

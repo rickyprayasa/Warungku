@@ -18,6 +18,7 @@ export function PublicStorePage() {
   const lastSlugRef = useRef<string | null>(null);
 
   const { refreshStore } = useAuth();
+  const { user } = useAuth();
   const {
     publicStore,
     publicStoreLoading,
@@ -48,17 +49,23 @@ export function PublicStorePage() {
         const loadedStore = await loadStoreBySlug(slug);
 
         if (isMounted && loadedStore?.id) {
-          console.log('[PublicStorePage] Store loaded, fetching details for:', loadedStore.id);
+          console.log('[PublicStorePage] Store loaded, fetching details for:', loadedStore.id, loadedStore.name);
           // Explicitly set current store ID again to be sure
           store.setCurrentStoreId(loadedStore.id);
 
+          console.log('[PublicStorePage] Current store ID set to:', store.currentStoreId);
+
           // Fetch details
+          console.log('[PublicStorePage] Fetching products and profile...');
           await Promise.all([
-            store.fetchStoreProfile(),
-            store.fetchProducts()
+            store.fetchStoreProfile().then(() => console.log('[PublicStorePage] Profile fetched')),
+            store.fetchProducts().then(() => console.log('[PublicStorePage] Products fetched, count:', store.products.length))
           ]);
 
+          console.log('[PublicStorePage] All data loaded. Products:', store.products.length, 'Profile:', store.storeProfile.name);
           hasFetchedRef.current = true;
+        } else {
+          console.error('[PublicStorePage] Failed to load store or store not found');
         }
       }
     };
@@ -135,16 +142,31 @@ export function PublicStorePage() {
             </div>
             <div>
               <h1 className="text-3xl font-display font-bold text-brand-black mb-2">Toko Tidak Ditemukan</h1>
-              <p className="font-mono text-muted-foreground">
+              <p className="font-mono text-muted-foreground mb-4">
                 Toko dengan alamat "<span className="font-bold">{slug}</span>" tidak ditemukan atau sudah tidak aktif.
               </p>
+              {user && (
+                <p className="font-mono text-sm text-blue-600 mb-4">
+                  Login sebagai: <span className="font-bold">{user.email}</span>
+                </p>
+              )}
             </div>
-            <button
-              onClick={() => navigate('/')}
-              className="px-6 py-3 bg-brand-orange text-brand-black font-bold border-4 border-brand-black shadow-hard hover:shadow-hard-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
-            >
-              Kembali ke Beranda
-            </button>
+            <div className="flex gap-3 justify-center">
+              {user && (
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="px-6 py-3 bg-brand-blue text-white font-bold border-4 border-brand-black shadow-hard hover:shadow-hard-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
+                >
+                  Ke Profil Toko
+                </button>
+              )}
+              <button
+                onClick={() => navigate('/')}
+                className="px-6 py-3 bg-brand-orange text-brand-black font-bold border-4 border-brand-black shadow-hard hover:shadow-hard-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
+              >
+                Kembali ke Beranda
+              </button>
+            </div>
           </div>
         </div>
       </div>

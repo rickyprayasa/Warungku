@@ -17,6 +17,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshStore: () => Promise<void>;
   updateStorePlan: (newPlan: string) => Promise<void>;
+  updateStoreSlug: (storeName: string, storeId: string) => Promise<string>;
+  fetchStoreByEmail: (email: string) => Promise<Store | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -88,9 +90,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthContext] Fetching store for user:', userId, 'email:', userEmail);
 
       // Skip fetching user store if we are in public store mode
-      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/store/')) {
-        console.log('[AuthContext] Skipping user store fetch in public mode');
-        return null;
+      if (typeof window !== 'undefined') {
+        const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback', '/omzetin'];
+        const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
+        if (!isInternalRoute && window.location.pathname !== '/') {
+          console.log('[AuthContext] Skipping user store fetch in public mode');
+          return null;
+        }
       }
 
       // Helper to add timeout to promises
@@ -285,6 +291,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' && session?.user) {
           try {
             await fetchUserStore(session.user.id, session.user.email);
+            // After store is loaded, fetch products and other data
+            const storeState = useWarungStore.getState();
+            if (storeState.currentStoreId) {
+              console.log('[AuthContext] SIGNED_IN: Fetching products for store:', storeState.currentStoreId);
+              await Promise.all([
+                storeState.fetchProducts(),
+                storeState.fetchStoreProfile(),
+              ]);
+            }
           } catch (err) {
             console.error('Error fetching store on sign in:', err);
           }
@@ -295,7 +310,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Make sure store is still associated with user
           if (session?.user) {
             try {
-              await fetchUserStore(session.user.id, session.user.email);
+              // Only fetch store if we don't have one or if the user ID changed
+              const currentStoreId = useWarungStore.getState().currentStoreId;
+              const hasStore = store !== null && currentStoreId !== null;
+
+              if (!hasStore) {
+                console.log('[AuthContext] TOKEN_REFRESHED: No store, fetching...');
+                await fetchUserStore(session.user.id, session.user.email);
+              } else {
+                console.log('[AuthContext] TOKEN_REFRESHED: Store already loaded, skipping fetch');
+              }
+
+              // After store is loaded, fetch products and other data if needed
+              const storeState = useWarungStore.getState();
+              if (storeState.currentStoreId && storeState.products.length === 0) {
+                console.log('[AuthContext] TOKEN_REFRESHED: Products empty, refetching for store:', storeState.currentStoreId);
+                await Promise.all([
+                  storeState.fetchProducts(),
+                  storeState.fetchStoreProfile(),
+                ]);
+              }
             } catch (err) {
               console.error('Error refetching store on token refresh:', err);
             }
@@ -304,9 +338,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
+    // Handle tab visibility change - when user returns to the tab
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Get latest state
+        const currentUser = user; // Use closure value but check if user exists
+        const storeId = useWarungStore.getState().currentStoreId;
+
+        if (currentUser && storeId) {
+          console.log('[AuthContext] Tab became visible, currentStoreId:', storeId);
+          // Refetch data when user returns to the tab
+          const storeState = useWarungStore.getState();
+          if (storeState.products.length === 0) {
+            console.log('[AuthContext] Refetching data after tab switch');
+            Promise.all([
+              storeState.fetchProducts(),
+              storeState.fetchStoreProfile(),
+            ]).catch(err => {
+              console.error('[AuthContext] Error refetching data:', err);
+            });
+          }
+        }
+      }
+    };
+
+    // Handle window focus
+    const handleFocus = () => {
+      // Get latest state
+      const currentUser = user; // Use closure value but check if user exists
+      const storeId = useWarungStore.getState().currentStoreId;
+
+      if (currentUser && storeId) {
+        console.log('[AuthContext] Window focused, currentStoreId:', storeId);
+        const storeState = useWarungStore.getState();
+        if (storeState.products.length === 0) {
+          console.log('[AuthContext] Refetching data after window focus');
+          Promise.all([
+            storeState.fetchProducts(),
+            storeState.fetchStoreProfile(),
+          ]).catch(err => {
+            console.error('[AuthContext] Error refetching data:', err);
+          });
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [fetchUserStore]);
 
@@ -529,6 +613,124 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateStoreSlug = async (storeName: string, storeId: string) => {
+    try {
+      // Generate slug from store name
+      const baseSlug = storeName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      // Check if slug already exists
+      const { data: existingStore } = await supabase
+        .from('stores')
+        .select('id, slug')
+        .eq('slug', baseSlug)
+        .neq('id', storeId)
+        .single();
+
+      let finalSlug = baseSlug;
+      if (existingStore) {
+        // If slug exists, append timestamp to make it unique
+        finalSlug = `${baseSlug}-${Date.now().toString(36)}`;
+      }
+
+      // Update the slug in the database
+      const { error } = await supabase
+        .from('stores')
+        .update({ slug: finalSlug })
+        .eq('id', storeId);
+
+      if (error) {
+        console.error('Error updating store slug:', error);
+        throw error;
+      }
+
+      // Update the local store state with the new slug
+      setStore(prev => prev ? { ...prev, slug: finalSlug } : null);
+      console.log(`Store slug updated to ${finalSlug}`);
+      return finalSlug;
+    } catch (error) {
+      console.error('Failed to update store slug:', error);
+      throw error;
+    }
+  };
+
+  const fetchStoreByEmail = async (email: string): Promise<Store | null> => {
+    try {
+      // For demo mode, use a direct approach with known store slug or ID
+      // Priority:
+      // 1. Use environment variable VITE_DEMO_STORE_ID if set
+      // 2. Use VITE_DEMO_STORE_SLUG if set
+      // 3. Try to find by slug pattern from email
+      // 4. Fall back to looking for any store with 'omzetin' in the name
+
+      const DEMO_STORE_ID = import.meta.env.VITE_DEMO_STORE_ID || '';
+      const DEMO_STORE_SLUG = import.meta.env.VITE_DEMO_STORE_SLUG || '';
+
+      // Method 1: Use demo store ID from env
+      if (DEMO_STORE_ID) {
+        const { data: storeData, error: storeError } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('id', DEMO_STORE_ID)
+          .single();
+
+        if (!storeError && storeData) {
+          console.log('[AuthContext] Demo mode: Loaded demo store by ID', storeData.name);
+          return storeData as Store;
+        }
+      }
+
+      // Method 2: Use demo store slug from env
+      if (DEMO_STORE_SLUG) {
+        const { data: storeData, error: storeError } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('slug', DEMO_STORE_SLUG)
+          .single();
+
+        if (!storeError && storeData) {
+          console.log('[AuthContext] Demo mode: Loaded demo store by slug', storeData.name);
+          return storeData as Store;
+        }
+      }
+
+      // Method 3: Try slug pattern from email (ricky.yusar -> ricky-yusar)
+      const emailSlug = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '-');
+      const { data: storeBySlug, error: slugError } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('slug', emailSlug)
+        .maybeSingle();
+
+      if (!slugError && storeBySlug) {
+        console.log('[AuthContext] Demo mode: Loaded store by email slug', storeBySlug.name);
+        return storeBySlug as Store;
+      }
+
+      // Method 4: Try to find store with 'omzetin' in the name or slug
+      const { data: omzetinStore, error: omzetinError } = await supabase
+        .from('stores')
+        .select('*')
+        .or('slug.eq.omzetin,name.ilike.%omzetin%')
+        .limit(1)
+        .maybeSingle();
+
+      if (!omzetinError && omzetinStore) {
+        console.log('[AuthContext] Demo mode: Loaded omzetin store', omzetinStore.name);
+        return omzetinStore as Store;
+      }
+
+      console.error('[AuthContext] Demo mode: Could not find any demo store');
+      console.error('[AuthContext] Tried: ID="' + DEMO_STORE_ID + '", Slug="' + DEMO_STORE_SLUG + '", Email Slug="' + emailSlug + '"');
+      return null;
+    } catch (error) {
+      console.error('[AuthContext] Failed to fetch store by email:', error);
+      return null;
+    }
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -620,6 +822,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     refreshStore,
     updateStorePlan,
+    updateStoreSlug,
+    fetchStoreByEmail,
   };
 
   return (
