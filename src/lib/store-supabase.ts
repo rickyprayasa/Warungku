@@ -668,7 +668,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       if (!storeId) throw new Error('No store selected');
 
       try {
-        const { error } = await supabase
+        const { error, count } = await supabase
           .from('stores')
           .update({
             name: profile.name,
@@ -679,9 +679,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             cart_enabled: profile.cartEnabled,
             slug: profile.slug,
           })
-          .eq('id', storeId);
+          .eq('id', storeId)
+          .select('id', { count: 'exact' });
 
         if (error) throw error;
+        if (count === 0) throw new Error('Gagal menyimpan: Toko tidak ditemukan atau Anda tidak memiliki akses.');
 
         // Save payment methods and bank details to settings
         const settingsToUpsert = [

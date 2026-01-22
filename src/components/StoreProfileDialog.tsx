@@ -25,11 +25,18 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
         e.preventDefault();
         setIsSaving(true);
         try {
+            // Prepare payload with cleaned slug
+            const payload = { ...formData };
+            if (payload.slug) {
+                // Remove leading/trailing hyphens for submission
+                payload.slug = payload.slug.replace(/^-+|-+$/g, '');
+            }
+
             // Validate slug
-            if (formData.slug) {
+            if (payload.slug) {
                 // Slug should only contain lowercase letters, numbers, and hyphens
                 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-                if (!slugRegex.test(formData.slug)) {
+                if (!slugRegex.test(payload.slug)) {
                     toast.error('Slug hanya boleh mengandung huruf kecil, angka, dan tanda hubung (-).');
                     setIsSaving(false);
                     return;
@@ -37,40 +44,40 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
             }
 
             // Check if slug changed and if it already exists
-            if (formData.slug !== storeProfile.slug && formData.slug) {
+            if (payload.slug !== storeProfile.slug && payload.slug) {
                 const { supabase } = await import('@/lib/supabase');
                 const { data: existingStore } = await supabase
                     .from('stores')
                     .select('id, name, slug')
-                    .eq('slug', formData.slug)
+                    .eq('slug', payload.slug)
                     .neq('id', storeId)
-                    .maybeSingle();
+                    .maybeSingle() as { data: { id: string; name: string; slug: string } | null; error: any };
 
                 if (existingStore) {
-                    toast.error(`Slug "${formData.slug}" sudah digunakan oleh toko "${existingStore.name}". Silakan gunakan slug lain.`);
+                    toast.error(`Slug "${payload.slug}" sudah digunakan oleh toko "${existingStore.name}". Silakan gunakan slug lain.`);
                     setIsSaving(false);
                     return;
                 }
             }
 
             // Update store profile
-            await updateStoreProfile(formData);
+            await updateStoreProfile(payload);
 
             // CRITICAL: Refresh AuthContext store to sync slug
             // This ensures store?.slug in Sidebar shows the updated value
             await refreshStore();
 
             // Show success message with new slug if it changed
-            if (formData.slug !== storeProfile.slug && formData.slug) {
-                toast.success(`Profil toko berhasil diperbarui. URL toko baru: /${formData.slug}`);
+            if (payload.slug !== storeProfile.slug && payload.slug) {
+                toast.success(`Profil toko berhasil diperbarui. URL toko baru: /${payload.slug}`);
             } else {
                 toast.success('Profil toko berhasil diperbarui');
             }
 
             setIsOpen(false);
-        } catch (error) {
-            toast.error('Gagal menyimpan profil toko. Silakan coba lagi.');
+        } catch (error: any) {
             console.error('Failed to update store profile:', error);
+            toast.error(`Gagal menyimpan profil toko: ${error.message || 'Terjadi kesalahan'}`);
         } finally {
             setIsSaving(false);
         }
@@ -95,28 +102,28 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
         // Compress and resize image before storing
         const img = new Image();
         const reader = new FileReader();
-        
+
         reader.onload = (event) => {
             img.onload = () => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d', { alpha: true });
-                
+
                 // Max dimensions for logo
                 const maxWidth = 150;
                 const maxHeight = 150;
-                
+
                 let { width, height } = img;
-                
+
                 // Calculate new dimensions maintaining aspect ratio
                 if (width > maxWidth || height > maxHeight) {
                     const ratio = Math.min(maxWidth / width, maxHeight / height);
                     width = Math.round(width * ratio);
                     height = Math.round(height * ratio);
                 }
-                
+
                 canvas.width = width;
                 canvas.height = height;
-                
+
                 // Handle transparency properly
                 if (ctx) {
                     // Clear canvas with transparent background
@@ -124,7 +131,7 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
                     // Draw image preserving transparency
                     ctx.drawImage(img, 0, 0, width, height);
                 }
-                
+
                 // Always use PNG to preserve transparency
                 let compressedDataUrl: string;
                 if (hasTransparency) {
@@ -134,18 +141,18 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
                     // JPEG for non-transparent images (smaller size)
                     compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 }
-                
+
                 // Check final size (base64 is ~33% larger than binary)
                 const base64Size = compressedDataUrl.length * 0.75;
                 if (base64Size > 100 * 1024) {
                     toast.warning('Logo dikompresi. Untuk hasil terbaik, gunakan gambar lebih kecil.');
                 }
-                
+
                 setFormData(prev => ({ ...prev, logoUrl: compressedDataUrl }));
             };
             img.src = event.target?.result as string;
         };
-        
+
         reader.readAsDataURL(file);
     };
 
@@ -195,7 +202,7 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
                             <Input
                                 id="slug"
                                 value={formData.slug || ''}
-                                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') })}
+                                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-') })}
                                 className="border-2 border-brand-black rounded-none font-mono focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange flex-1"
                                 placeholder="nama-toko"
                             />
@@ -204,9 +211,9 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
                             Slug hanya boleh mengandung huruf kecil, angka, dan tanda hubung (-). URL toko Anda: <span className="font-bold text-brand-orange">/{formData.slug || storeProfile.slug || 'nama-toko'}</span>
                         </p>
                         {storeProfile.slug && (
-                          <p className="text-[10px] text-blue-600 font-mono">
+                            <p className="text-[10px] text-blue-600 font-mono">
                                 Slug saat ini: <span className="font-bold">{storeProfile.slug}</span>
-                          </p>
+                            </p>
                         )}
                     </div>
 
@@ -270,8 +277,8 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
                         />
                     </div>
 
-                    <Button 
-                        type="submit" 
+                    <Button
+                        type="submit"
                         disabled={isSaving}
                         className="w-full bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-transparent hover:border-brand-black rounded-none font-mono font-bold uppercase transition-all disabled:opacity-50"
                     >
