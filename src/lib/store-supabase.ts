@@ -870,14 +870,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             store_id: storeId,
             total,
             profit,
-            sale_type: 'retail',
+            sale_type: (saleData as any).saleType || 'retail',
             notes: saleData.notes || '',
           })
           .select()
           .single() as any,
-        20000,
+        30000,
         'Gagal menyimpan penjualan (timeout)'
       );
+
 
       if (saleError) throw saleError;
 
@@ -886,7 +887,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         supabase
           .from('sale_items')
           .insert(items.map(item => ({ ...item, sale_id: saleRow.id }))),
-        20000,
+        30000,
         'Gagal menyimpan detail penjualan (timeout)'
       );
 
@@ -902,7 +903,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               .from('products')
               .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
               .eq('id', item.productId),
-            10000,
+            15000,
             'Gagal update stok produk (timeout)'
           );
         }
