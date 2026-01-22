@@ -6,7 +6,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { usePlan } from '@/contexts/PlanContext';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield, CreditCard } from 'lucide-react';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
@@ -24,7 +24,7 @@ import {
 export function Sidebar() {
     const { isAuthenticated, signOut, store } = useAuth();
     const { isAdmin } = useAdmin();
-    const { isFreePlan } = usePlan();
+    const { isFreePlan, isTrialActive, daysRemainingInTrial, plan, effectivePlan } = usePlan();
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const navigate = useNavigate();
     const location = useLocation();
@@ -132,6 +132,38 @@ export function Sidebar() {
                                 </span>
                             </div>
                         </div>
+
+                        {/* Trial Status Badge */}
+                        {isTrialActive && daysRemainingInTrial !== null && (
+                            <div className="mt-2 bg-green-50 border-2 border-green-600 rounded px-2 py-1.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></div>
+                                        <span className="font-mono text-[10px] font-bold text-green-700 uppercase">Trial Pro</span>
+                                    </div>
+                                    <span className="font-mono text-[10px] font-bold text-green-800">
+                                        {daysRemainingInTrial} hari
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Plan Badge */}
+                        {!isTrialActive && (
+                            <div className={`mt-2 border-2 rounded px-2 py-1 ${
+                                plan === 'free'
+                                    ? 'bg-gray-100 border-gray-400'
+                                    : 'bg-brand-orange/10 border-brand-orange'
+                            }`}>
+                                <div className="text-center">
+                                    <span className={`font-mono text-[10px] font-bold uppercase ${
+                                        plan === 'free' ? 'text-gray-600' : 'text-brand-orange'
+                                    }`}>
+                                        Plan {plan === 'free' ? 'Free' : plan === 'pro' ? 'Pro' : 'Enterprise'}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -213,18 +245,6 @@ export function Sidebar() {
                 <NavItem to="/dashboard" tab="cashflow" icon={ArrowRightLeft} label="Arus Kas" collapsed={sidebarCollapsed} />
                 <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" collapsed={sidebarCollapsed} />
                 <RekonNavItem collapsed={sidebarCollapsed} />
-
-                {/* UPGRADE - only show for free plans */}
-                {isFreePlan && (
-                    <>
-                        {!sidebarCollapsed && (
-                            <div className="pt-3 pb-1 px-4">
-                                <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Langganan</p>
-                            </div>
-                        )}
-                        <NavItem to="/upgrade" icon={CreditCard} label="Upgrade Plan" collapsed={sidebarCollapsed} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" />
-                    </>
-                )}
 
                 {/* ADMIN CMS LINK */}
                 {isAdmin && (

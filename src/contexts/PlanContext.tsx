@@ -14,6 +14,7 @@ interface PlanLimits {
   showWatermark: boolean;
   canAccessAnalytics: boolean;
   canUseQris: boolean;
+  canUseCustomDomain: boolean;
   maxStores: number;
 }
 
@@ -27,6 +28,7 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     showWatermark: true,
     canAccessAnalytics: false,
     canUseQris: false,
+    canUseCustomDomain: false,
     maxStores: 1,
   },
   demo: {
@@ -38,6 +40,7 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     showWatermark: true,
     canAccessAnalytics: false,
     canUseQris: false,
+    canUseCustomDomain: false,
     maxStores: 1,
   },
   pro: {
@@ -49,6 +52,7 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     showWatermark: false,
     canAccessAnalytics: true,
     canUseQris: true,
+    canUseCustomDomain: true,
     maxStores: 3,
   },
   enterprise: {
@@ -60,12 +64,14 @@ const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     showWatermark: false,
     canAccessAnalytics: true,
     canUseQris: true,
+    canUseCustomDomain: true,
     maxStores: Infinity,
   },
 };
 
 interface PlanContextType {
   plan: PlanType;
+  effectivePlan: PlanType;
   limits: PlanLimits;
   currentProductCount: number;
   currentMonthTransactionCount: number;
@@ -77,6 +83,9 @@ interface PlanContextType {
   transactionUsagePercent: number;
   isFreePlan: boolean;
   isPaidPlan: boolean;
+  isTrialActive: boolean;
+  trialEndsAt: Date | null;
+  daysRemainingInTrial: number | null;
   refreshPlan: () => void;
 }
 
@@ -89,6 +98,17 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
   // Add a state to force refresh of the plan
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Trial status state
+  const [trialStatus, setTrialStatus] = useState<{
+    isTrialActive: boolean;
+    trialEndsAt: Date | null;
+    daysRemainingInTrial: number | null;
+  }>({
+    isTrialActive: false,
+    trialEndsAt: null,
+    daysRemainingInTrial: null,
+  });
 
   const plan = useMemo((): PlanType => {
     if (!isAuthenticated || !store) {
@@ -104,7 +124,15 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
     // No plan set - default to free for new stores
     return 'free';
-  }, [isAuthenticated, store, refreshTrigger]); // Add refreshTrigger to dependency array
+  }, [isAuthenticated, store, refreshTrigger]);
+
+  // Calculate effective plan (pro during trial)
+  const effectivePlan = useMemo((): PlanType => {
+    if (trialStatus.isTrialActive) {
+      return 'pro'; // Trial users get pro features
+    }
+    return plan;
+  }, [plan, trialStatus.isTrialActive]);
 
   const refreshPlan = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -143,7 +171,60 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [isAuthenticated, store?.id, store?.plan, refreshPlan]);
 
-  const limits = PLAN_LIMITS[plan];
+  // Fetch trial status from database
+  useEffect(() => {
+    const fetchTrialStatus = async () => {
+      if (!isAuthenticated || !store?.id) {
+        setTrialStatus({
+          isTrialActive: false,
+          trialEndsAt: null,
+          daysRemainingInTrial: null,
+        });
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('stores')
+          .select('is_trial_active, trial_ends_at')
+          .eq('id', store.id)
+          .single();
+
+        if (error) {
+          console.error('[PlanContext] Error fetching trial status:', error);
+          return;
+        }
+
+        const isTrialActive = data?.is_trial_active || false;
+        const trialEndsAt = data?.trial_ends_at ? new Date(data.trial_ends_at) : null;
+
+        // Calculate days remaining
+        let daysRemainingInTrial = null;
+        if (isTrialActive && trialEndsAt) {
+          const now = new Date();
+          const diffTime = trialEndsAt.getTime() - now.getTime();
+          daysRemainingInTrial = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          // If trial has ended, set to 0
+          if (daysRemainingInTrial < 0) {
+            daysRemainingInTrial = 0;
+          }
+        }
+
+        setTrialStatus({
+          isTrialActive,
+          trialEndsAt,
+          daysRemainingInTrial,
+        });
+      } catch (err) {
+        console.error('[PlanContext] Error in trial status fetch:', err);
+      }
+    };
+
+    fetchTrialStatus();
+  }, [isAuthenticated, store?.id]);
+
+  const limits = PLAN_LIMITS[effectivePlan];
 
   const currentProductCount = products.length;
 
@@ -174,6 +255,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
   const value: PlanContextType = {
     plan,
+    effectivePlan,
     limits,
     currentProductCount,
     currentMonthTransactionCount,
@@ -185,6 +267,9 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     transactionUsagePercent,
     isFreePlan,
     isPaidPlan,
+    isTrialActive: trialStatus.isTrialActive,
+    trialEndsAt: trialStatus.trialEndsAt,
+    daysRemainingInTrial: trialStatus.daysRemainingInTrial,
     refreshPlan,
   };
 

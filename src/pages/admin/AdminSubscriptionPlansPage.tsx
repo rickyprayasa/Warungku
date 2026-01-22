@@ -67,19 +67,37 @@ export function AdminSubscriptionPlansPage() {
     const fetchPlans = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await (supabase.from('subscription_plans') as any)
+            const { data, error } = await supabase
+                .from('subscription_plans')
                 .select('*')
                 .in('name', ['Free', 'Pro', 'Enterprise']);
 
-            if (error && error.code !== 'PGRST116') {
+            if (error) {
+                console.error('[AdminSubscriptionPlans] Error fetching plans:', error);
                 throw error;
             }
+
+            console.log('[AdminSubscriptionPlans] Fetched plans from DB:', data);
 
             if (data && data.length > 0) {
                 // Map database plans to simple format
                 const fetchedPlans: SimplePlan[] = ['free', 'pro', 'enterprise'].map((type: string) => {
                     const dbPlan = data.find((p: any) => p.name.toLowerCase() === type);
                     const defaultPlan = plans.find(p => p.type === type)!;
+
+                    if (!defaultPlan) {
+                        console.warn('[AdminSubscriptionPlans] Default plan not found for type:', type);
+                        return {
+                            type: type as any,
+                            name: type.charAt(0).toUpperCase() + type.slice(1),
+                            description: '',
+                            monthly_price: 0,
+                            yearly_price: 0,
+                            features: [],
+                            is_active: true,
+                        };
+                    }
+
                     return {
                         ...defaultPlan,
                         features: dbPlan?.features || defaultPlan.features,
@@ -89,9 +107,12 @@ export function AdminSubscriptionPlansPage() {
                     };
                 });
                 setPlans(fetchedPlans);
+            } else {
+                console.log('[AdminSubscriptionPlans] No plans found in DB, using defaults');
             }
         } catch (error) {
-            console.error('Error fetching plans:', error);
+            console.error('[AdminSubscriptionPlans] Error fetching plans:', error);
+            toast.error('Gagal memuat paket langganan');
         } finally {
             setIsLoading(false);
         }
@@ -101,10 +122,19 @@ export function AdminSubscriptionPlansPage() {
         setIsSaving(true);
         try {
             for (const plan of plans) {
-                const { data: existing } = await (supabase.from('subscription_plans') as any)
+                console.log('[AdminSubscriptionPlans] Saving plan:', plan.type, plan.name);
+
+                // Check if plan exists
+                const { data: existing, error: findError } = await supabase
+                    .from('subscription_plans')
                     .select('id')
-                    .ilike('name', plan.name)
-                    .single();
+                    .eq('name', plan.name)
+                    .maybeSingle();
+
+                if (findError) {
+                    console.error('[AdminSubscriptionPlans] Error finding plan:', findError);
+                    throw findError;
+                }
 
                 const planData = {
                     name: plan.name,
@@ -119,20 +149,39 @@ export function AdminSubscriptionPlansPage() {
                     plan_type: plan.type,
                 };
 
+                console.log('[AdminSubscriptionPlans] Plan data:', planData);
+
+                let error;
                 if (existing) {
-                    await (supabase.from('subscription_plans') as any)
+                    console.log('[AdminSubscriptionPlans] Updating existing plan:', existing.id);
+                    const { error: updateError } = await supabase
+                        .from('subscription_plans')
                         .update(planData)
                         .eq('id', existing.id);
+                    error = updateError;
                 } else {
-                    await (supabase.from('subscription_plans') as any)
+                    console.log('[AdminSubscriptionPlans] Inserting new plan');
+                    const { error: insertError } = await supabase
+                        .from('subscription_plans')
                         .insert([planData]);
+                    error = insertError;
                 }
+
+                if (error) {
+                    console.error('[AdminSubscriptionPlans] Error saving plan:', error);
+                    throw error;
+                }
+
+                console.log('[AdminSubscriptionPlans] Plan saved successfully');
             }
 
             toast.success('Paket langganan berhasil disimpan!');
+
+            // Refresh data from database to confirm changes
+            await fetchPlans();
         } catch (error: any) {
             console.error('Error saving plans:', error);
-            toast.error('Gagal menyimpan paket');
+            toast.error(`Gagal menyimpan paket: ${error?.message || 'Unknown error'}`);
         } finally {
             setIsSaving(false);
         }

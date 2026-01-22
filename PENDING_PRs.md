@@ -2,6 +2,29 @@
 
 Berikut adalah daftar PR/tasks yang belum selesai atau di-skip sebelumnya:
 
+## 0. Payment Confirmation Feature (TEMPORARILY DISABLED)
+
+**Status:** ✅ Dihapus untuk sementara
+**Date:** 2026-01-22
+**Reason:** Masalah teknis yang belum terselesaikan meskipun sudah dicoba oleh beberapa AI agent
+
+**Changes Made:**
+- ✅ Dihapus tombol "Konfirmasi Pembayaran" dari CheckoutPage.tsx
+- ✅ Dihapus teks "Cara Pembayaran" (instructions)
+- ✅ Dihapus PaymentConfirmDialog component
+- ✅ Dihapus state variables terkait: `confirmDialogOpen`, `isProcessing`
+- ✅ Dihapus functions: `handleConfirmPayment()`, `processPayment()`
+- ✅ Dihapus import untuk `PaymentConfirmDialog` dan `Loader2` icon
+
+**Files Modified:**
+- `src/pages/CheckoutPage.tsx`
+
+**Notes:**
+- Fitur ini mungkin akan diimplementasikan ulang di masa depan menggunakan pendekatan yang berbeda
+- Untuk saat ini, checkout hanya menampilkan QR code tanpa tombol konfirmasi
+
+---
+
 ## 1. Public Sales Transaction via RPC (SKIPPED)
 
 **Status:** ⚠️ Di-skip di conversation sebelumnya

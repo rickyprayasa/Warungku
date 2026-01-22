@@ -4,6 +4,9 @@ import { useWarungStore } from '@/lib/store';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Store } from '@/types/supabase';
 
+// Admin email whitelist - sync with AdminContext
+const ADMIN_EMAILS = ['admin@rsquareidea.my.id'];
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -33,6 +36,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const createStoreForUser = useCallback(async (userId: string, userEmail?: string): Promise<Store | null> => {
     try {
       console.log('[AuthContext] Creating store for user:', userId);
+
+      // Check if user is admin - admins don't need stores
+      if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
+        console.log('[AuthContext] User is admin, skipping store creation');
+        return null;
+      }
 
       // Generate store name from email or use default
       const storeName = userEmail?.split('@')[0] || 'Toko Saya';
@@ -78,6 +87,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log('[AuthContext] User added as store owner');
+
+      // Start 14-day trial for Free plan stores
+      try {
+        const { data: trialData, error: trialError } = await supabase.rpc('start_trial_period', {
+          store_id: storeData.id,
+        });
+
+        if (trialError) {
+          console.error('[AuthContext] Failed to start trial period:', trialError);
+          // Don't fail store creation if trial fails, just log the error
+        } else {
+          console.log('[AuthContext] Trial period started for store:', storeData.id, trialData);
+        }
+      } catch (trialErr) {
+        console.error('[AuthContext] Exception starting trial period:', trialErr);
+      }
+
       return storeData as Store;
     } catch (err) {
       console.error('[AuthContext] Failed to create store for user:', err);
@@ -88,6 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserStore = useCallback(async (userId: string, userEmail?: string): Promise<Store | null> => {
     try {
       console.log('[AuthContext] Fetching store for user:', userId, 'email:', userEmail);
+
+      // Check if user is admin - admins don't need stores
+      if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
+        console.log('[AuthContext] User is admin, skipping store fetch');
+        setStore(null);
+        return null;
+      }
 
       // Skip fetching user store if we are in public store mode
       if (typeof window !== 'undefined') {
@@ -486,6 +519,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, storeName: string) => {
     try {
       console.log('[AuthContext] Starting signup for:', email);
+
+      // Check if email is in admin whitelist - admins should not register normally
+      if (ADMIN_EMAILS.includes(email)) {
+        console.log('[AuthContext] Admin email detected, blocking normal registration');
+        return { error: 'Email ini digunakan untuk admin. Silakan login langsung.' };
+      }
 
       // 1. Create user (Supabase may send email confirmation if enabled)
       const { data: authData, error: authError } = await supabase.auth.signUp({

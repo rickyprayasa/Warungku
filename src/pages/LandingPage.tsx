@@ -18,6 +18,9 @@ function RealStatsSection() {
     });
     const [loading, setLoading] = useState(true);
 
+    // Admin email to exclude from user count
+    const ADMIN_EMAILS = ['admin@rsquareidea.my.id'];
+
     useEffect(() => {
         async function fetchRealStats() {
             try {
@@ -37,12 +40,26 @@ function RealStatsSection() {
                     .select('*', { count: 'exact', head: true });
 
                 // Count total unique users by counting distinct user_ids from store_members
+                // Exclude admin emails from count
                 const { data: membersData } = await supabase
                     .from('store_members')
-                    .select('user_id');
+                    .select('user_id, user_auth_data!inner(email)');
 
-                // Get unique user count
-                const uniqueUserIds = new Set(membersData?.map(m => m.user_id) || []);
+                // Get unique user count excluding admins
+                const adminUserIds = new Set<string>();
+                const uniqueUserIds = new Set<string>();
+
+                (membersData || []).forEach((member: any) => {
+                    const email = member?.user_auth_data?.email;
+                    if (email && ADMIN_EMAILS.includes(email)) {
+                        // This is an admin user, track their ID
+                        adminUserIds.add(member.user_id);
+                    } else if (member.user_id) {
+                        // Regular user, add to count
+                        uniqueUserIds.add(member.user_id);
+                    }
+                });
+
                 const membersCount = uniqueUserIds.size;
 
                 setStats({
@@ -50,6 +67,14 @@ function RealStatsSection() {
                     totalTransactions: salesCount || 0,
                     totalProducts: productsCount || 0,
                     totalUsers: membersCount || 0
+                });
+
+                console.log('[RealStats] Stats fetched:', {
+                    stores: storesCount,
+                    transactions: salesCount,
+                    products: productsCount,
+                    users: membersCount,
+                    adminUsersExcluded: adminUserIds.size
                 });
             } catch (error) {
                 console.error('Error fetching stats:', error);
@@ -83,18 +108,13 @@ function RealStatsSection() {
             value: stats.totalProducts > 0 ? `${stats.totalProducts.toLocaleString()}` : "0",
             label: "Produk Terdaftar",
             icon: Package
-        },
-        {
-            value: stats.totalUsers > 0 ? `${stats.totalUsers}+` : "0",
-            label: "Pengguna",
-            icon: Users
         }
     ];
 
     return (
         <section className="w-full border-b-3 border-black bg-black text-white py-12">
             <div className="mx-auto max-w-7xl px-6 lg:px-10">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {statsData.map((stat, idx) => (
                         <motion.div
                             key={idx}
@@ -474,41 +494,43 @@ export function LandingPage() {
                     >
                         <AnimatedLogo textColor="text-brand-white" />
                     </motion.div>
-                    <div className="hidden gap-6 md:flex">
+                    <div className="hidden gap-4 md:flex">
                         {[
-                            { href: "#features", text: "Fitur" },
-                            { href: "#dashboard", text: "Dashboard" },
-                            { href: "#stories", text: "Testimoni" },
-                            { href: "#pricing", text: "Harga" }
+                            { href: "#features", label: "FITUR" },
+                            { href: "#dashboard", label: "DASHBOARD" },
+                            { href: "#stories", label: "TESTIMONI" },
+                            { href: "#pricing", label: "HARGA" }
                         ].map((link) => (
                             <motion.a
                                 key={link.href}
-                                className="text-base font-bold text-white relative group px-2 py-1"
+                                className="font-mono uppercase font-bold text-sm text-white border-2 border-transparent rounded-none px-4 py-2 relative group overflow-hidden"
                                 href={link.href}
-                                whileHover={{ y: -2 }}
-                                whileTap={{ y: 0 }}
+                                whileHover={{
+                                    y: -2
+                                }}
+                                whileTap={{ y: 0, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
                             >
-                                {link.text}
-                                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300" />
+                                <span className="relative z-10">{link.label}</span>
+                                <div className="absolute inset-0 bg-brand-black border-2 border-brand-black shadow-hard opacity-0 group-hover:opacity-100 transition-all duration-200 -z-0" />
                             </motion.a>
                         ))}
                     </div>
                     <div className="flex items-center gap-3">
                         <motion.button
-                            className="hidden sm:block text-base font-bold text-white border-2 border-white/30 hover:border-white hover:bg-white hover:text-brand-black px-4 py-2 rounded transition-all"
+                            className="hidden sm:flex items-center justify-center gap-2 font-mono uppercase font-bold text-sm text-brand-black bg-white border-2 border-brand-black rounded-none shadow-hard hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-200 px-4 py-2"
                             onClick={() => navigate('/login')}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
                         >
+                            <span className="material-symbols-outlined text-[18px]">login</span>
                             Masuk
                         </motion.button>
-                        <NeoButton
-                            variant="secondary"
-                            className="h-11 px-5 text-base bg-white text-brand-black hover:bg-black hover:text-white border-2 border-white hover:border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:shadow-[3px_3px_0px_0px_#000] rounded transition-all"
+                        <motion.button
+                            className="flex items-center justify-center gap-2 font-mono uppercase font-bold text-sm text-white bg-brand-black border-2 border-brand-black rounded-none shadow-hard hover:shadow-hard-sm hover:bg-brand-orange hover:text-brand-black active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-200 px-4 py-2"
                             onClick={() => navigate('/register')}
                         >
+                            <span className="material-symbols-outlined text-[18px]">person_add</span>
                             Daftar
-                        </NeoButton>
+                        </motion.button>
                     </div>
                 </div>
             </motion.nav>
@@ -541,21 +563,6 @@ export function LandingPage() {
                     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10 lg:py-24">
                         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16 items-center">
                             <div className="lg:col-span-7 flex flex-col gap-8 text-center lg:text-left z-10">
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20, rotate: -5 }}
-                                    animate={{ opacity: 1, y: 0, rotate: -1 }}
-                                    transition={{ duration: 0.5 }}
-                                    className="inline-flex items-center self-center gap-2 border-3 border-black bg-brand-yellow px-4 py-2 font-black text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_#000] transform -rotate-1 lg:self-start"
-                                >
-                                    <motion.span
-                                        animate={{ rotate: [0, 360] }}
-                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                        className="material-symbols-outlined text-base"
-                                    >
-                                        verified
-                                    </motion.span>
-                                    #1 POS App for MSMEs
-                                </motion.div>
                                 <motion.h1
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}

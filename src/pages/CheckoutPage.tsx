@@ -8,13 +8,12 @@ import type { SaleFormValues } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { QRCodeSVG } from 'qrcode.react';
 import { convertToDynamicQRIS, getMerchantName, validateQRIS, formatQRISAmount } from '@/lib/qris';
-import { ArrowLeft, Clock, CheckCircle, AlertCircle, Copy, ShoppingCart, RefreshCw, Loader2, Lock, User, Building2, CreditCard } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, AlertCircle, Copy, ShoppingCart, RefreshCw, Lock, User, Building2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { QRISDownloadButton } from '@/components/QRISDownload';
 import { usePlan } from '@/contexts/PlanContext';
 import { UpgradeDialog } from '@/components/UpgradeDialog';
-import { PaymentConfirmDialog } from '@/components/PaymentConfirmDialog';
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Removed due to error
 
 
@@ -33,9 +32,7 @@ export function CheckoutPage() {
   const [timeLeft, setTimeLeft] = useState(PAYMENT_TIMEOUT);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'expired'>('pending');
   const [dynamicQRIS, setDynamicQRIS] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'qris' | 'manual'>('qris');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
 
@@ -105,58 +102,6 @@ export function CheckoutPage() {
       setSelectedPaymentMethod(activeStoreProfile.paymentMethods[0]);
     }
   }, [activeTab, activeStoreProfile.paymentMethods, selectedPaymentMethod]);
-
-  const handleConfirmPayment = async () => {
-    console.log('[CheckoutPage] Confirm clicked. Tab:', activeTab, 'Method:', selectedPaymentMethod);
-
-    if (items.length === 0) {
-      toast.error('Keranjang belanja kosong');
-      return;
-    }
-
-    // Validate payment method selection
-    if (activeTab === 'manual' && !selectedPaymentMethod) {
-      toast.error('Silakan pilih metode pembayaran (klik salah satu pilihan di atas)');
-      return;
-    }
-
-    // Open custom confirmation dialog
-    setConfirmDialogOpen(true);
-  };
-
-  const processPayment = async () => {
-    setIsProcessing(true);
-    try {
-      // Create sale to reduce stock
-      const saleData: SaleFormValues = {
-        items: items.map((item) => ({
-          productId: item.product.id,
-          productName: item.product.name,
-          quantity: item.quantity,
-          price: item.product.isPromo && item.product.promoPrice
-            ? item.product.promoPrice
-            : item.product.price,
-        })),
-        notes: 'Pembayaran via QRIS (Self-checkout)',
-      };
-
-      // Use addPublicSale for unauthenticated users, addSale for authenticated users
-      if (isAuthenticated) {
-        await addSale(saleData);
-      } else {
-        await addPublicSale(saleData);
-      }
-
-      setPaymentStatus('success');
-      setConfirmDialogOpen(false);
-      toast.success('Pembayaran dikonfirmasi! Stok telah dikurangi.');
-    } catch (error) {
-      console.error('Failed to process payment:', error);
-      toast.error(`Gagal memproses pembayaran: ${(error as any).message || 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleBackToMenu = () => {
     if (paymentStatus === 'success') {
@@ -507,19 +452,6 @@ export function CheckoutPage() {
                     </div>
                   )}
               </div>
-
-              <div className="mt-8 bg-blue-50 p-4 border-2 border-blue-200">
-                <p className="font-mono text-xs text-blue-800 mb-2 font-bold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  Instruksi Transfer:
-                </p>
-                <ul className="list-disc list-inside font-mono text-xs text-blue-700 space-y-1 ml-1">
-                  <li>Transfer sejumlah <strong>{formatCurrency(total)}</strong> ke salah satu rekening/e-wallet di atas</li>
-                  <li>Pastikan nama penerima sesuai</li>
-                  <li>Simpan bukti transfer</li>
-                  <li>Klik tombol <strong>"Konfirmasi Pembayaran"</strong> di bawah</li>
-                </ul>
-              </div>
             </div>
           )}
         </div>
@@ -557,18 +489,6 @@ export function CheckoutPage() {
           </div>
         </div>
 
-        {/* Instructions */}
-        <div className="bg-blue-50 border-2 border-blue-200 p-4 mb-4">
-          <p className="font-mono text-sm text-blue-800 font-bold mb-2">Cara Pembayaran:</p>
-          <ol className="font-mono text-xs text-blue-700 list-decimal list-inside space-y-1">
-            <li>Buka aplikasi e-wallet atau mobile banking</li>
-            <li>Pilih menu Scan QR atau QRIS</li>
-            <li>Scan QR Code di atas</li>
-            <li>Periksa nominal dan konfirmasi pembayaran</li>
-            <li>Klik "Konfirmasi Pembayaran" setelah berhasil</li>
-          </ol>
-        </div>
-
         {/* Transaction limit warning */}
         {transactionLimitReached && (
           <div className="p-4 bg-amber-50 border-2 border-amber-400 rounded-none mb-4">
@@ -583,43 +503,7 @@ export function CheckoutPage() {
             </p>
           </div>
         )}
-
-        {/* Confirm Button */}
-        <Button
-          onClick={handleConfirmPayment}
-          disabled={isProcessing || transactionLimitReached}
-          className="w-full h-14 bg-brand-black text-brand-white border-2 border-brand-black rounded-none font-bold uppercase text-base hover:bg-brand-orange hover:text-brand-black transition-all disabled:opacity-50"
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Memproses...
-            </>
-          ) : transactionLimitReached ? (
-            <>
-              <Lock className="w-5 h-5 mr-2" />
-              Batas Tercapai - Upgrade
-            </>
-          ) : (
-            <>
-              <CheckCircle className="w-5 h-5 mr-2" />
-              Konfirmasi Pembayaran
-            </>
-          )}
-        </Button>
-
-        <p className="text-center font-mono text-xs text-muted-foreground mt-4">
-          Pastikan pembayaran berhasil sebelum konfirmasi
-        </p>
       </div>
-
-      <PaymentConfirmDialog
-        open={confirmDialogOpen}
-        onOpenChange={setConfirmDialogOpen}
-        onConfirm={processPayment}
-        total={formatCurrency(total)}
-        isProcessing={isProcessing}
-      />
 
       <UpgradeDialog
         open={upgradeDialogOpen}
