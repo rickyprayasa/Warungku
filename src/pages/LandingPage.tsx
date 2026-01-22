@@ -2,11 +2,13 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { UpgradePlanDialog } from '@/components/UpgradePlanDialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AppFooter } from '@/components/AppFooter';
 import { useRef, useState, useEffect } from 'react';
-import { TrendingUp, ShoppingCart, BarChart3, Users, DollarSign, Package, Store } from 'lucide-react';
+import { TrendingUp, ShoppingCart, BarChart3, Users, DollarSign, Package, Store, Download, MessageCircle, Facebook, Twitter, Share2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { AnimatedLogo } from '@/components/AnimatedLogo';
+import { QRCodeCanvas } from 'qrcode.react';
 
 // Real Stats Component
 function RealStatsSection() {
@@ -191,9 +193,8 @@ function InteractiveAppPreview() {
                             <motion.button
                                 key={idx}
                                 onClick={() => setActiveTab(item.active ? (activeTab as any) : (['dashboard', 'pos', 'analytics'][idx] as any))}
-                                className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all ${
-                                    item.active ? 'bg-brand-orange text-black' : 'text-gray-400 hover:text-white hover:bg-white/10'
-                                }`}
+                                className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all ${item.active ? 'bg-brand-orange text-black' : 'text-gray-400 hover:text-white hover:bg-white/10'
+                                    }`}
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.95 }}
                             >
@@ -415,28 +416,28 @@ export function LandingPage() {
             icon: "point_of_sale",
             title: "POS Kasir",
             desc: "Sistem kasir cepat & mudah. Terima pembayaran tunai, QRIS, dan kartu debit dalam hitungan detik.",
-            hoverColor: "hover:bg-brand-yellow",
+            hoverColor: "",
             color: "bg-brand-orange"
         },
         {
             icon: "inventory_2",
             title: "Manajemen Inventori",
             desc: "Pantau stok barang real-time. Dapatkan notifikasi saat stok menipis agar penjualan tidak terhambat.",
-            hoverColor: "hover:bg-blue-500 hover:text-white",
+            hoverColor: "",
             color: "bg-blue-500"
         },
         {
             icon: "account_balance_wallet",
             title: "Laporan Keuangan",
             desc: "Laporan laba rugi otomatis. Tahu persis keuntungan harian, mingguan, dan bulanan tanpa pusing hitung manual.",
-            hoverColor: "hover:bg-green-500",
+            hoverColor: "",
             color: "bg-green-500"
         },
         {
             icon: "monitoring",
             title: "Analitik Bisnis",
             desc: "Analisis tren penjualan terlaris. Ambil keputusan bisnis berdasarkan data, bukan tebak-tebakan.",
-            hoverColor: "hover:bg-purple-500 hover:text-white",
+            hoverColor: "",
             color: "bg-purple-500"
         }
     ];
@@ -494,27 +495,51 @@ export function LandingPage() {
                     >
                         <AnimatedLogo textColor="text-brand-white" />
                     </motion.div>
-                    <div className="hidden gap-4 md:flex">
-                        {[
-                            { href: "#features", label: "FITUR" },
-                            { href: "#dashboard", label: "DASHBOARD" },
-                            { href: "#stories", label: "TESTIMONI" },
-                            { href: "#pricing", label: "HARGA" }
-                        ].map((link) => (
-                            <motion.a
-                                key={link.href}
-                                className="font-mono uppercase font-bold text-sm text-white border-2 border-transparent rounded-none px-4 py-2 relative group overflow-hidden"
-                                href={link.href}
-                                whileHover={{
-                                    y: -2
-                                }}
-                                whileTap={{ y: 0, scale: 0.98 }}
-                                transition={{ duration: 0.15 }}
-                            >
-                                <span className="relative z-10">{link.label}</span>
-                                <div className="absolute inset-0 bg-brand-black border-2 border-brand-black shadow-hard opacity-0 group-hover:opacity-100 transition-all duration-200 -z-0" />
-                            </motion.a>
-                        ))}
+                    <div className="hidden md:flex items-center gap-4">
+                        <div className="bg-white border-3 border-black px-6 py-2 shadow-[4px_4px_0px_0px_#000] transform -rotate-2 hover:rotate-0 transition-all duration-200 cursor-default">
+                            <h1 className="text-2xl font-black tracking-wider text-black uppercase" style={{ fontFamily: 'Archivo, sans-serif' }}>
+                                WARUNGKU
+                            </h1>
+                        </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <button className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                                    <Share2 className="w-6 h-6 text-black" />
+                                </button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-zinc-950 border-2 border-brand-orange text-white sm:rounded-xl p-0 overflow-hidden max-w-sm">
+                                <div className="p-6 flex flex-col items-center text-center relative">
+                                    <h2 className="text-brand-orange font-bold tracking-widest mb-6 text-lg">SCAN UNTUK MEMBUKA</h2>
+
+                                    <div className="bg-white p-3 rounded-xl shadow-[0_0_20px_rgba(243,128,32,0.3)] mb-6">
+                                        <QRCodeCanvas value={window.location.href} size={180} />
+                                    </div>
+
+                                    <p className="text-zinc-400 text-sm mb-6 max-w-[250px] leading-relaxed">
+                                        Arahkan kamera HP Anda ke QR Code di atas untuk membuka <span className="text-white font-bold">WARUNGKU</span>.
+                                    </p>
+
+                                    <Button className="w-full bg-brand-orange hover:bg-brand-orange/90 text-black font-bold mb-6 rounded-lg h-12">
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Download QR Code
+                                    </Button>
+
+                                    <div className="space-y-3 w-full">
+                                        <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase">BAGIKAN VIA</p>
+                                        <div className="flex justify-center gap-3">
+                                            <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#25D366] hover:bg-zinc-800 hover:text-[#25D366] hover:border-zinc-700 w-10 h-10"><MessageCircle size={18} /></Button>
+                                            <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1877F2] hover:bg-zinc-800 hover:text-[#1877F2] hover:border-zinc-700 w-10 h-10"><Facebook size={18} /></Button>
+                                            <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1DA1F2] hover:bg-zinc-800 hover:text-[#1DA1F2] hover:border-zinc-700 w-10 h-10"><Twitter size={18} /></Button>
+                                            <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-brand-orange hover:bg-zinc-800 hover:text-brand-orange hover:border-zinc-700 w-10 h-10"><Share2 size={18} /></Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 pt-4 border-t border-zinc-900 w-full">
+                                        <p className="text-[10px] text-zinc-600">2026 OMZETIN by RSQUARE. All rights reserved.</p>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                     <div className="flex items-center gap-3">
                         <motion.button
@@ -543,18 +568,18 @@ export function LandingPage() {
                 }}>
                     {/* Animated floating elements */}
                     <motion.div
-                        variants={floatVariants}
+                        variants={floatVariants as any}
                         animate="animate"
                         className="absolute top-20 left-10 w-20 h-20 bg-purple-500 border-3 border-black rounded-full opacity-20 hidden lg:block"
                     />
                     <motion.div
-                        variants={floatVariants}
+                        variants={floatVariants as any}
                         animate="animate"
                         transition={{ delay: 0.5 }}
                         className="absolute bottom-20 right-10 w-32 h-32 bg-brand-yellow border-3 border-black rounded-full opacity-20 hidden lg:block"
                     />
                     <motion.div
-                        variants={floatVariants}
+                        variants={floatVariants as any}
                         animate="animate"
                         transition={{ delay: 1 }}
                         className="absolute top-1/2 right-1/4 w-16 h-16 bg-brand-orange border-3 border-black rounded-full opacity-20 hidden lg:block"
@@ -668,63 +693,73 @@ export function LandingPage() {
                 <RealStatsSection />
 
                 {/* Features Section */}
-                <section className="relative w-full max-w-7xl px-6 py-20 lg:px-10 mx-auto" id="features">
-                    <motion.div
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true }}
-                        variants={containerVariants}
-                    >
-                        <motion.div variants={itemVariants} className="mb-12 text-center md:mb-20">
-                            <h2 className="text-5xl font-black tracking-tight text-black sm:text-6xl uppercase mb-6">
-                                Fitur Juara<br />
-                                <motion.span
-                                    className="bg-black text-white px-3 border-3 border-black shadow-[3px_3px_0px_0px_#000] transform -rotate-1 inline-block"
-                                    whileHover={{ rotate: 1, scale: 1.05 }}
-                                >
-                                    Omzetin
-                                </motion.span>
-                            </h2>
-                            <p className="mx-auto mt-4 max-w-2xl text-xl font-bold text-gray-700 bg-white p-4 border-2 border-black shadow-[3px_3px_0px_0px_#000]">
-                                Semua yang Anda butuhkan untuk menjalankan bisnis UMKM lebih efisien dan menguntungkan.
-                            </p>
-                        </motion.div>
-                        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                            {features.map((feature, idx) => (
-                                <NeoCard key={idx} hoverColor={feature.hoverColor} className="flex flex-col items-start gap-4 group overflow-hidden">
-                                    <motion.div
-                                        className="w-full h-24 border-b-3 border-black flex items-center justify-center relative overflow-hidden group-hover:bg-black/5 transition-colors"
-                                        style={{ backgroundColor: feature.color }}
-                                        whileHover={{ scale: 1.02 }}
-                                        transition={{ duration: 0.3 }}
+                <section className="relative w-full border-b-3 border-black bg-brand-yellow/10 py-24 overflow-hidden" id="features">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 opacity-10" style={{
+                        backgroundImage: 'radial-gradient(#000 2px, transparent 2px)',
+                        backgroundSize: '30px 30px'
+                    }} />
+
+                    <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
+                        <motion.div
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true }}
+                            variants={containerVariants}
+                        >
+                            <motion.div variants={itemVariants} className="mb-16 text-center">
+                                <h2 className="text-5xl font-black tracking-tight text-black sm:text-6xl uppercase mb-6 drop-shadow-[4px_4px_0px_rgba(255,255,255,1)]">
+                                    Fitur Juara<br />
+                                    <motion.span
+                                        className="bg-brand-orange text-white px-4 py-1 border-3 border-black shadow-[6px_6px_0px_0px_#000] transform -rotate-2 inline-block mt-2"
+                                        whileHover={{ rotate: 0, scale: 1.05 }}
                                     >
-                                        {/* Animated background pattern */}
-                                        <div className="absolute inset-0 opacity-20">
-                                            <div className="absolute top-2 left-2 w-3 h-3 border-2 border-black rounded-full" />
-                                            <div className="absolute top-2 right-2 w-3 h-3 border-2 border-black rounded-full" />
-                                            <div className="absolute bottom-2 left-2 w-3 h-3 border-2 border-black rounded-full" />
-                                            <div className="absolute bottom-2 right-2 w-3 h-3 border-2 border-black rounded-full" />
-                                        </div>
-                                        <motion.span
-                                            className="material-symbols-outlined text-5xl text-black font-bold relative z-10"
-                                            whileHover={{ scale: 1.1, rotate: 5 }}
-                                            transition={{ duration: 0.2 }}
+                                        Omzetin
+                                    </motion.span>
+                                </h2>
+                                <p className="mx-auto mt-6 max-w-2xl text-xl font-bold text-black bg-white p-6 border-3 border-black shadow-[8px_8px_0px_0px_#000] transform rotate-1">
+                                    Semua yang Anda butuhkan untuk menjalankan bisnis UMKM lebih efisien dan menguntungkan.
+                                </p>
+                            </motion.div>
+
+                            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                                {features.map((feature, idx) => (
+                                    <NeoCard
+                                        key={idx}
+                                        hoverColor={feature.hoverColor}
+                                        className="flex flex-col items-start gap-0 p-0 overflow-hidden h-full"
+                                    >
+                                        <div
+                                            className={`w-full h-32 border-b-3 border-black flex items-center justify-center relative overflow-hidden ${feature.color}`}
                                         >
-                                            {feature.icon}
-                                        </motion.span>
-                                    </motion.div>
-                                    <div className="p-4 pt-2">
-                                        <h3 className="text-xl font-black uppercase mb-2 w-full" style={{ color: feature.color.replace('bg-', 'text-').replace('-500', '-600') }}>
-                                            {feature.title}
-                                        </h3>
-                                        <p className="font-bold text-gray-700 leading-snug text-sm">
-                                            {feature.desc}
-                                        </p>
-                                    </div>
-                                </NeoCard>
-                            ))}
+                                            {/* Abstract shapes in background */}
+                                            <div className="absolute top-0 right-0 w-16 h-16 bg-black/10 rounded-bl-full" />
+                                            <div className="absolute bottom-0 left-0 w-12 h-12 bg-white/20 rounded-tr-full" />
+
+                                            <motion.div
+                                                className="bg-white border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] rounded-lg relative z-10"
+                                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                                transition={{ type: "spring", stiffness: 300 }}
+                                            >
+                                                <span className="material-symbols-outlined text-4xl text-black">
+                                                    {feature.icon}
+                                                </span>
+                                            </motion.div>
+                                        </div>
+
+                                        <div className="p-6 flex flex-col flex-1 bg-white relative z-20">
+                                            <h3 className="text-xl font-black uppercase mb-3 leading-tight">
+                                                {feature.title}
+                                            </h3>
+                                            <p className="font-medium text-gray-700 leading-relaxed text-sm flex-1">
+                                                {feature.desc}
+                                            </p>
+                                        </div>
+                                    </NeoCard>
+                                ))}
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
+                    </div>
                 </section>
 
                 {/* Dashboard Preview Section with Screenshot */}
@@ -941,16 +976,7 @@ export function LandingPage() {
                                 >
                                     Mulai Gratis Sekarang
                                 </NeoButton>
-                                <UpgradePlanDialog
-                                    trigger={
-                                        <NeoButton
-                                            variant="secondary"
-                                            className="h-16 w-full px-8 text-xl sm:w-auto"
-                                        >
-                                            Lihat Paket Harga
-                                        </NeoButton>
-                                    }
-                                />
+                                <LandingUpgradeDialog />
                             </div>
                         </motion.div>
                     </motion.div>
@@ -959,5 +985,126 @@ export function LandingPage() {
 
             <AppFooter />
         </div>
+    );
+}
+
+function LandingUpgradeDialog() {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <motion.button
+                    className="h-16 w-full px-8 text-xl sm:w-auto border-3 border-black font-bold transition-all duration-200 shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 bg-white text-black hover:bg-[#F2F2F2]"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                >
+                    Lihat Paket Harga
+                </motion.button>
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl bg-white border-3 border-black p-0 shadow-[10px_10px_0px_0px_#000] sm:rounded-none overflow-hidden">
+                <div className="bg-brand-orange border-b-3 border-black p-6 flex justify-between items-center">
+                    <div>
+                        <DialogTitle className="text-3xl font-black uppercase tracking-tight">Pilih Paket Juara</DialogTitle>
+                        <DialogDescription className="text-black font-bold opacity-80">
+                            Investasi terbaik untuk pertumbuhan bisnis Anda.
+                        </DialogDescription>
+                    </div>
+                </div>
+
+                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto max-h-[80vh]">
+                    {/* Free Plan */}
+                    <div className="border-3 border-black p-6 flex flex-col relative bg-gray-50">
+                        <div className="mb-4">
+                            <h3 className="text-2xl font-black uppercase">Starter</h3>
+                            <div className="mt-2 flex items-baseline gap-1">
+                                <span className="text-4xl font-black">Rp 0</span>
+                                <span className="text-sm font-bold text-gray-600">/selamanya</span>
+                            </div>
+                            <p className="mt-2 text-sm font-bold text-gray-600">Cocok untuk warung kecil yang baru mulai.</p>
+                        </div>
+                        <ul className="space-y-3 mb-8 flex-1">
+                            {[
+                                "Maksimal 50 Produk",
+                                "Laporan Harian Dasar",
+                                "Manajemen Stok Simpel",
+                                "1 User Kasir",
+                                "Support via Email"
+                            ].map((feature, i) => (
+                                <li key={i} className="flex items-center gap-2 text-sm font-bold">
+                                    <span className="material-symbols-outlined text-green-600 text-lg">check_circle</span>
+                                    {feature}
+                                </li>
+                            ))}
+                        </ul>
+                        <button className="w-full py-3 border-3 border-black font-bold bg-white hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
+                            Daftar Gratis
+                        </button>
+                    </div>
+
+                    {/* Pro Plan */}
+                    <div className="border-3 border-black p-6 flex flex-col relative bg-brand-yellow transform md:-translate-y-4 shadow-[8px_8px_0px_0px_#000]">
+                        <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-xs font-black uppercase border-l-3 border-b-3 border-black">
+                            Paling Laris
+                        </div>
+                        <div className="mb-4">
+                            <h3 className="text-2xl font-black uppercase">Juragan</h3>
+                            <div className="mt-2 flex items-baseline gap-1">
+                                <span className="text-4xl font-black">Rp 199rb</span>
+                                <span className="text-sm font-bold text-black">/bulan</span>
+                            </div>
+                            <p className="mt-2 text-sm font-bold text-black">Untuk bisnis yang siap scale-up serius.</p>
+                        </div>
+                        <ul className="space-y-3 mb-8 flex-1">
+                            {[
+                                "Produk Unlimited",
+                                "Laporan Keuangan Lengkap",
+                                "Manajemen Stok & Opname",
+                                "5 User Kasir",
+                                "Export Laporan Excel/PDF",
+                                "Support Prioritas WhatsApp",
+                                "Custom Struk Logo"
+                            ].map((feature, i) => (
+                                <li key={i} className="flex items-center gap-2 text-sm font-bold">
+                                    <span className="material-symbols-outlined text-black text-lg">verified</span>
+                                    {feature}
+                                </li>
+                            ))}
+                        </ul>
+                        <button className="w-full py-3 border-3 border-black font-black bg-brand-orange hover:bg-white transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
+                            Pilih Paket Juragan
+                        </button>
+                    </div>
+
+                    {/* Enterprise Plan */}
+                    <div className="border-3 border-black p-6 flex flex-col relative bg-purple-100">
+                        <div className="mb-4">
+                            <h3 className="text-2xl font-black uppercase">Sultan</h3>
+                            <div className="mt-2 flex items-baseline gap-1">
+                                <span className="text-4xl font-black">Custom</span>
+                            </div>
+                            <p className="mt-2 text-sm font-bold text-gray-600">Solusi khusus untuk franchise & chain store.</p>
+                        </div>
+                        <ul className="space-y-3 mb-8 flex-1">
+                            {[
+                                "Semua Fitur Juragan",
+                                "Multi-Cabang / Outlet",
+                                "Dedicated Account Manager",
+                                "Custom Integrasi API",
+                                "Training & Onboarding",
+                                "SLA Guarantee 99.9%",
+                                "White Label Option"
+                            ].map((feature, i) => (
+                                <li key={i} className="flex items-center gap-2 text-sm font-bold">
+                                    <span className="material-symbols-outlined text-purple-600 text-lg">stars</span>
+                                    {feature}
+                                </li>
+                            ))}
+                        </ul>
+                        <button className="w-full py-3 border-3 border-black font-bold bg-white hover:bg-purple-50 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
+                            Hubungi Sales
+                        </button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }

@@ -4,9 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useStore } from '@/contexts/StoreContext';
 import { Button } from './ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X, Share2, Download, MessageCircle, Facebook, Twitter } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { SettingsDialog } from './SettingsDialog';
+import { QRCodeCanvas } from 'qrcode.react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationBell } from './NotificationBell';
@@ -66,10 +68,53 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
 
               {/* Centered Store Name (Public Mode Only) */}
               {isPublicMode && storeName && (
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full pointer-events-none">
-                  <span className="font-display font-bold text-xl md:text-2xl text-brand-black uppercase tracking-wider">
-                    {storeName}
-                  </span>
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-full pointer-events-none">
+                  <div className="flex items-center gap-4 pointer-events-auto">
+                    <div className="bg-white border-3 border-black px-6 py-2 shadow-[4px_4px_0px_0px_#000] transform -rotate-2 hover:rotate-0 transition-all duration-200 cursor-default">
+                      <h1 className="text-xl md:text-2xl font-black tracking-wider text-black uppercase">
+                        {storeName}
+                      </h1>
+                    </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="p-2 hover:bg-black/5 rounded-full transition-colors">
+                          <Share2 className="w-6 h-6 text-black" />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-zinc-950 border-2 border-brand-orange text-white sm:rounded-xl p-0 overflow-hidden max-w-sm">
+                        <div className="p-6 flex flex-col items-center text-center relative">
+                          <h2 className="text-brand-orange font-bold tracking-widest mb-6 text-lg">SCAN UNTUK MEMBUKA</h2>
+
+                          <div className="bg-white p-3 rounded-xl shadow-[0_0_20px_rgba(243,128,32,0.3)] mb-6">
+                            <QRCodeCanvas value={window.location.href} size={180} />
+                          </div>
+
+                          <p className="text-zinc-400 text-sm mb-6 max-w-[250px] leading-relaxed">
+                            Arahkan kamera HP Anda ke QR Code di atas untuk membuka <span className="text-white font-bold">{storeName}</span>.
+                          </p>
+
+                          <Button className="w-full bg-brand-orange hover:bg-brand-orange/90 text-black font-bold mb-6 rounded-lg h-12">
+                            <Download className="mr-2 h-4 w-4" />
+                            Download QR Code
+                          </Button>
+
+                          <div className="space-y-3 w-full">
+                            <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase">BAGIKAN VIA</p>
+                            <div className="flex justify-center gap-3">
+                              <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#25D366] hover:bg-zinc-800 hover:text-[#25D366] hover:border-zinc-700 w-10 h-10"><MessageCircle size={18} /></Button>
+                              <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1877F2] hover:bg-zinc-800 hover:text-[#1877F2] hover:border-zinc-700 w-10 h-10"><Facebook size={18} /></Button>
+                              <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1DA1F2] hover:bg-zinc-800 hover:text-[#1DA1F2] hover:border-zinc-700 w-10 h-10"><Twitter size={18} /></Button>
+                              <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-brand-orange hover:bg-zinc-800 hover:text-brand-orange hover:border-zinc-700 w-10 h-10"><Share2 size={18} /></Button>
+                            </div>
+                          </div>
+
+                          <div className="mt-6 pt-4 border-t border-zinc-900 w-full">
+                            <p className="text-[10px] text-zinc-600">2026 OMZETIN by RSQUARE. All rights reserved.</p>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               )}
 
