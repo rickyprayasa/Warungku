@@ -21,7 +21,8 @@ interface PlanDetails {
     borderColor: string;
 }
 
-const plans: PlanDetails[] = [
+// Default plans as fallback
+const defaultPlans: PlanDetails[] = [
     {
         id: 'free',
         name: 'Free',
@@ -43,7 +44,7 @@ const plans: PlanDetails[] = [
     {
         id: 'pro',
         name: 'Pro',
-        price: 'Rp 99.000',
+        price: 'Rp 50.000',
         priceNote: '/bulan',
         description: 'Untuk bisnis yang berkembang',
         icon: Crown,
@@ -85,10 +86,21 @@ const plans: PlanDetails[] = [
     },
 ];
 
+// Helper function to format price
+const formatPrice = (price: number | null | undefined): string => {
+    if (price === null || price === undefined || price === 0) return 'Rp 0';
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+    }).format(price);
+};
+
 export function UpgradePlanContent() {
     const { store, updateStorePlan } = useAuth();
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
     const [dbPlans, setDbPlans] = useState<any[]>([]);
+    const [plans, setPlans] = useState<PlanDetails[]>(defaultPlans);
     const currentPlan = store?.plan || 'free';
 
     useEffect(() => {
@@ -101,6 +113,24 @@ export function UpgradePlanContent() {
 
                 if (error) throw error;
                 setDbPlans(data || []);
+
+                // Merge database plans with default plans
+                if (data && data.length > 0) {
+                    const mergedPlans: PlanDetails[] = defaultPlans.map((defaultPlan) => {
+                        const dbPlan = data.find((p: any) => p.name.toLowerCase() === defaultPlan.id);
+
+                        if (dbPlan && dbPlan.price !== null && dbPlan.price !== undefined && defaultPlan.id !== 'enterprise') {
+                            return {
+                                ...defaultPlan,
+                                price: formatPrice(dbPlan.price),
+                            };
+                        }
+
+                        return defaultPlan;
+                    });
+
+                    setPlans(mergedPlans);
+                }
             } catch (error) {
                 console.error('Error fetching plans:', error);
             }

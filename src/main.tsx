@@ -281,7 +281,18 @@ const router = createBrowserRouter([
       </Suspense>
     ),
     errorElement: <RouteErrorBoundary />,
+    children: [
+      {
+        path: "checkout",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <CheckoutPage />
+          </Suspense>
+        ),
+      },
+    ],
   },
+
   // Admin CMS Dashboard
   {
     path: "/admin",

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Omzetin - Neo-Brutalist SaaS Landing Page</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    "neo-orange": "#FF6B00",
+                    "neo-black": "#000000",
+                    "neo-white": "#FFFFFF",
+                    "neo-grey": "#F2F2F2",
+                    "neo-purple": "#A855F7",
+                    "neo-blue": "#3B82F6",
+                    "neo-green": "#22C55E",
+                    "neo-yellow": "#FDE047"
+                },
+                fontFamily: {
+                    "display": ["Archivo", "sans-serif"],
+                    "body": ["Archivo", "sans-serif"]
+                },
+                borderRadius: { "none": "0", "sm": "0.125rem", "md": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem" },
+                boxShadow: {
+                    'neo': '5px 5px 0px 0px #000000',
+                    'neo-sm': '3px 3px 0px 0px #000000',
+                    'neo-lg': '8px 8px 0px 0px #000000',
+                    'neo-xl': '12px 12px 0px 0px #000000',
+                    'neo-hover': '2px 2px 0px 0px #000000',
+                },
+                borderWidth: {
+                    '3': '3px',
+                }
+            },
+        },
+    }
+</script>
+<style>html {
+        scroll-behavior: smooth;
+    }
+    body {
+        background-color: #FFFFFF;
+        color: #000000;
+        font-family: 'Archivo', sans-serif;
+    }::-webkit-scrollbar {
+        width: 12px;
+        border-left: 2px solid black;
+    }
+    ::-webkit-scrollbar-track {
+        background: #ffffff; 
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #FF6B00; 
+        border: 2px solid black;
+        box-shadow: 2px 2px 0px 0px #000 inset;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #000000; 
+    }
+    .neo-border {
+        border: 3px solid #000000;
+    }
+    .neo-card {
+        background-color: #ffffff;
+        border: 3px solid #000000;
+        box-shadow: 6px 6px 0px 0px #000000;
+        transition: all 0.2s ease;
+    }
+    .neo-card:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 8px 8px 0px 0px #000000;
+    }
+    .neo-button {
+        border: 3px solid #000000;
+        box-shadow: 4px 4px 0px 0px #000000;
+        font-weight: 700;
+        transition: all 0.1s ease;
+    }
+    .neo-button:active {
+        transform: translate(4px, 4px);
+        box-shadow: 0px 0px 0px 0px #000000;
+    }
+    .pattern-dots {
+        background-image: radial-gradient(#000 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+    .pattern-lines {
+        background: repeating-linear-gradient(
+          45deg,
+          #fff,
+          #fff 10px,
+          #f2f2f2 10px,
+          #f2f2f2 20px
+        );
+    }
+    .chunky-icon {
+        filter: drop-shadow(4px 4px 0px #000);
+    }
+</style>
+</head>
+<body class="bg-neo-white text-neo-black font-display overflow-x-hidden antialiased selection:bg-neo-orange selection:text-white">
+<nav class="sticky top-0 z-50 w-full border-b-3 border-neo-black bg-neo-white">
+<div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
+<div class="flex items-center gap-3">
+<div class="flex h-12 w-12 items-center justify-center border-3 border-neo-black bg-neo-orange shadow-neo-sm transform -rotate-3">
+<span class="material-symbols-outlined text-3xl text-neo-black font-bold">storefront</span>
+</div>
+<span class="text-3xl font-black tracking-tighter text-neo-black uppercase">Omzetin</span>
+</div>
+<div class="hidden gap-8 md:flex">
+<a class="text-base font-bold text-neo-black hover:bg-neo-yellow hover:px-2 hover:-mx-2 border-2 border-transparent hover:border-neo-black transition-all" href="#features">Fitur</a>
+<a class="text-base font-bold text-neo-black hover:bg-neo-blue hover:text-white hover:px-2 hover:-mx-2 border-2 border-transparent hover:border-neo-black transition-all" href="#dashboard">Dashboard</a>
+<a class="text-base font-bold text-neo-black hover:bg-neo-purple hover:text-white hover:px-2 hover:-mx-2 border-2 border-transparent hover:border-neo-black transition-all" href="#stories">Testimoni</a>
+<a class="text-base font-bold text-neo-black hover:bg-neo-green hover:px-2 hover:-mx-2 border-2 border-transparent hover:border-neo-black transition-all" href="#pricing">Harga</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden text-base font-bold text-neo-black sm:block hover:underline decoration-4 underline-offset-4 decoration-neo-orange">Masuk</button>
+<button class="neo-button flex h-12 items-center justify-center bg-neo-black px-6 text-base font-bold text-white hover:bg-neo-orange hover:text-black">
+                Daftar
+            </button>
+</div>
+</div>
+</nav>
+<main class="flex flex-col items-center w-full">
+<section class="relative w-full border-b-3 border-neo-black pattern-dots bg-neo-white">
+<div class="mx-auto max-w-7xl px-6 py-12 lg:px-10 lg:py-24">
+<div class="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16 items-center">
+<div class="lg:col-span-7 flex flex-col gap-8 text-center lg:text-left z-10">
+<div class="inline-flex items-center self-center gap-2 border-3 border-neo-black bg-neo-yellow px-4 py-2 font-black text-xs uppercase tracking-wider shadow-neo-sm transform -rotate-1 lg:self-start">
+<span class="material-symbols-outlined text-base">verified</span>
+                        #1 POS App for MSMEs
+                    </div>
+<h1 class="text-6xl font-black leading-[0.95] tracking-tight text-neo-black sm:text-7xl lg:text-8xl">
+                        Satu Aplikasi,<br/>
+<span class="inline-block bg-neo-orange px-2 text-white border-3 border-neo-black shadow-neo transform rotate-2">Semua Solusi</span>
+<span class="block mt-2">UMKM</span>
+</h1>
+<p class="text-xl font-bold leading-relaxed text-gray-800 lg:max-w-xl border-l-4 border-neo-black pl-6 bg-white py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
+                        Kelola kasir, stok, dan laporan keuangan dalam satu genggaman. Tingkatkan omzet bisnis Anda tanpa ribet, tanpa drama.
+                    </p>
+<div class="flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start pt-4">
+<button class="neo-button group flex h-14 items-center justify-center gap-3 bg-neo-orange px-8 text-lg text-black hover:bg-white border-3 border-black">
+                            Coba Gratis
+                            <span class="material-symbols-outlined text-2xl group-hover:translate-x-1 transition-transform font-bold">arrow_forward</span>
+</button>
+<button class="neo-button flex h-14 items-center justify-center gap-2 bg-white px-8 text-lg text-neo-black hover:bg-neo-grey border-3 border-black">
+<span class="material-symbols-outlined text-2xl">play_circle</span>
+                            Lihat Demo
+                        </button>
+</div>
+<div class="mt-4 flex flex-wrap items-center justify-center gap-6 text-sm font-bold text-neo-black lg:justify-start">
+<div class="flex items-center gap-2 bg-white border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_#000]">
+<span class="material-symbols-outlined text-lg">check_box</span>
+                            Tanpa Kartu Kredit
+                        </div>
+<div class="flex items-center gap-2 bg-white border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_#000]">
+<span class="material-symbols-outlined text-lg">check_box</span>
+                            Gratis 14 Hari
+                        </div>
+</div>
+</div>
+<div class="lg:col-span-5 relative flex justify-center lg:justify-end">
+<div class="relative w-full max-w-lg">
+<div class="absolute -top-10 -right-10 w-24 h-24 bg-neo-purple border-3 border-black rounded-full z-0"></div>
+<div class="absolute -bottom-6 -left-8 w-32 h-32 bg-neo-yellow border-3 border-black z-0 transform rotate-12"></div>
+<div class="w-full aspect-[4/5] border-3 border-neo-black bg-white shadow-neo-xl relative overflow-hidden group z-10">
+<div class="absolute inset-0 bg-neo-orange opacity-10 pattern-lines"></div>
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 flex flex-col gap-4">
+<div class="w-full h-1/3 bg-neo-black border-3 border-black shadow-neo-sm"></div>
+<div class="w-2/3 h-1/3 bg-neo-orange border-3 border-black shadow-neo-sm ml-auto"></div>
+<div class="w-1/2 h-1/3 bg-neo-grey border-3 border-black shadow-neo-sm mr-auto"></div>
+</div>
+<div class="absolute top-6 right-6 bg-white border-3 border-black p-3 shadow-neo transform rotate-3">
+<span class="font-black text-2xl">🚀 +120%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="w-full border-b-3 border-neo-black bg-neo-yellow py-10 overflow-hidden">
+<div class="mx-auto flex max-w-7xl flex-col items-center gap-6 px-6 lg:px-10">
+<div class="bg-black text-white px-4 py-1 text-sm font-bold uppercase tracking-widest transform -rotate-1 border-2 border-white">
+                Dipercaya oleh 5.000+ UMKM Indonesia
+            </div>
+<div class="flex w-full flex-wrap justify-center gap-8 md:gap-16 opacity-80">
+<div class="flex items-center gap-2 text-xl font-black text-neo-black uppercase tracking-widest">
+                    KopiKulo
+                </div>
+<div class="flex items-center gap-2 text-xl font-black text-neo-black uppercase tracking-widest">
+                    JanjiJiwa
+                </div>
+<div class="flex items-center gap-2 text-xl font-black text-neo-black uppercase tracking-widest">
+                    Haus!
+                </div>
+<div class="flex items-center gap-2 text-xl font-black text-neo-black uppercase tracking-widest">
+                    GeprekBensu
+                </div>
+</div>
+</div>
+</section>
+<section class="relative w-full max-w-7xl px-6 py-20 lg:px-10 mx-auto" id="features">
+<div class="mb-12 text-center md:mb-20">
+<h2 class="text-5xl font-black tracking-tight text-neo-black sm:text-6xl uppercase mb-6">
+                Fitur Juara<br/><span class="bg-neo-black text-white px-3 border-3 border-black shadow-neo-sm transform -rotate-1 inline-block">Omzetin</span>
+</h2>
+<p class="mx-auto mt-4 max-w-2xl text-xl font-bold text-gray-700 bg-white p-4 border-2 border-black shadow-neo-sm">
+                Semua yang Anda butuhkan untuk menjalankan bisnis UMKM lebih efisien dan menguntungkan.
+            </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+<div class="neo-card p-6 bg-white hover:bg-neo-yellow transition-colors duration-300 flex flex-col items-start gap-4 group">
+<div class="w-16 h-16 bg-neo-orange border-3 border-black shadow-neo-sm flex items-center justify-center group-hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-4xl text-black font-bold">point_of_sale</span>
+</div>
+<h3 class="text-2xl font-black uppercase border-b-4 border-black pb-2 w-full">POS Kasir</h3>
+<p class="font-bold text-gray-800 leading-snug">
+                    Sistem kasir cepat &amp; mudah. Terima pembayaran tunai, QRIS, dan kartu debit dalam hitungan detik.
+                </p>
+</div>
+<div class="neo-card p-6 bg-white hover:bg-neo-blue hover:text-white transition-colors duration-300 flex flex-col items-start gap-4 group">
+<div class="w-16 h-16 bg-neo-black border-3 border-black shadow-neo-sm flex items-center justify-center group-hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-4xl text-white group-hover:text-black font-bold">inventory_2</span>
+</div>
+<h3 class="text-2xl font-black uppercase border-b-4 border-black pb-2 w-full group-hover:border-white">Manajemen Inventori</h3>
+<p class="font-bold text-gray-800 group-hover:text-white leading-snug">
+                    Pantau stok barang real-time. Dapatkan notifikasi saat stok menipis agar penjualan tidak terhambat.
+                </p>
+</div>
+<div class="neo-card p-6 bg-white hover:bg-neo-green transition-colors duration-300 flex flex-col items-start gap-4 group">
+<div class="w-16 h-16 bg-neo-grey border-3 border-black shadow-neo-sm flex items-center justify-center group-hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-4xl text-black font-bold">account_balance_wallet</span>
+</div>
+<h3 class="text-2xl font-black uppercase border-b-4 border-black pb-2 w-full">Laporan Keuangan</h3>
+<p class="font-bold text-gray-800 leading-snug">
+                    Laporan laba rugi otomatis. Tahu persis keuntungan harian, mingguan, dan bulanan tanpa pusing hitung manual.
+                </p>
+</div>
+<div class="neo-card p-6 bg-white hover:bg-neo-purple hover:text-white transition-colors duration-300 flex flex-col items-start gap-4 group">
+<div class="w-16 h-16 bg-neo-orange border-3 border-black shadow-neo-sm flex items-center justify-center group-hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-4xl text-black font-bold">monitoring</span>
+</div>
+<h3 class="text-2xl font-black uppercase border-b-4 border-black pb-2 w-full group-hover:border-white">Analitik Bisnis</h3>
+<p class="font-bold text-gray-800 group-hover:text-white leading-snug">
+                    Analisis tren penjualan terlaris. Ambil keputusan bisnis berdasarkan data, bukan tebak-tebakan.
+                </p>
+</div>
+</div>
+</section>
+<section class="w-full border-y-3 border-neo-black bg-neo-grey py-24 pattern-lines" id="dashboard">
+<div class="mx-auto max-w-7xl px-6 lg:px-10">
+<div class="flex flex-col lg:flex-row gap-12 items-center">
+<div class="lg:w-1/3">
+<h2 class="text-5xl font-black uppercase mb-6 leading-tight">
+                    Lihat Bisnismu <span class="text-neo-orange bg-black px-2">Tumbuh</span>
+</h2>
+<p class="text-xl font-bold mb-8 border-l-4 border-black pl-4">
+                    Dashboard simpel yang memberikan gambaran lengkap kesehatan bisnismu dalam satu layar.
+                </p>
+<ul class="flex flex-col gap-4 font-bold text-lg">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined bg-neo-orange border-2 border-black p-1 text-white shadow-[2px_2px_0px_0px_#000]">check</span>
+                        Grafik Penualan Real-time
+                    </li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined bg-neo-blue border-2 border-black p-1 text-white shadow-[2px_2px_0px_0px_#000]">check</span>
+                        Produk Terlaris
+                    </li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined bg-neo-green border-2 border-black p-1 text-white shadow-[2px_2px_0px_0px_#000]">check</span>
+                        Metode Pembayaran Favorit
+                    </li>
+</ul>
+</div>
+<div class="lg:w-2/3 w-full">
+<div class="w-full bg-white border-3 border-black shadow-neo-xl p-4 md:p-6 relative">
+<div class="absolute top-0 left-0 w-full h-10 border-b-3 border-black bg-neo-yellow flex items-center px-4 gap-2">
+<div class="w-4 h-4 rounded-none bg-white border-2 border-black"></div>
+<div class="w-4 h-4 rounded-none bg-black border-2 border-black"></div>
+<div class="text-xs font-black uppercase ml-auto">Omzetin Dashboard v2.0</div>
+</div>
+<div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="border-3 border-black p-4 shadow-neo-sm bg-white">
+<div class="text-xs font-bold uppercase text-gray-500 mb-1">Total Omzet Hari Ini</div>
+<div class="text-3xl font-black">Rp 2.5jt</div>
+<div class="mt-2 text-sm font-bold text-neo-green flex items-center gap-1">
+<span class="material-symbols-outlined text-base">arrow_upward</span> +15%
+                            </div>
+</div>
+<div class="border-3 border-black p-4 shadow-neo-sm bg-white">
+<div class="text-xs font-bold uppercase text-gray-500 mb-1">Total Transaksi</div>
+<div class="text-3xl font-black">48</div>
+<div class="mt-2 text-sm font-bold text-neo-blue flex items-center gap-1">
+<span class="material-symbols-outlined text-base">arrow_upward</span> +8%
+                            </div>
+</div>
+<div class="border-3 border-black p-4 shadow-neo-sm bg-white">
+<div class="text-xs font-bold uppercase text-gray-500 mb-1">Produk Terjual</div>
+<div class="text-3xl font-black">124</div>
+<div class="mt-2 text-sm font-bold text-neo-orange flex items-center gap-1">
+<span class="material-symbols-outlined text-base">local_fire_department</span> Hot
+                            </div>
+</div>
+<div class="md:col-span-3 border-3 border-black p-6 shadow-neo-sm bg-white min-h-[300px] flex flex-col justify-end relative overflow-hidden">
+<div class="absolute top-4 left-4 font-black uppercase text-xl">Grafik Penualan Mingguan</div>
+<div class="flex items-end justify-between gap-2 h-48 w-full mt-10 px-2">
+<div class="w-full bg-neo-grey border-2 border-black h-[40%] hover:bg-neo-black transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs p-1 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Sen</div>
+</div>
+<div class="w-full bg-neo-grey border-2 border-black h-[55%] hover:bg-neo-black transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs p-1 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Sel</div>
+</div>
+<div class="w-full bg-neo-grey border-2 border-black h-[45%] hover:bg-neo-black transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs p-1 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Rab</div>
+</div>
+<div class="w-full bg-neo-grey border-2 border-black h-[70%] hover:bg-neo-black transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs p-1 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Kam</div>
+</div>
+<div class="w-full bg-neo-orange border-2 border-black h-[90%] shadow-[4px_-4px_0px_0px_#000] relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs p-1 font-bold">Jum</div>
+</div>
+<div class="w-full bg-neo-grey border-2 border-black h-[85%] hover:bg-neo-black transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs p-1 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Sab</div>
+</div>
+<div class="w-full bg-neo-grey border-2 border-black h-[60%] hover:bg-neo-black transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs p-1 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Min</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="relative w-full max-w-7xl px-6 py-24 lg:px-10 mx-auto" id="stories">
+<div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-3 border-black pb-8">
+<div>
+<h2 class="text-5xl font-black tracking-tight text-neo-black uppercase sm:text-6xl">Kata Mereka</h2>
+<p class="mt-4 text-xl font-bold bg-neo-yellow inline-block px-2 border-2 border-black shadow-neo-sm">Bukti nyata dari sesama pemilik UMKM.</p>
+</div>
+<div class="flex gap-4">
+<button class="neo-button flex h-12 w-12 items-center justify-center bg-white text-black hover:bg-black hover:text-white">
+<span class="material-symbols-outlined text-2xl font-bold">arrow_back</span>
+</button>
+<button class="neo-button flex h-12 w-12 items-center justify-center bg-neo-orange text-black hover:bg-black hover:text-white">
+<span class="material-symbols-outlined text-2xl font-bold">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+<div class="flex flex-col justify-between border-3 border-black bg-white p-8 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-1">
+<div class="mb-6">
+<div class="mb-4 flex gap-1 bg-black w-fit px-2 py-1">
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+</div>
+<p class="text-lg font-bold leading-relaxed text-black border-l-4 border-neo-orange pl-3">"Omzetin bikin hidup saya tenang. Gak perlu begadang lagi cuma buat rekap penjualan harian. Mantap!"</p>
+</div>
+<div class="flex items-center gap-4 border-t-3 border-black pt-6">
+<div class="h-14 w-14 border-2 border-black bg-neo-blue shadow-[2px_2px_0px_0px_#000] flex items-center justify-center text-white font-black text-xl">BU</div>
+<div>
+<p class="font-black text-neo-black uppercase">Budi Santoso</p>
+<p class="text-sm font-bold text-gray-600">Pemilik, Kopi Senja</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-between border-3 border-black bg-neo-grey p-8 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-1">
+<div class="mb-6">
+<div class="mb-4 flex gap-1 bg-black w-fit px-2 py-1">
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+</div>
+<p class="text-lg font-bold leading-relaxed text-black border-l-4 border-neo-purple pl-3">"Fitur stoknya juara. Dulu sering kehabisan barang pas rame, sekarang udah ada notif otomatis."</p>
+</div>
+<div class="flex items-center gap-4 border-t-3 border-black pt-6">
+<div class="h-14 w-14 border-2 border-black bg-neo-purple shadow-[2px_2px_0px_0px_#000] flex items-center justify-center text-white font-black text-xl">SI</div>
+<div>
+<p class="font-black text-neo-black uppercase">Siti Aminah</p>
+<p class="text-sm font-bold text-gray-600">Owner, Toko Berkah</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-between border-3 border-black bg-white p-8 shadow-neo hover:shadow-neo-lg transition-all hover:-translate-y-1">
+<div class="mb-6">
+<div class="mb-4 flex gap-1 bg-black w-fit px-2 py-1">
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+<span class="material-symbols-outlined text-xl text-neo-orange fill-current" style="font-variation-settings: 'FILL' 1">star</span>
+</div>
+<p class="text-lg font-bold leading-relaxed text-black border-l-4 border-neo-green pl-3">"Tampilannya keren tapi gampang dipake. Kasir saya yang gaptek aja langsung bisa dalam 10 menit."</p>
+</div>
+<div class="flex items-center gap-4 border-t-3 border-black pt-6">
+<div class="h-14 w-14 border-2 border-black bg-neo-green shadow-[2px_2px_0px_0px_#000] flex items-center justify-center text-black font-black text-xl">AN</div>
+<div>
+<p class="font-black text-neo-black uppercase">Andi Pratama</p>
+<p class="text-sm font-bold text-gray-600">Manager, Burger Bro</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="w-full max-w-7xl px-6 py-20 lg:px-10 mx-auto" id="pricing">
+<div class="relative overflow-hidden border-3 border-black bg-neo-orange px-6 py-16 text-center shadow-neo-xl sm:px-12 sm:py-24 pattern-dots">
+<div class="absolute top-0 right-0 w-32 h-32 bg-neo-yellow border-b-3 border-l-3 border-black"></div>
+<div class="absolute bottom-0 left-0 w-24 h-24 bg-white border-t-3 border-r-3 border-black"></div>
+<div class="relative z-10 mx-auto max-w-3xl bg-white border-3 border-black p-8 sm:p-12 shadow-neo transform rotate-1">
+<h2 class="mb-6 text-4xl font-black tracking-tight text-neo-black uppercase sm:text-6xl">Siap Scale Up?</h2>
+<p class="mb-10 text-xl font-medium text-gray-800">Bergabunglah dengan ribuan pebisnis UMKM yang telah sukses bersama Omzetin.</p>
+<div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
+<button class="neo-button h-16 w-full bg-neo-black px-8 text-xl font-bold text-white hover:bg-neo-blue sm:w-auto border-3 border-black shadow-neo-lg">
+                        Mulai Gratis Sekarang
+                    </button>
+<button class="neo-button h-16 w-full bg-white px-8 text-xl font-bold text-black hover:bg-gray-100 sm:w-auto border-3 border-black">
+                        Hubungi Sales
+                    </button>
+</div>
+</div>
+</div>
+</section>
+<footer class="w-full border-t-3 border-black bg-white pt-16 pb-8">
+<div class="mx-auto max-w-7xl px-6 lg:px-10">
+<div class="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 mb-12">
+<div class="col-span-2 lg:col-span-2">
+<div class="flex items-center gap-2 mb-6">
+<div class="flex h-10 w-10 items-center justify-center border-2 border-black bg-neo-orange text-black shadow-neo-sm">
+<span class="material-symbols-outlined text-2xl font-bold">storefront</span>
+</div>
+<span class="text-2xl font-black text-neo-black uppercase">Omzetin</span>
+</div>
+<p class="mb-6 max-w-xs text-base font-medium text-gray-600 border-l-4 border-black pl-4">Membantu UMKM Indonesia naik kelas dengan teknologi yang mudah dan terjangkau.</p>
+<div class="flex gap-4">
+<a class="flex h-10 w-10 items-center justify-center border-2 border-black bg-white text-black hover:bg-neo-black hover:text-white transition-colors shadow-neo-sm" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="flex h-10 w-10 items-center justify-center border-2 border-black bg-white text-black hover:bg-neo-black hover:text-white transition-colors shadow-neo-sm" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-lg font-black uppercase text-neo-black border-b-2 border-black w-fit pb-1">Produk</h4>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Fitur</a>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Harga</a>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Integrasi</a>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-lg font-black uppercase text-neo-black border-b-2 border-black w-fit pb-1">Bantuan</h4>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Blog</a>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Panduan</a>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Pusat Bantuan</a>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-lg font-black uppercase text-neo-black border-b-2 border-black w-fit pb-1">Perusahaan</h4>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Tentang Kami</a>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Karir</a>
+<a class="text-base font-bold text-gray-600 hover:text-neo-orange hover:translate-x-1 transition-all" href="#">Kontak</a>
+</div>
+</div>
+<div class="border-t-3 border-black pt-8 text-center text-sm font-bold text-gray-500 uppercase tracking-widest">
+                © 2024 Omzetin Indonesia. Hak Cipta Dilindungi.
+            </div>
+</div>
+</footer>
+</main>
+</body></html>

@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PackagePlus, MessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { api } from '@/lib/api-client';
+import { supabase } from '@/lib/supabase';
+import { useWarungStore } from '@/lib/store-supabase';
 
 interface CustomerFeedbackDialogProps {
     product: Product;
@@ -37,18 +38,26 @@ export function CustomerFeedbackDialog({ product, type, onClose }: CustomerFeedb
         setIsSubmitting(true);
 
         try {
-            await api('/api/feedback', {
-                method: 'POST',
-                body: JSON.stringify({
-                    productId: product.id,
-                    productName: product.name,
-                    requesterName: name,
+            const currentStoreId = useWarungStore.getState().currentStoreId;
+
+            if (!currentStoreId) {
+                throw new Error('Store ID not found');
+            }
+
+            const { error } = await supabase
+                .from('snack_requests')
+                .insert({
+                    store_id: currentStoreId,
+                    product_id: product.id,
+                    snack_name: product.name,
+                    requester_name: name,
                     quantity: type === 'stock_request' ? quantity : 0,
                     notes: message,
-                    requestType: type,
+                    request_type: type,
                     status: 'pending'
-                })
-            });
+                } as any);
+
+            if (error) throw error;
 
             toast({
                 title: "Terkirim!",
@@ -59,6 +68,7 @@ export function CustomerFeedbackDialog({ product, type, onClose }: CustomerFeedb
 
             onClose();
         } catch (error: any) {
+            console.error('Feedback error:', error);
             toast({
                 title: "Error",
                 description: error.message || "Gagal mengirim request",

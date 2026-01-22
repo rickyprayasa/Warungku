@@ -30,7 +30,7 @@ export function QRISSetupDialog({ trigger, compact = false }: QRISSetupDialogPro
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] rounded-none border-4 border-brand-black bg-brand-white p-0 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl rounded-none border-4 border-brand-black bg-brand-white p-0 max-h-[90vh] overflow-y-auto">
         <div className="bg-brand-orange p-4 border-b-4 border-brand-black">
           <DialogHeader>
             <DialogTitle className="font-display font-black text-2xl text-brand-black uppercase tracking-wider flex items-center gap-2">

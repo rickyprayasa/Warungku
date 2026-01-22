@@ -1,5 +1,6 @@
 import { useCartStore } from '@/lib/cart-store';
 import { useWarungStore } from '@/lib/store';
+import { useStore } from '@/contexts/StoreContext';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -17,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export function CartSheet() {
   const { items, isCartOpen, closeCart, updateQuantity, removeFromCart, clearCart, getTotal } = useCartStore();
   const storeProfile = useWarungStore((state) => state.storeProfile);
+  const { publicStore, isPublicMode } = useStore();
   const navigate = useNavigate();
 
   const formatCurrency = (value: number) =>
@@ -28,7 +30,12 @@ export function CartSheet() {
 
   const handleCheckout = () => {
     closeCart();
-    navigate('/checkout');
+    // Use store-specific checkout URL when in public mode to preserve store context
+    if (isPublicMode && publicStore?.slug) {
+      navigate(`/${publicStore.slug}/checkout`);
+    } else {
+      navigate('/checkout');
+    }
   };
 
   const total = getTotal();
@@ -101,7 +108,7 @@ export function CartSheet() {
                         <h4 className="font-bold text-sm truncate">{item.product.name}</h4>
                         <p className="font-mono text-xs text-muted-foreground">
                           {formatCurrency(price)}
-                          {item.product.qtyPerUnit && item.product.qtyPerUnit > 1 
+                          {item.product.qtyPerUnit && item.product.qtyPerUnit > 1
                             ? ` / ${item.product.qtyPerUnit} pcs`
                             : ' /pcs'
                           }

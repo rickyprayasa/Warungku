@@ -571,18 +571,21 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         if (error) throw error;
 
         if (store) {
-          // Fetch payment methods from settings
-          const { data: pmData } = await supabase
+          // Fetch all settings
+          const { data: settingsData } = await supabase
             .from('settings')
-            .select('value')
-            .eq('store_id', storeId)
-            .eq('key', 'payment_methods')
-            .single() as any;
+            .select('key, value')
+            .eq('store_id', storeId);
+
+          const settingsMap = (settingsData || []).reduce((acc: any, curr: any) => {
+            acc[curr.key] = curr.value;
+            return acc;
+          }, {});
 
           let paymentMethods: string[] = [];
-          if (pmData?.value) {
+          if (settingsMap.payment_methods) {
             try {
-              paymentMethods = JSON.parse(pmData.value);
+              paymentMethods = JSON.parse(settingsMap.payment_methods);
             } catch (e) {
               console.error('Failed to parse payment methods:', e);
             }
@@ -598,6 +601,10 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               cartEnabled: store.cart_enabled !== false,
               paymentMethods,
               slug: store.slug || '',
+              bankName: settingsMap.bank_name || '',
+              accountNumber: settingsMap.account_number || '',
+              accountName: settingsMap.account_name || '',
+              phoneNumber: settingsMap.phone_number || '',
             }
           });
         }
@@ -676,18 +683,20 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         if (error) throw error;
 
-        // Save payment methods to settings if present
-        if (profile.paymentMethods) {
-          const { error: pmError } = await supabase
-            .from('settings')
-            .upsert({
-              store_id: storeId,
-              key: 'payment_methods',
-              value: JSON.stringify(profile.paymentMethods),
-            }, { onConflict: 'store_id,key' } as any);
+        // Save payment methods and bank details to settings
+        const settingsToUpsert = [
+          { store_id: storeId, key: 'payment_methods', value: JSON.stringify(profile.paymentMethods || []) },
+          { store_id: storeId, key: 'bank_name', value: profile.bankName || '' },
+          { store_id: storeId, key: 'account_number', value: profile.accountNumber || '' },
+          { store_id: storeId, key: 'account_name', value: profile.accountName || '' },
+          { store_id: storeId, key: 'phone_number', value: profile.phoneNumber || '' },
+        ];
 
-          if (pmError) console.error('Failed to save payment methods:', pmError);
-        }
+        const { error: settingsError } = await supabase
+          .from('settings')
+          .upsert(settingsToUpsert, { onConflict: 'store_id,key' } as any);
+
+        if (settingsError) console.error('Failed to save settings:', settingsError);
 
         set({ storeProfile: profile });
       } catch (error) {
@@ -912,6 +921,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       if (!storeId) throw new Error('No store selected');
 
       try {
+        console.log('[addPublicSale] Calling RPC create_public_sale with:', { storeId, itemsCount: saleData.items.length });
+
         // Call RPC function for public sale creation
         const { data, error } = await supabase.rpc('create_public_sale', {
           sale_data: {
@@ -926,8 +937,10 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           },
         });
 
+        console.log('[addPublicSale] RPC Result:', { data, error });
+
         if (error) {
-          console.error('[addPublicSale] RPC error:', error);
+          console.error('[addPublicSale] RPC error object:', JSON.stringify(error, null, 2));
           throw error;
         }
 

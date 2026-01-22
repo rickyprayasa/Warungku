@@ -13,6 +13,11 @@ interface PublicStore {
   logoUrl?: string;
   qrisCode?: string;
   cartEnabled?: boolean;
+  paymentMethods?: string[];
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+  phoneNumber?: string; // E-wallet phone number
 }
 
 interface StoreContextType {
@@ -43,6 +48,68 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setManualIsPublicMode(mode);
     console.log('[StoreContext] Public mode updated to:', mode);
   }, []);
+
+  const fetchStoreSettings = async (storeId: string) => {
+    try {
+      console.log('[StoreContext] Fetching settings for store:', storeId);
+
+      // Try RPC first (for public access bypassing RLS)
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc('get_public_store_settings', { p_store_id: storeId });
+
+      let settingsData = rpcData;
+
+      if (rpcError) {
+        console.warn('[StoreContext] RPC get_public_store_settings failed, falling back to direct query:', rpcError);
+        // Fallback to direct query (might fail due to RLS if not authenticated)
+        const { data: directData, error: directError } = await supabase
+          .from('settings')
+          .select('key, value')
+          .eq('store_id', storeId);
+
+        if (directError) {
+          console.error('[StoreContext] Error fetching settings (direct):', directError);
+        }
+        settingsData = directData;
+      }
+
+      console.log('[StoreContext] Raw settings data:', settingsData);
+
+      const settingsMap = (settingsData || []).reduce((acc: any, curr: any) => {
+        acc[curr.key] = curr.value;
+        return acc;
+      }, {});
+
+      let paymentMethods: string[] = [];
+      if (settingsMap.payment_methods) {
+        try {
+          paymentMethods = JSON.parse(settingsMap.payment_methods);
+        } catch (e) {
+          console.error('Failed to parse payment methods:', e);
+        }
+      }
+
+      const result = {
+        paymentMethods,
+        bankName: settingsMap.bank_name || '',
+        accountNumber: settingsMap.account_number || '',
+        accountName: settingsMap.account_name || '',
+        phoneNumber: settingsMap.phone_number || '',
+      };
+
+      console.log('[StoreContext] Processed settings:', result);
+      return result;
+    } catch (error) {
+      console.error('Failed to fetch store settings:', error);
+      return {
+        paymentMethods: [],
+        bankName: '',
+        accountNumber: '',
+        accountName: '',
+        phoneNumber: '',
+      };
+    }
+  };
 
   const loadStoreBySlug = useCallback(async (slug: string): Promise<PublicStore | null> => {
     console.log('[StoreContext] Loading store by slug:', slug);
@@ -127,6 +194,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
 
         if (demoStore) {
+          const settings = await fetchStoreSettings(demoStore.id);
           const store: PublicStore = {
             id: demoStore.id,
             name: demoStore.name,
@@ -136,6 +204,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             logoUrl: demoStore.logo_url || '',
             qrisCode: demoStore.qris_code || '',
             cartEnabled: demoStore.cart_enabled !== false,
+            ...settings
           };
           setPublicStore(store);
           setCurrentStoreId(store.id);
@@ -184,6 +253,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       console.log('[StoreContext] Store loaded successfully:', data);
 
+      const settings = await fetchStoreSettings(data.id);
+
       const store: PublicStore = {
         id: data.id,
         name: data.name,
@@ -193,6 +264,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         logoUrl: data.logo_url || '',
         qrisCode: data.qris_code || '',
         cartEnabled: data.cart_enabled !== false,
+        ...settings
       };
 
       setPublicStore(store);
@@ -217,10 +289,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // For public store routes, we should consider it public mode regardless of authentication status
   // Check if current path is NOT an internal route
+  // Note: /checkout is internal, but /:slug/checkout is public (handled by PublicStorePage)
   const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
-  const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
-  const isPublicMode = manualIsPublicMode || !isInternalRoute;
-  console.log('[StoreContext] isPublicMode:', isPublicMode, 'isAuthenticated:', isAuthenticated, 'publicStore:', publicStore, 'current path:', window.location.pathname);
+
+  // Check if path matches /:slug/checkout pattern (public store checkout)
+  const isPublicCheckout = /^\/[^\/]+\/checkout$/.test(window.location.pathname);
+
+  const isInternalRoute = !isPublicCheckout && (
+    internalRoutes.some(route => window.location.pathname === route ||
+      (route !== '/' && window.location.pathname.startsWith(route + '/'))) ||
+    window.location.pathname.startsWith('/admin')
+  );
+  const isPublicMode = manualIsPublicMode || isPublicCheckout || !isInternalRoute;
+  console.log('[StoreContext] isPublicMode:', isPublicMode, 'isPublicCheckout:', isPublicCheckout, 'isAuthenticated:', isAuthenticated, 'publicStore:', publicStore, 'current path:', window.location.pathname);
 
   // For public store routes, use the public store ID regardless of authentication status
   const activeStoreId = isPublicMode ? publicStore?.id : (isAuthenticated ? authStoreId : (publicStore?.id || currentStoreId));

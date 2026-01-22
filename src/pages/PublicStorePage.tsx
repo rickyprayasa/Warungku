@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useStore } from '@/contexts/StoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWarungStore } from '@/lib/store-supabase';
@@ -14,8 +14,12 @@ import { POSPage } from './POSPage';
 export function PublicStorePage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const hasFetchedRef = useRef(false);
   const lastSlugRef = useRef<string | null>(null);
+
+  // Check if we're on the checkout route
+  const isCheckoutRoute = location.pathname.endsWith('/checkout');
 
   const { refreshStore } = useAuth();
   const { user } = useAuth();
@@ -178,6 +182,19 @@ export function PublicStorePage() {
   // Store not loaded yet
   if (!publicStore) {
     return null;
+  }
+
+  // If on checkout route, render only the outlet (CheckoutPage)
+  // This preserves the store initialization/context but lets CheckoutPage control the UI
+  // If on checkout route, render only the outlet (CheckoutPage)
+  // This preserves the store initialization/context but lets CheckoutPage control the UI
+  if (isCheckoutRoute) {
+    return (
+      <>
+        <Outlet />
+        <Toaster richColors closeButton theme="light" />
+      </>
+    );
   }
 
   return (

@@ -83,6 +83,9 @@ export default {
   			'96': '24rem',
   			'128': '32rem'
   		},
+  		borderWidth: {
+        '3': '3px',
+  		},
   		borderRadius: {
         'none': '0',
   			'4xl': '2rem',
