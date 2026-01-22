@@ -86,14 +86,28 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
                           <h2 className="text-brand-orange font-bold tracking-widest mb-6 text-lg">SCAN UNTUK MEMBUKA</h2>
 
                           <div className="bg-white p-3 rounded-xl shadow-[0_0_20px_rgba(243,128,32,0.3)] mb-6">
-                            <QRCodeCanvas value={window.location.href} size={180} />
+                            <QRCodeCanvas id="header-qr-code" value={window.location.href} size={180} />
                           </div>
 
                           <p className="text-zinc-400 text-sm mb-6 max-w-[250px] leading-relaxed">
                             Arahkan kamera HP Anda ke QR Code di atas untuk membuka <span className="text-white font-bold">{storeName}</span>.
                           </p>
 
-                          <Button className="w-full bg-brand-orange hover:bg-brand-orange/90 text-black font-bold mb-6 rounded-lg h-12">
+                          <Button
+                            className="w-full bg-brand-orange hover:bg-brand-orange/90 text-black font-bold mb-6 rounded-lg h-12"
+                            onClick={() => {
+                              const canvas = document.getElementById('header-qr-code') as HTMLCanvasElement;
+                              if (canvas) {
+                                const pngUrl = canvas.toDataURL("image/png");
+                                const downloadLink = document.createElement("a");
+                                downloadLink.href = pngUrl;
+                                downloadLink.download = "warungku-qr.png";
+                                document.body.appendChild(downloadLink);
+                                downloadLink.click();
+                                document.body.removeChild(downloadLink);
+                              }
+                            }}
+                          >
                             <Download className="mr-2 h-4 w-4" />
                             Download QR Code
                           </Button>
@@ -101,10 +115,38 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
                           <div className="space-y-3 w-full">
                             <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase">BAGIKAN VIA</p>
                             <div className="flex justify-center gap-3">
-                              <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#25D366] hover:bg-zinc-800 hover:text-[#25D366] hover:border-zinc-700 w-10 h-10"><MessageCircle size={18} /></Button>
-                              <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1877F2] hover:bg-zinc-800 hover:text-[#1877F2] hover:border-zinc-700 w-10 h-10"><Facebook size={18} /></Button>
-                              <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1DA1F2] hover:bg-zinc-800 hover:text-[#1DA1F2] hover:border-zinc-700 w-10 h-10"><Twitter size={18} /></Button>
-                              <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-brand-orange hover:bg-zinc-800 hover:text-brand-orange hover:border-zinc-700 w-10 h-10"><Share2 size={18} /></Button>
+                              <Button
+                                size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#25D366] hover:bg-zinc-800 hover:text-[#25D366] hover:border-zinc-700 w-10 h-10"
+                                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent('Kunjungi ' + (storeName || 'Warungku') + '! ' + window.location.href)}`, '_blank')}
+                              >
+                                <MessageCircle size={18} />
+                              </Button>
+                              <Button
+                                size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1877F2] hover:bg-zinc-800 hover:text-[#1877F2] hover:border-zinc-700 w-10 h-10"
+                                onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
+                              >
+                                <Facebook size={18} />
+                              </Button>
+                              <Button
+                                size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1DA1F2] hover:bg-zinc-800 hover:text-[#1DA1F2] hover:border-zinc-700 w-10 h-10"
+                                onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent('Kunjungi ' + (storeName || 'Warungku') + '!')}`, '_blank')}
+                              >
+                                <Twitter size={18} />
+                              </Button>
+                              <Button
+                                size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-brand-orange hover:bg-zinc-800 hover:text-brand-orange hover:border-zinc-700 w-10 h-10"
+                                onClick={() => {
+                                  if (navigator.share) {
+                                    navigator.share({
+                                      title: storeName || 'Warungku',
+                                      text: 'Kunjungi ' + (storeName || 'Warungku') + '!',
+                                      url: window.location.href
+                                    });
+                                  }
+                                }}
+                              >
+                                <Share2 size={18} />
+                              </Button>
                             </div>
                           </div>
 

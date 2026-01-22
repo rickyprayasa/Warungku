@@ -495,51 +495,27 @@ export function LandingPage() {
                     >
                         <AnimatedLogo textColor="text-brand-white" />
                     </motion.div>
-                    <div className="hidden md:flex items-center gap-4">
-                        <div className="bg-white border-3 border-black px-6 py-2 shadow-[4px_4px_0px_0px_#000] transform -rotate-2 hover:rotate-0 transition-all duration-200 cursor-default">
-                            <h1 className="text-2xl font-black tracking-wider text-black uppercase" style={{ fontFamily: 'Archivo, sans-serif' }}>
-                                WARUNGKU
-                            </h1>
-                        </div>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <button className="p-2 hover:bg-black/5 rounded-full transition-colors">
-                                    <Share2 className="w-6 h-6 text-black" />
-                                </button>
-                            </DialogTrigger>
-                            <DialogContent className="bg-zinc-950 border-2 border-brand-orange text-white sm:rounded-xl p-0 overflow-hidden max-w-sm">
-                                <div className="p-6 flex flex-col items-center text-center relative">
-                                    <h2 className="text-brand-orange font-bold tracking-widest mb-6 text-lg">SCAN UNTUK MEMBUKA</h2>
-
-                                    <div className="bg-white p-3 rounded-xl shadow-[0_0_20px_rgba(243,128,32,0.3)] mb-6">
-                                        <QRCodeCanvas value={window.location.href} size={180} />
-                                    </div>
-
-                                    <p className="text-zinc-400 text-sm mb-6 max-w-[250px] leading-relaxed">
-                                        Arahkan kamera HP Anda ke QR Code di atas untuk membuka <span className="text-white font-bold">WARUNGKU</span>.
-                                    </p>
-
-                                    <Button className="w-full bg-brand-orange hover:bg-brand-orange/90 text-black font-bold mb-6 rounded-lg h-12">
-                                        <Download className="mr-2 h-4 w-4" />
-                                        Download QR Code
-                                    </Button>
-
-                                    <div className="space-y-3 w-full">
-                                        <p className="text-[10px] text-zinc-500 font-bold tracking-widest uppercase">BAGIKAN VIA</p>
-                                        <div className="flex justify-center gap-3">
-                                            <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#25D366] hover:bg-zinc-800 hover:text-[#25D366] hover:border-zinc-700 w-10 h-10"><MessageCircle size={18} /></Button>
-                                            <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1877F2] hover:bg-zinc-800 hover:text-[#1877F2] hover:border-zinc-700 w-10 h-10"><Facebook size={18} /></Button>
-                                            <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-[#1DA1F2] hover:bg-zinc-800 hover:text-[#1DA1F2] hover:border-zinc-700 w-10 h-10"><Twitter size={18} /></Button>
-                                            <Button size="icon" variant="outline" className="rounded-full border-zinc-800 bg-zinc-900 text-brand-orange hover:bg-zinc-800 hover:text-brand-orange hover:border-zinc-700 w-10 h-10"><Share2 size={18} /></Button>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 pt-4 border-t border-zinc-900 w-full">
-                                        <p className="text-[10px] text-zinc-600">2026 OMZETIN by RSQUARE. All rights reserved.</p>
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                    <div className="hidden gap-4 md:flex">
+                        {[
+                            { href: "#features", label: "FITUR" },
+                            { href: "#dashboard", label: "DASHBOARD" },
+                            { href: "#stories", label: "TESTIMONI" },
+                            { href: "#pricing", label: "HARGA" }
+                        ].map((link) => (
+                            <motion.a
+                                key={link.href}
+                                className="font-mono uppercase font-bold text-sm text-white border-2 border-transparent rounded-none px-4 py-2 relative group overflow-hidden"
+                                href={link.href}
+                                whileHover={{
+                                    y: -2
+                                }}
+                                whileTap={{ y: 0, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                            >
+                                <span className="relative z-10">{link.label}</span>
+                                <div className="absolute inset-0 bg-brand-black border-2 border-brand-black shadow-hard opacity-0 group-hover:opacity-100 transition-all duration-200 -z-0" />
+                            </motion.a>
+                        ))}
                     </div>
                     <div className="flex items-center gap-3">
                         <motion.button
