@@ -43,8 +43,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
+      // CRITICAL FIX: Check if user ALREADY has a store to prevent duplicates
+      const { data: existingMember } = await supabase
+        .from('store_members')
+        .select('store_id')
+        .eq('user_id', userId)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingMember?.store_id) {
+        console.log('[AuthContext] User already has a store, fetching it instead of creating new:', existingMember.store_id);
+        const { data: existingStore } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('id', existingMember.store_id)
+          .single();
+
+        if (existingStore) {
+          return existingStore as Store;
+        }
+      }
+
       // Generate store name from email or use default
       const storeName = userEmail?.split('@')[0] || 'Toko Saya';
+
 
       // Generate unique slug
       const slug = storeName
