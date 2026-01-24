@@ -121,11 +121,28 @@ export function AuthCallbackPage() {
         return;
       }
 
+      // CRITICAL FIX: Check if user already has a store to prevent duplicates
+      const { data: existingMember } = await supabase
+        .from('store_members')
+        .select('store_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingMember?.store_id) {
+        console.log('[AuthCallback] User already has store, redirecting:', existingMember.store_id);
+        setCurrentStoreId(existingMember.store_id);
+        toast.success('Toko Anda sudah tersedia!');
+        navigate('/dashboard');
+        return;
+      }
+
       // Create store
       const slug = storeName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
+
 
       const { data: storeData, error: storeError } = await (supabase
         .from('stores') as any)
