@@ -35,6 +35,7 @@ import {
     Shield,
     Save,
     Trash2,
+    ExternalLink,
 } from 'lucide-react';
 import {
     Select,
@@ -250,25 +251,63 @@ export function AdminUsersPage() {
 
     const viewUserDetails = async (userId: string) => {
         try {
-            const { data, error } = await (supabase.rpc as any)('get_user_statistics', {
-                p_user_id: userId,
-            });
-
-            if (error) throw error;
-
             const user = users.find(u => u.user_id === userId);
             if (!user) {
                 toast.error('User tidak ditemukan');
                 return;
             }
 
-            const stats = data && data.length > 0 ? data[0] : {};
+            let productCount = 0;
+            let salesCount = 0;
+            let purchasesCount = 0;
+
+            // Try RPC first, fallback to direct queries if RPC doesn't exist
+            try {
+                const { data, error } = await (supabase.rpc as any)('get_user_statistics', {
+                    p_user_id: userId,
+                });
+
+                if (!error && data && data.length > 0) {
+                    const stats = data[0];
+                    productCount = stats.product_count || 0;
+                    salesCount = stats.sales_count || 0;
+                    purchasesCount = stats.purchases_count || 0;
+                } else {
+                    throw new Error('RPC not available');
+                }
+            } catch (rpcError) {
+                // Fallback: Direct queries if RPC not available
+                console.log('RPC not available, using fallback queries');
+
+                if (user.store?.id) {
+                    // Get product count
+                    const { count: pCount } = await supabase
+                        .from('products')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('store_id', user.store.id);
+                    productCount = pCount || 0;
+
+                    // Get sales count
+                    const { count: sCount } = await supabase
+                        .from('sales')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('store_id', user.store.id);
+                    salesCount = sCount || 0;
+
+                    // Get purchases count
+                    const { count: puCount } = await supabase
+                        .from('purchases')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('store_id', user.store.id);
+                    purchasesCount = puCount || 0;
+                }
+            }
 
             setSelectedUser({
                 user,
-                productCount: stats.product_count || 0,
-                salesCount: stats.sales_count || 0,
-                purchasesCount: stats.purchases_count || 0,
+                productCount,
+                salesCount,
+                purchasesCount,
             });
             setDetailOpen(true);
         } catch (error) {
@@ -406,7 +445,20 @@ export function AdminUsersPage() {
                                     <TableRow key={user.id} className="border-b-2 border-brand-black last:border-b-0">
                                         <TableCell className="font-mono font-bold">
                                             {user.store?.name || '-'}
-                                            <div className="text-xs text-muted-foreground font-normal">/{user.store?.slug || '-'}</div>
+                                            {user.store?.slug ? (
+                                                <a
+                                                    href={`/${user.store.slug}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-blue-600 hover:text-blue-800 font-normal flex items-center gap-1 hover:underline"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    /{user.store.slug}
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            ) : (
+                                                <div className="text-xs text-muted-foreground font-normal">/-</div>
+                                            )}
                                         </TableCell>
                                         <TableCell className="font-mono text-sm">{user.email}</TableCell>
                                         <TableCell>

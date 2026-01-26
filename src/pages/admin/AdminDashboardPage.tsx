@@ -10,7 +10,8 @@ import {
     TrendingUp,
     Activity,
     Calendar,
-    RefreshCw
+    RefreshCw,
+    ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -113,11 +114,18 @@ export function AdminDashboardPage() {
                                 {recentStores.map((store: any) => (
                                     <div key={store.id} className="p-4 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center justify-between">
-                                            <div>
+                                            <div className="flex-1">
                                                 <p className="font-bold font-mono">{store.name}</p>
-                                                <p className="text-xs text-muted-foreground font-mono">
+                                                <a
+                                                    href={`/${store.slug}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-blue-600 hover:text-blue-800 font-mono flex items-center gap-1 hover:underline"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
                                                     /{store.slug}
-                                                </p>
+                                                    <ExternalLink className="w-3 h-3" />
+                                                </a>
                                             </div>
                                             <div className="text-right">
                                                 <Badge className="rounded-none font-mono text-xs" variant="outline">
