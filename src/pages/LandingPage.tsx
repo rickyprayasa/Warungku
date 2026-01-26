@@ -146,40 +146,12 @@ function DynamicTestimonials() {
     const [testimonials, setTestimonials] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Fallback static testimonials
-    const staticTestimonials = [
-        {
-            name: "Budi Santoso",
-            role: "Pemilik, Kopi Senja",
-            initials: "BU",
-            color: "bg-blue-500",
-            content: "Omzetin bikin hidup saya tenang. Gak perlu begadang lagi cuma buat rekap penjualan harian. Mantap!",
-            rating: 5
-        },
-        {
-            name: "Siti Aminah",
-            role: "Owner, Toko Berkah",
-            initials: "SI",
-            color: "bg-purple-500",
-            content: "Fitur stoknya juara. Dulu sering kehabisan barang pas rame, sekarang udah ada notif otomatis.",
-            rating: 5
-        },
-        {
-            name: "Andi Pratama",
-            role: "Manager, Burger Bro",
-            initials: "AN",
-            color: "bg-green-500",
-            content: "Tampilannya keren tapi gampang dipake. Kasir saya yang gaptek aja langsung bisa dalam 10 menit.",
-            rating: 5
-        }
-    ];
-
     useEffect(() => {
         async function fetchTestimonials() {
             try {
                 const { data, error } = await supabase
                     .from('testimonials')
-                    .select('*, stores(name)')
+                    .select('*, stores(name, logo_url)')
                     .eq('status', 'approved')
                     .order('created_at', { ascending: false })
                     .limit(6);
@@ -188,13 +160,9 @@ function DynamicTestimonials() {
 
                 if (data && data.length > 0) {
                     setTestimonials(data);
-                } else {
-                    // Use static testimonials if no approved ones exist
-                    setTestimonials(staticTestimonials);
                 }
             } catch (error) {
                 console.error('Error fetching testimonials:', error);
-                setTestimonials(staticTestimonials);
             } finally {
                 setLoading(false);
             }
@@ -220,6 +188,21 @@ function DynamicTestimonials() {
         );
     }
 
+    // Show empty state if no testimonials
+    if (testimonials.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-brand-orange border-4 border-brand-black mb-4">
+                    <span className="material-symbols-outlined text-4xl text-brand-black" style={{ fontVariationSettings: "'FILL' 1" }}>
+                        star
+                    </span>
+                </div>
+                <p className="text-lg font-bold text-brand-black">Jadilah yang pertama memberikan testimoni!</p>
+                <p className="text-muted-foreground font-mono text-sm mt-2">Daftar dan bagikan pengalaman Anda menggunakan Omzetin.</p>
+            </div>
+        );
+    }
+
     return (
         <motion.div
             variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
@@ -228,12 +211,11 @@ function DynamicTestimonials() {
             {testimonials.slice(0, 6).map((testimonial, idx) => (
                 <motion.div
                     key={testimonial.id || idx}
-                    className="flex flex-col justify-between bg-white/10 backdrop-blur-sm border border-white/20 p-6 rounded-none hover:bg-white/20 transition-all"
+                    className="flex flex-col justify-between bg-brand-white border-4 border-brand-black p-6 rounded-none shadow-hard hover:shadow-hard-lg hover:-translate-y-1 transition-all"
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: idx * 0.1 }}
-                    whileHover={{ y: -5, scale: 1.02 }}
                 >
                     <div className="mb-4">
                         <div className="mb-3 flex gap-1">
@@ -247,19 +229,29 @@ function DynamicTestimonials() {
                                 </span>
                             ))}
                         </div>
-                        <p className="text-lg font-medium leading-relaxed text-white">
+                        <p className="text-lg font-medium leading-relaxed text-brand-black">
                             "{testimonial.content || testimonial.quote}"
                         </p>
                     </div>
-                    <div className="flex items-center gap-4 border-t border-white/20 pt-4">
-                        <div
-                            className={`h-12 w-12 ${testimonial.color || getColor(idx)} border-2 border-white/30 flex items-center justify-center text-white font-black text-lg`}
-                        >
-                            {testimonial.initials || getInitials(testimonial.stores?.name || 'User')}
-                        </div>
+                    <div className="flex items-center gap-4 border-t-4 border-brand-black pt-4">
+                        {testimonial.stores?.logo_url ? (
+                            <div className="h-12 w-12 border-4 border-brand-black overflow-hidden bg-white flex items-center justify-center">
+                                <img 
+                                    src={testimonial.stores.logo_url} 
+                                    alt={testimonial.stores?.name || 'Store'} 
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                        ) : (
+                            <div
+                                className={`h-12 w-12 ${testimonial.color || getColor(idx)} border-4 border-brand-black flex items-center justify-center text-brand-black font-black text-lg`}
+                            >
+                                {testimonial.initials || getInitials(testimonial.stores?.name || 'User')}
+                            </div>
+                        )}
                         <div>
-                            <p className="font-bold text-white">{testimonial.name || testimonial.stores?.name || 'Pengguna Omzetin'}</p>
-                            <p className="text-sm text-gray-300">{testimonial.role || 'Pemilik UMKM'}</p>
+                            <p className="font-bold text-brand-black">{testimonial.name || testimonial.stores?.name || 'Pengguna Omzetin'}</p>
+                            <p className="text-sm text-muted-foreground font-mono">{testimonial.role || 'Pemilik UMKM'}</p>
                         </div>
                     </div>
                 </motion.div>
@@ -964,12 +956,10 @@ export function LandingPage() {
                 </motion.section>
 
                 {/* Testimonials Section - Dynamic from DB */}
-                <section className="relative w-full py-24 overflow-hidden" id="stories" style={{
-                    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'
-                }}>
+                <section className="relative w-full py-24 overflow-hidden bg-brand-cream" id="stories">
                     {/* Decorative Pattern Overlay */}
-                    <div className="absolute inset-0 opacity-10" style={{
-                        backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)',
+                    <div className="absolute inset-0 opacity-5" style={{
+                        backgroundImage: 'radial-gradient(#1a1a1a 1px, transparent 1px)',
                         backgroundSize: '30px 30px'
                     }} />
 
@@ -981,10 +971,10 @@ export function LandingPage() {
                             variants={containerVariants}
                         >
                             <motion.div variants={itemVariants} className="mb-12 text-center">
-                                <h2 className="text-5xl font-black tracking-tight text-white uppercase sm:text-6xl mb-4">
+                                <h2 className="text-5xl font-black tracking-tight text-brand-black uppercase sm:text-6xl mb-4">
                                     Kata <span className="text-brand-orange">Mereka</span>
                                 </h2>
-                                <p className="text-xl font-bold text-gray-300 bg-white/10 backdrop-blur-sm inline-block px-6 py-2 border border-white/20 rounded-none">
+                                <p className="text-xl font-bold text-brand-black bg-brand-orange inline-block px-6 py-2 border-4 border-brand-black rounded-none shadow-hard">
                                     Bukti nyata dari sesama pemilik UMKM.
                                 </p>
                             </motion.div>
