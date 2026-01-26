@@ -15,7 +15,8 @@ import {
     Banknote,
     CreditCard,
     Package,
-    FileText
+    FileText,
+    MessageCircle
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -34,6 +35,7 @@ export function AdminLayout() {
         { to: '/admin/users', icon: Users, label: 'Users' },
         { to: '/admin/subscription-plans', icon: Package, label: 'Subscription Plans' },
         { to: '/admin/transactions', icon: Banknote, label: 'Transactions' },
+        { to: '/admin/testimonials', icon: MessageCircle, label: 'Testimonials' },
         { to: '/admin/duitku-settings', icon: CreditCard, label: 'Duitku Settings' },
         { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
         { to: '/admin/audit-log', icon: FileText, label: 'Audit Log' },

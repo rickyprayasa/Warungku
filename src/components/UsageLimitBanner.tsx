@@ -21,37 +21,9 @@ export function UsageLimitBanner() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeTrigger, setUpgradeTrigger] = useState<'product_limit' | 'transaction_limit' | 'general'>('general');
 
-  // Show trial banner for active trial users
+  // Trial users - don't show banner in content (already shown in sidebar)
   if (isTrialActive && daysRemainingInTrial !== null && daysRemainingInTrial > 0) {
-    return (
-      <div className="bg-green-50 border-b-2 border-brand-black px-4 py-3">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <div className="flex items-center gap-2 shrink-0">
-              <Gift className="w-5 h-5 text-green-600" />
-              <span className="font-mono text-sm font-bold text-green-800">
-                Trial Gratis
-              </span>
-            </div>
-
-            <div className="flex-1">
-              <p className="text-sm font-mono text-green-700">
-                Nikmati fitur <span className="font-bold">Pro</span> selama{' '}
-                <span className="font-bold">{daysRemainingInTrial} hari</span> lagi!
-              </p>
-            </div>
-
-            <button
-              onClick={() => setUpgradeOpen(true)}
-              className="shrink-0 flex items-center gap-2 px-4 py-2 bg-brand-orange text-brand-black font-mono text-sm font-bold border-2 border-brand-black hover:shadow-hard-sm transition-all"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              Upgrade Sekarang
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Trial expired warning

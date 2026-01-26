@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationBell } from './NotificationBell';
+import { TestimonialDialog } from './TestimonialDialog';
 
 interface AppHeaderProps {
   storeName?: string;
@@ -187,6 +188,7 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
                   </>
                 ) : (
                   <>
+                    <TestimonialDialog />
                     <NotificationBell />
                     <SettingsDialog />
                   </>
@@ -197,6 +199,7 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
               <div className="md:hidden flex items-center gap-2">
                 {isAuthenticated && !isPublicMode && (
                   <>
+                    <TestimonialDialog />
                     <NotificationBell />
                     <SettingsDialog />
                   </>

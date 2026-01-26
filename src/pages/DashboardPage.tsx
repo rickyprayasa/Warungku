@@ -15,7 +15,8 @@ import { QRISSetupContent } from "@/components/QRISSetupContent";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import { PlanBadge } from "@/components/PlanBadge";
 import { SettingsDashboard } from "@/components/SettingsDashboard";
-import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag, QrCode, Crown, Settings } from "lucide-react";
+import { TestimonialDashboard } from "@/components/TestimonialDashboard";
+import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag, QrCode, Crown, Settings, MessageCircle } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useWarungStore } from "@/lib/store";
 
@@ -78,6 +79,7 @@ export function DashboardPage() {
     { value: "cashflow", label: "Arus Kas", icon: ArrowRightLeft, color: "violet" },
     { value: "finance", label: "Keuangan", icon: Banknote, color: "green" },
     { value: "qris", label: "Setup QRIS", icon: QrCode, color: "orange" },
+    { value: "testimonials", label: "Testimoni", icon: MessageCircle, color: "amber" },
     { value: "settings", label: "Pengaturan", icon: Settings, color: "gray" },
   ];
 
@@ -270,6 +272,12 @@ export function DashboardPage() {
             <div className={activeTab === 'settings' ? 'block' : 'hidden'}>
               <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
                 <SettingsDashboard />
+              </motion.div>
+            </div>
+
+            <div className={activeTab === 'testimonials' ? 'block' : 'hidden'}>
+              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                <TestimonialDashboard />
               </motion.div>
             </div>
           </div>

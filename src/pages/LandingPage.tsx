@@ -141,7 +141,133 @@ function RealStatsSection() {
     );
 }
 
-// Interactive App Preview Component
+// Dynamic Testimonials Component - fetches from database
+function DynamicTestimonials() {
+    const [testimonials, setTestimonials] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fallback static testimonials
+    const staticTestimonials = [
+        {
+            name: "Budi Santoso",
+            role: "Pemilik, Kopi Senja",
+            initials: "BU",
+            color: "bg-blue-500",
+            content: "Omzetin bikin hidup saya tenang. Gak perlu begadang lagi cuma buat rekap penjualan harian. Mantap!",
+            rating: 5
+        },
+        {
+            name: "Siti Aminah",
+            role: "Owner, Toko Berkah",
+            initials: "SI",
+            color: "bg-purple-500",
+            content: "Fitur stoknya juara. Dulu sering kehabisan barang pas rame, sekarang udah ada notif otomatis.",
+            rating: 5
+        },
+        {
+            name: "Andi Pratama",
+            role: "Manager, Burger Bro",
+            initials: "AN",
+            color: "bg-green-500",
+            content: "Tampilannya keren tapi gampang dipake. Kasir saya yang gaptek aja langsung bisa dalam 10 menit.",
+            rating: 5
+        }
+    ];
+
+    useEffect(() => {
+        async function fetchTestimonials() {
+            try {
+                const { data, error } = await supabase
+                    .from('testimonials')
+                    .select('*, stores(name)')
+                    .eq('status', 'approved')
+                    .order('created_at', { ascending: false })
+                    .limit(6);
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    setTestimonials(data);
+                } else {
+                    // Use static testimonials if no approved ones exist
+                    setTestimonials(staticTestimonials);
+                }
+            } catch (error) {
+                console.error('Error fetching testimonials:', error);
+                setTestimonials(staticTestimonials);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchTestimonials();
+    }, []);
+
+    const getColor = (idx: number) => {
+        const colors = ['bg-brand-orange', 'bg-purple-500', 'bg-green-500', 'bg-blue-500', 'bg-pink-500', 'bg-cyan-500'];
+        return colors[idx % colors.length];
+    };
+
+    const getInitials = (name: string) => {
+        return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center py-12">
+                <div className="w-8 h-8 border-4 border-brand-orange border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
+    return (
+        <motion.div
+            variants={{ hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
+            className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
+        >
+            {testimonials.slice(0, 6).map((testimonial, idx) => (
+                <motion.div
+                    key={testimonial.id || idx}
+                    className="flex flex-col justify-between bg-white/10 backdrop-blur-sm border border-white/20 p-6 rounded-none hover:bg-white/20 transition-all"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    whileHover={{ y: -5, scale: 1.02 }}
+                >
+                    <div className="mb-4">
+                        <div className="mb-3 flex gap-1">
+                            {[...Array(testimonial.rating || 5)].map((_, i) => (
+                                <span
+                                    key={i}
+                                    className="material-symbols-outlined text-xl text-brand-orange"
+                                    style={{ fontVariationSettings: "'FILL' 1" }}
+                                >
+                                    star
+                                </span>
+                            ))}
+                        </div>
+                        <p className="text-lg font-medium leading-relaxed text-white">
+                            "{testimonial.content || testimonial.quote}"
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-4 border-t border-white/20 pt-4">
+                        <div
+                            className={`h-12 w-12 ${testimonial.color || getColor(idx)} border-2 border-white/30 flex items-center justify-center text-white font-black text-lg`}
+                        >
+                            {testimonial.initials || getInitials(testimonial.stores?.name || 'User')}
+                        </div>
+                        <div>
+                            <p className="font-bold text-white">{testimonial.name || testimonial.stores?.name || 'Pengguna Omzetin'}</p>
+                            <p className="text-sm text-gray-300">{testimonial.role || 'Pemilik UMKM'}</p>
+                        </div>
+                    </div>
+                </motion.div>
+            ))}
+        </motion.div>
+    );
+}
+
 function InteractiveAppPreview() {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'pos' | 'analytics'>('dashboard');
     const [cartItems, setCartItems] = useState(0);
@@ -837,71 +963,49 @@ export function LandingPage() {
                     </div>
                 </motion.section>
 
-                {/* Testimonials Section */}
-                <section className="relative w-full max-w-7xl px-6 py-24 lg:px-10 mx-auto" id="stories">
-                    <motion.div
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{ once: true }}
-                        variants={containerVariants}
-                    >
-                        <motion.div variants={itemVariants} className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-3 border-black pb-8">
-                            <div>
-                                <h2 className="text-5xl font-black tracking-tight text-black uppercase sm:text-6xl">Kata Mereka</h2>
-                                <p className="mt-4 text-xl font-bold bg-brand-yellow inline-block px-2 border-2 border-black shadow-[3px_3px_0px_0px_#000]">
+                {/* Testimonials Section - Dynamic from DB */}
+                <section className="relative w-full py-24 overflow-hidden" id="stories" style={{
+                    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'
+                }}>
+                    {/* Decorative Pattern Overlay */}
+                    <div className="absolute inset-0 opacity-10" style={{
+                        backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)',
+                        backgroundSize: '30px 30px'
+                    }} />
+
+                    <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
+                        <motion.div
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true }}
+                            variants={containerVariants}
+                        >
+                            <motion.div variants={itemVariants} className="mb-12 text-center">
+                                <h2 className="text-5xl font-black tracking-tight text-white uppercase sm:text-6xl mb-4">
+                                    Kata <span className="text-brand-orange">Mereka</span>
+                                </h2>
+                                <p className="text-xl font-bold text-gray-300 bg-white/10 backdrop-blur-sm inline-block px-6 py-2 border border-white/20 rounded-none">
                                     Bukti nyata dari sesama pemilik UMKM.
                                 </p>
-                            </div>
+                            </motion.div>
+
+                            <DynamicTestimonials />
                         </motion.div>
-                        <motion.div variants={itemVariants} className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-                            {testimonials.map((testimonial, idx) => (
-                                <motion.div
-                                    key={idx}
-                                    className={`flex flex-col justify-between border-3 border-black ${idx === 1 ? 'bg-[#F2F2F2]' : 'bg-white'} p-8 shadow-[5px_5px_0px_0px_#000] hover:shadow-[8px_8px_0px_0px_#000] transition-all`}
-                                    whileHover={{ y: -10 }}
-                                    initial={{ opacity: 0, y: 30 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: idx * 0.1 }}
-                                >
-                                    <div className="mb-6">
-                                        <motion.div
-                                            className="mb-4 flex gap-1 bg-black w-fit px-2 py-1"
-                                            whileHover={{ scale: 1.05 }}
-                                        >
-                                            {[...Array(5)].map((_, i) => (
-                                                <motion.span
-                                                    key={i}
-                                                    className="material-symbols-outlined text-xl text-brand-orange fill-current"
-                                                    style={{ fontVariationSettings: "'FILL' 1" }}
-                                                    whileHover={{ scale: 1.2 }}
-                                                >
-                                                    star
-                                                </motion.span>
-                                            ))}
-                                        </motion.div>
-                                        <p className={`text-lg font-bold leading-relaxed text-black ${testimonial.borderColor} pl-3`}>
-                                            "{testimonial.quote}"
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-4 border-t-3 border-black pt-6">
-                                        <motion.div
-                                            className={`h-14 w-14 border-2 border-black ${testimonial.color} shadow-[2px_2px_0px_0px_#000] flex items-center justify-center ${idx === 2 ? 'text-black' : 'text-white'} font-black text-xl`}
-                                            whileHover={{ rotate: 360, scale: 1.1 }}
-                                            transition={{ duration: 0.6 }}
-                                        >
-                                            {testimonial.initials}
-                                        </motion.div>
-                                        <div>
-                                            <p className="font-black text-black uppercase">{testimonial.name}</p>
-                                            <p className="text-sm font-bold text-gray-600">{testimonial.role}</p>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </motion.div>
+                    </div>
+
+                    {/* Floating decorative elements */}
+                    <motion.div
+                        className="absolute top-20 left-10 w-24 h-24 bg-brand-orange/20 rounded-full blur-xl"
+                        animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
+                        transition={{ duration: 6, repeat: Infinity }}
+                    />
+                    <motion.div
+                        className="absolute bottom-20 right-10 w-32 h-32 bg-purple-500/20 rounded-full blur-xl"
+                        animate={{ y: [10, -10, 10], x: [5, -5, 5] }}
+                        transition={{ duration: 8, repeat: Infinity }}
+                    />
                 </section>
+
 
                 {/* Pricing CTA Section */}
                 <motion.section

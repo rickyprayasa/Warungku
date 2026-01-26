@@ -6,7 +6,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { usePlan } from '@/contexts/PlanContext';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield } from 'lucide-react';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield, MessageCircle } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
@@ -150,15 +150,13 @@ export function Sidebar() {
 
                         {/* Plan Badge */}
                         {!isTrialActive && (
-                            <div className={`mt-2 border-2 rounded px-2 py-1 ${
-                                plan === 'free'
-                                    ? 'bg-gray-100 border-gray-400'
-                                    : 'bg-brand-orange/10 border-brand-orange'
-                            }`}>
+                            <div className={`mt-2 border-2 rounded px-2 py-1 ${plan === 'free'
+                                ? 'bg-gray-100 border-gray-400'
+                                : 'bg-brand-orange/10 border-brand-orange'
+                                }`}>
                                 <div className="text-center">
-                                    <span className={`font-mono text-[10px] font-bold uppercase ${
-                                        plan === 'free' ? 'text-gray-600' : 'text-brand-orange'
-                                    }`}>
+                                    <span className={`font-mono text-[10px] font-bold uppercase ${plan === 'free' ? 'text-gray-600' : 'text-brand-orange'
+                                        }`}>
                                         Plan {plan === 'free' ? 'Free' : plan === 'pro' ? 'Pro' : 'Enterprise'}
                                     </span>
                                 </div>

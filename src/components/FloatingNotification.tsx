@@ -1,4 +1,4 @@
-import { Bell, X, PackageX, AlertTriangle, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, X, PackageX, AlertTriangle, CheckCheck, Trash2, Star } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLowStockAlerts } from '@/hooks/useLowStockAlerts';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { TestimonialDialog } from './TestimonialDialog';
 
 export function FloatingNotification() {
     const navigate = useNavigate();
@@ -98,7 +99,11 @@ export function FloatingNotification() {
     };
 
     return (
-        <div className="hidden md:block fixed top-6 right-6 z-[9999] pointer-events-auto">
+        <div className="hidden md:flex items-center gap-2 fixed top-6 right-6 z-[9999] pointer-events-auto">
+            {/* Testimonial Button */}
+            <TestimonialDialog />
+
+            {/* Notification Bell */}
             <Popover open={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger asChild>
                     <button
