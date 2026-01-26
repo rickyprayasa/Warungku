@@ -667,25 +667,53 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
-      try {
-        const { error, count } = await supabase
-          .from('stores')
-          .update({
-            name: profile.name,
-            address: profile.address,
-            phone: profile.phone,
-            logo_url: profile.logoUrl,
-            qris_code: profile.qrisCode,
-            cart_enabled: profile.cartEnabled,
-            slug: profile.slug,
-          })
-          .eq('id', storeId)
-          .select('id', { count: 'exact' });
+      // Retry logic helper
+      const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
+        let lastError;
+        for (let i = 0; i < maxRetries; i++) {
+          try {
+            return await operation();
+          } catch (error: any) {
+            console.warn(`Attempt ${i + 1} failed:`, error);
+            lastError = error;
+            // Wait before retry (exponential backoff: 500ms, 1000ms, 2000ms)
+            if (i < maxRetries - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, i)));
+            }
+          }
+        }
+        throw lastError;
+      };
 
-        if (error) throw error;
-        if (count === 0) throw new Error('Gagal menyimpan: Toko tidak ditemukan atau Anda tidak memiliki akses.');
+      try {
+        // Use retry logic for the main update operation
+        await retryOperation(async () => {
+          // Use withTimeout to prevent hanging
+          const { error, data } = await withTimeout(
+            supabase
+              .from('stores')
+              .update({
+                name: profile.name,
+                address: profile.address,
+                phone: profile.phone,
+                logo_url: profile.logoUrl,
+                qris_code: profile.qrisCode,
+                cart_enabled: profile.cartEnabled,
+                slug: profile.slug,
+              })
+              .eq('id', storeId)
+              .select('id') // Simplified select
+              .single() as any,
+            10000, // 10s timeout
+            'Gagal menyimpan profil toko (timeout)'
+          );
+
+          if (error) throw error;
+          if (!data) throw new Error('Gagal menyimpan: Toko tidak ditemukan atau Anda tidak memiliki akses.');
+        });
 
         // Save payment methods and bank details to settings
+        // These are less critical, so we can do them in parallel or sequentially without blocking the main success
         const settingsToUpsert = [
           { store_id: storeId, key: 'payment_methods', value: JSON.stringify(profile.paymentMethods || []) },
           { store_id: storeId, key: 'bank_name', value: profile.bankName || '' },
@@ -694,11 +722,16 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           { store_id: storeId, key: 'phone_number', value: profile.phoneNumber || '' },
         ];
 
-        const { error: settingsError } = await supabase
-          .from('settings')
-          .upsert(settingsToUpsert, { onConflict: 'store_id,key' } as any);
+        // Use a separate try-catch for settings to not fail the whole operation if settings fail
+        try {
+          const { error: settingsError } = await supabase
+            .from('settings')
+            .upsert(settingsToUpsert, { onConflict: 'store_id,key' } as any);
 
-        if (settingsError) console.error('Failed to save settings:', settingsError);
+          if (settingsError) console.error('Failed to save settings:', settingsError);
+        } catch (settingsErr) {
+          console.error('Exception saving settings:', settingsErr);
+        }
 
         set({ storeProfile: profile });
       } catch (error) {

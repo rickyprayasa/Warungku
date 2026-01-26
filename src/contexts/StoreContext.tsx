@@ -231,23 +231,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setTimeout(() => reject(new Error('Koneksi timeout, silakan coba lagi')), 15000);
       });
 
-      // Race between fetch and timeout
-      const { data, error } = await Promise.race([
+      // Try exact match first
+      let { data, error } = await Promise.race([
         supabase
           .from('stores')
           .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
           .eq('slug', slug)
-          .single(),
+          .maybeSingle(), // Use maybeSingle to avoid 406/PGRST116 errors
         timeoutPromise
       ]) as any;
 
+      // If not found, try case-insensitive match
+      if (!data && !error) {
+        console.log('[StoreContext] Exact slug match failed, trying case-insensitive match for:', slug);
+        const { data: fallbackData, error: fallbackError } = await Promise.race([
+          supabase
+            .from('stores')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .ilike('slug', slug) // Case insensitive match
+            .maybeSingle(),
+          timeoutPromise
+        ]) as any;
+
+        if (fallbackData) {
+          data = fallbackData;
+        } else if (fallbackError) {
+          // Only log error if it's not just "not found"
+          console.warn('[StoreContext] Case-insensitive lookup error:', fallbackError);
+        }
+      }
+
       if (error) {
         console.error('[StoreContext] Error loading store:', error);
-        if (error.code === 'PGRST116') {
-          setPublicStoreError('Toko tidak ditemukan');
-        } else {
-          setPublicStoreError(error.message);
-        }
+        setPublicStoreError(error.message);
+        return null;
+      }
+
+      if (!data) {
+        console.warn('[StoreContext] Store not found for slug:', slug);
+        setPublicStoreError('Toko tidak ditemukan');
         return null;
       }
 
