@@ -1458,27 +1458,67 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
+      // Check if we are in public mode or visiting another store
+      const { data: { session } } = await supabase.auth.getSession();
+      let shouldSelectReturn = false;
+
+      if (session?.user) {
+        // Check if user is a member of this store
+        const { data: member } = await supabase
+          .from('store_members')
+          .select('id')
+          .eq('store_id', storeId)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        shouldSelectReturn = !!member;
+      }
+
+      let query = supabase
+        .from('snack_requests')
+        .insert({
+          store_id: storeId,
+          requester_name: requestData.requesterName,
+          snack_name: requestData.snackName,
+          quantity: requestData.quantity,
+          notes: requestData.notes || '',
+          status: 'pending',
+        });
+
+      // Only select returned row if we are a store member (authorized to view)
+      if (shouldSelectReturn) {
+        // @ts-ignore
+        query = query.select().single();
+      }
+
       const { data, error } = await withTimeout(
-        supabase
-          .from('snack_requests')
-          .insert({
-            store_id: storeId,
-            requester_name: requestData.requesterName,
-            snack_name: requestData.snackName,
-            quantity: requestData.quantity,
-            notes: requestData.notes || '',
-            status: 'pending',
-          })
-          .select()
-          .single(),
+        query,
         20000,
         'Gagal menyimpan request (timeout)'
       );
 
       if (error) throw error;
-      const newRequest = toJajananRequest(data);
-      set((state) => { state.jajananRequests.unshift(newRequest); });
-      return newRequest;
+
+      // Only update local state if we got data back (authenticated mode)
+      if (data) {
+        const newRequest = toJajananRequest(data);
+        set((state) => { state.jajananRequests.unshift(newRequest); });
+        return newRequest;
+      }
+
+      // Return a mock object for public mode success
+      return {
+        id: 'temp-id',
+        storeId,
+        requesterName: requestData.requesterName,
+        snackName: requestData.snackName,
+        quantity: requestData.quantity,
+        notes: requestData.notes,
+        status: 'pending',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as JajananRequest;
     },
 
     updateJajananRequestStatus: async (requestId, status) => {

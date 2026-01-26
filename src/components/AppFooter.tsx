@@ -237,8 +237,11 @@ export function AppFooter() {
             <span className="font-mono text-sm font-bold text-brand-white uppercase tracking-wider">
               Dipersembahkan oleh
             </span>
-            <div
-              className="flex items-center gap-3 group bg-brand-white p-3 border-2 border-brand-orange rounded-lg shadow-[2px_2px_0px_0px_rgba(255,138,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,138,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all cursor-default"
+            <a
+              href="https://www.rsquareidea.my.id/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 group bg-brand-white p-3 border-2 border-brand-orange rounded-lg shadow-[2px_2px_0px_0px_rgba(255,138,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(255,138,0,1)] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all cursor-pointer"
             >
               <img
                 src={logo40}
@@ -249,7 +252,7 @@ export function AppFooter() {
                 className="h-10 w-10 transition-transform duration-300 group-hover:scale-110"
               />
               <span className="font-display text-xl font-bold text-brand-black uppercase tracking-wider">RSQUARE</span>
-            </div>
+            </a>
             <p className="font-mono text-xs text-gray-400 text-center md:text-right max-w-xs">
               Menyediakan template aplikasi Google Sheets untuk bisnis Anda.
             </p>

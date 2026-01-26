@@ -62,7 +62,7 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
                   )
                 ) : logoUrl ? (
                   <div className="flex items-center gap-2">
-                    <img src={logoUrl} alt={storeName || 'Store'} className="h-10 w-auto object-contain" />
+                    <img src={logoUrl} alt={storeName || 'Store'} className="h-14 w-auto object-contain" />
                     {storeName && <span className="font-display font-bold text-xl text-brand-black hidden sm:inline">{storeName}</span>}
                   </div>
                 ) : storeName ? (
