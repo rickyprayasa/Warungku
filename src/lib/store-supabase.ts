@@ -667,18 +667,20 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
-      // Retry logic helper
-      const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
+      // Retry logic helper - more retries for slow connections
+      const retryOperation = async (operation: () => Promise<any>, maxRetries = 4) => {
         let lastError;
         for (let i = 0; i < maxRetries; i++) {
           try {
             return await operation();
           } catch (error: any) {
-            console.warn(`Attempt ${i + 1} failed:`, error);
+            console.warn(`[updateStoreProfile] Attempt ${i + 1}/${maxRetries} failed:`, error?.message || error);
             lastError = error;
-            // Wait before retry (exponential backoff: 500ms, 1000ms, 2000ms)
+            // Wait before retry (exponential backoff: 1s, 2s, 4s, 8s)
             if (i < maxRetries - 1) {
-              await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, i)));
+              const delay = 1000 * Math.pow(2, i);
+              console.log(`[updateStoreProfile] Retrying in ${delay}ms...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
             }
           }
         }
@@ -768,18 +770,20 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
-      // Retry logic helper
-      const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
+      // Retry logic helper - more retries for slow connections
+      const retryOperation = async (operation: () => Promise<any>, maxRetries = 4) => {
         let lastError;
         for (let i = 0; i < maxRetries; i++) {
           try {
             return await operation();
           } catch (error: any) {
-            console.warn(`[addProduct] Attempt ${i + 1} failed:`, error);
+            console.warn(`[addProduct] Attempt ${i + 1}/${maxRetries} failed:`, error?.message || error);
             lastError = error;
-            // Wait before retry (exponential backoff: 1s, 2s, 4s)
+            // Wait before retry (exponential backoff: 1s, 2s, 4s, 8s)
             if (i < maxRetries - 1) {
-              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+              const delay = 1000 * Math.pow(2, i);
+              console.log(`[addProduct] Retrying in ${delay}ms...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
             }
           }
         }

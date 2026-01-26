@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal, Tags, QrCode } from 'lucide-react';
+import { Package, Warehouse, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ClipboardCheck, Store, Plus, List, BarChart3, Menu as MenuIcon, MoreHorizontal, Tags, QrCode, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWarungStore } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 
-const moreTabs = [
+// Static more tabs (without store - that will be added dynamically)
+const staticMoreTabs = [
     { value: "purchases", label: "Beli", icon: ShoppingCart, path: "/dashboard?tab=purchases" },
     { value: "suppliers", label: "Pemasok", icon: Truck, path: "/dashboard?tab=suppliers" },
     { value: "requests", label: "Request", icon: Inbox, path: "/dashboard?tab=requests" },
@@ -13,16 +15,29 @@ const moreTabs = [
     { value: "finance", label: "Finance", icon: Banknote, path: "/dashboard?tab=finance" },
     { value: "analytics", label: "Dashboard", icon: BarChart3, path: "/dashboard?tab=analytics" },
     { value: "qris", label: "Setup QRIS", icon: QrCode, path: "/dashboard?tab=qris" },
-    { value: "store", label: "Lihat Toko", icon: Store, path: "/store" },
 ];
 
 export function MobileBottomNav() {
     const navigate = useNavigate();
     const location = useLocation();
     const opnameMode = useWarungStore((state) => state.opnameMode);
+    const { store } = useAuth();
     const [showMore, setShowMore] = useState(false);
     const [activeTab, setActiveTab] = useState("pos");
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+
+    // Generate dynamic moreTabs with store link
+    const moreTabs = [
+        ...staticMoreTabs,
+        // Add store link only if store has slug
+        ...(store?.slug ? [{ 
+            value: "store", 
+            label: "Lihat Toko", 
+            icon: ExternalLink, 
+            path: `/${store.slug}`,
+            isExternal: true 
+        }] : [])
+    ];
 
     // Helper function to get rekon label based on current mode
     const getRekonLabel = () => {
@@ -100,7 +115,12 @@ export function MobileBottomNav() {
     }, [location]);
 
     const handleNavigation = (tab: any) => {
-        navigate(tab.path);
+        // If it's an external link (like store URL), open in new tab
+        if (tab.isExternal) {
+            window.open(tab.path, '_blank', 'noopener,noreferrer');
+        } else {
+            navigate(tab.path);
+        }
         setShowMore(false);
     };
 
