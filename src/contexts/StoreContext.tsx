@@ -226,44 +226,56 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     // Normal store loading (non-demo mode)
     try {
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Koneksi timeout, silakan coba lagi')), 15000);
-      });
+      console.log('[StoreContext] Starting normal store lookup for slug:', slug);
 
-      // Try exact match first
-      let { data, error } = await Promise.race([
-        supabase
+      // Use the same approach as demo mode - simpler and proven to work
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+        .eq('slug', slug)
+        .maybeSingle();
+
+      console.log('[StoreContext] Query result - data:', data, 'error:', error);
+
+      // If exact match failed, try case-insensitive
+      if (!data && !error) {
+        console.log('[StoreContext] Exact match failed, trying case-insensitive for:', slug);
+        const { data: ilikData, error: ilikError } = await supabase
           .from('stores')
           .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
-          .eq('slug', slug)
-          .maybeSingle(), // Use maybeSingle to avoid 406/PGRST116 errors
-        timeoutPromise
-      ]) as any;
+          .ilike('slug', slug)
+          .maybeSingle();
 
-      // If not found, try case-insensitive match
-      if (!data && !error) {
-        console.log('[StoreContext] Exact slug match failed, trying case-insensitive match for:', slug);
-        const { data: fallbackData, error: fallbackError } = await Promise.race([
-          supabase
-            .from('stores')
-            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
-            .ilike('slug', slug) // Case insensitive match
-            .maybeSingle(),
-          timeoutPromise
-        ]) as any;
+        console.log('[StoreContext] Case-insensitive result - data:', ilikData, 'error:', ilikError);
 
-        if (fallbackData) {
-          data = fallbackData;
-        } else if (fallbackError) {
-          // Only log error if it's not just "not found"
-          console.warn('[StoreContext] Case-insensitive lookup error:', fallbackError);
+        if (ilikData) {
+          const settings = await fetchStoreSettings(ilikData.id);
+          const store: PublicStore = {
+            id: ilikData.id,
+            name: ilikData.name,
+            slug: ilikData.slug,
+            address: ilikData.address || '',
+            phone: ilikData.phone || '',
+            logoUrl: ilikData.logo_url || '',
+            qrisCode: ilikData.qris_code || '',
+            cartEnabled: ilikData.cart_enabled !== false,
+            ...settings
+          };
+          setPublicStore(store);
+          setCurrentStoreId(store.id);
+          setPublicStoreLoading(false);
+          return store;
+        }
+
+        if (ilikError) {
+          console.error('[StoreContext] Case-insensitive lookup error:', ilikError);
         }
       }
 
       if (error) {
         console.error('[StoreContext] Error loading store:', error);
         setPublicStoreError(error.message);
+        setPublicStoreLoading(false);
         return null;
       }
 
