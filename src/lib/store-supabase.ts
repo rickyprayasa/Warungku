@@ -327,24 +327,24 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         return;
       }
 
-      // SECURITY: Double check if user is member of this store
-      // This is critical because RLS for products is public (for storefront)
-      // but dashboard access should be restricted.
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Check if we are in public store mode
-        // Public store URLs are anything that's NOT in internalRoutes
-        const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
-        const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
-        const isPublicStore = !isInternalRoute && window.location.pathname !== '/';
+      // Check if we are in public store mode FIRST (no async needed)
+      // Public store URLs are anything that's NOT in internalRoutes
+      const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
+      const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
+      const isPublicStore = !isInternalRoute && window.location.pathname !== '/';
 
-        if (!isPublicStore) {
-          const { data: member, error } = await supabase
+      // SECURITY: Only check membership for internal (dashboard) routes
+      // For public store, RLS already protects modification, reading is allowed
+      if (!isPublicStore) {
+        // Lazy auth check - only when needed for internal routes
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: member } = await supabase
             .from('store_members')
             .select('id')
             .eq('store_id', storeId)
             .eq('user_id', user.id)
-            .maybeSingle(); // Use maybeSingle to avoid error if not found
+            .maybeSingle();
 
           if (!member) {
             console.error('[SECURITY ALERT] User attempted to fetch products from a store they are not a member of!', { userId: user.id, storeId });

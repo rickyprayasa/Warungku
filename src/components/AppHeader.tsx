@@ -54,7 +54,12 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
               {/* Logo (Left) */}
               <Link to="/" className="flex items-center gap-3 relative z-10">
                 {isPublicMode ? (
-                  <AnimatedLogo textColor="text-brand-white" />
+                  // In public mode, only show icon on mobile when store name is displayed
+                  storeName ? (
+                    <AnimatedLogo textColor="text-brand-white" hideTextOnMobile />
+                  ) : (
+                    <AnimatedLogo textColor="text-brand-white" />
+                  )
                 ) : logoUrl ? (
                   <div className="flex items-center gap-2">
                     <img src={logoUrl} alt={storeName || 'Store'} className="h-10 w-auto object-contain" />

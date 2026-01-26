@@ -42,7 +42,7 @@ const barVariants: Variants = {
   }),
 };
 
-export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: string }) {
+export function AnimatedLogo({ textColor = "text-brand-black", hideTextOnMobile = false }: { textColor?: string; hideTextOnMobile?: boolean }) {
   const brandColors = ['rgb(243, 128, 32)', 'rgb(17, 17, 17)', 'rgb(160, 160, 160)', 'rgb(255, 255, 255)'];
   const donutColors = ['rgb(17, 17, 17)', 'rgb(255, 255, 255)', 'rgb(160, 160, 160)']; // Black, White, Gray
   const numDonutSegments = donutColors.length;
@@ -102,7 +102,7 @@ export function AnimatedLogo({ textColor = "text-brand-black" }: { textColor?: s
         </g>
       </motion.svg>
       <span
-        className={`font-display text-2xl md:text-4xl font-bold tracking-tight ${textColor}`}
+        className={`font-display text-2xl md:text-4xl font-bold tracking-tight ${textColor} ${hideTextOnMobile ? 'hidden md:inline' : ''}`}
         style={{
           WebkitTextStroke: '2px #000000',
           paintOrder: 'stroke fill',
