@@ -61,14 +61,32 @@ export function PublicStorePage() {
 
           // Fetch details using FRESH state reference
           const storeState = useWarungStore.getState();
-          console.log('[PublicStorePage] Fetching products and profile with storeId:', storeState.currentStoreId);
+          console.log('[PublicStorePage] Fetching products with storeId:', storeState.currentStoreId);
 
-          await Promise.all([
-            storeState.fetchStoreProfile().then(() => console.log('[PublicStorePage] Profile fetched')),
-            storeState.fetchProducts().then(() => console.log('[PublicStorePage] Products fetched, count:', storeState.products.length))
-          ]);
+          // OPTIMIZATION: Set store profile directly from loadedStore instead of fetching it again
+          // This avoids potential RLS issues when logged in as a different user
+          useWarungStore.setState((state) => {
+            state.storeProfile = {
+              name: loadedStore.name,
+              address: loadedStore.address || '',
+              phone: loadedStore.phone || '',
+              logoUrl: loadedStore.logoUrl || '',
+              qrisCode: loadedStore.qrisCode || '',
+              cartEnabled: loadedStore.cartEnabled !== false,
+              paymentMethods: loadedStore.paymentMethods || [],
+              slug: loadedStore.slug,
+              bankName: loadedStore.bankName || '',
+              accountNumber: loadedStore.accountNumber || '',
+              accountName: loadedStore.accountName || '',
+              phoneNumber: loadedStore.phoneNumber || '',
+            };
+          });
+          console.log('[PublicStorePage] Profile set from loaded data');
 
-          console.log('[PublicStorePage] All data loaded. Products:', storeState.products.length, 'Profile:', storeState.storeProfile.name);
+          // Only fetch products
+          await storeState.fetchProducts().then(() => console.log('[PublicStorePage] Products fetched, count:', storeState.products.length));
+
+          console.log('[PublicStorePage] All data loaded. Products:', storeState.products.length);
           hasFetchedRef.current = true;
         } else {
           console.error('[PublicStorePage] Failed to load store or store not found');
