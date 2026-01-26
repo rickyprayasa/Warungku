@@ -688,7 +688,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       try {
         // Use retry logic for the main update operation
         await retryOperation(async () => {
-          // Use withTimeout to prevent hanging
+          // Use withTimeout to prevent hanging - 60s for large logo uploads
           const { error, data } = await withTimeout(
             supabase
               .from('stores')
@@ -704,8 +704,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               .eq('id', storeId)
               .select('id') // Simplified select
               .single() as any,
-            10000, // 10s timeout
-            'Gagal menyimpan profil toko (timeout)'
+            60000, // 60s timeout - increased for slow connections and large logo uploads
+            'Gagal menyimpan profil toko (timeout). Coba lagi dengan koneksi yang lebih stabil.'
           );
 
           if (error) throw error;
@@ -768,28 +768,48 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
-      const { data, error } = await withTimeout(
-        supabase
-          .from('products')
-          .insert({
-            store_id: storeId,
-            name: productData.name,
-            price: productData.price,
-            cost: productData.cost || 0,
-            image_url: productData.imageUrl || '',
-            category: productData.category || '',
-            description: productData.description || '',
-            is_promo: productData.isPromo || false,
-            promo_price: productData.promoPrice,
-            is_active: productData.isActive !== false,
-            is_best_seller: productData.isBestSeller || false,
-            min_stock_level: productData.minStockLevel || 10,
-            qty_per_unit: productData.qtyPerUnit || 1,
-          })
-          .select()
-          .single() as any,
-        20000,
-        'Gagal menyimpan produk (timeout)'
+      // Retry logic helper
+      const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
+        let lastError;
+        for (let i = 0; i < maxRetries; i++) {
+          try {
+            return await operation();
+          } catch (error: any) {
+            console.warn(`[addProduct] Attempt ${i + 1} failed:`, error);
+            lastError = error;
+            // Wait before retry (exponential backoff: 1s, 2s, 4s)
+            if (i < maxRetries - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+            }
+          }
+        }
+        throw lastError;
+      };
+
+      const { data, error } = await retryOperation(() =>
+        withTimeout(
+          supabase
+            .from('products')
+            .insert({
+              store_id: storeId,
+              name: productData.name,
+              price: productData.price,
+              cost: productData.cost || 0,
+              image_url: productData.imageUrl || '',
+              category: productData.category || '',
+              description: productData.description || '',
+              is_promo: productData.isPromo || false,
+              promo_price: productData.promoPrice,
+              is_active: productData.isActive !== false,
+              is_best_seller: productData.isBestSeller || false,
+              min_stock_level: productData.minStockLevel || 10,
+              qty_per_unit: productData.qtyPerUnit || 1,
+            })
+            .select()
+            .single() as any,
+          45000, // 45s timeout - increased for slow connections and large images
+          'Gagal menyimpan produk (timeout). Coba lagi dengan koneksi yang lebih stabil.'
+        )
       );
 
       if (error) throw error;
@@ -806,28 +826,48 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     },
 
     updateProduct: async (productId, productData) => {
-      const { data, error } = await withTimeout(
-        supabase
-          .from('products')
-          .update({
-            name: productData.name,
-            price: productData.price,
-            cost: productData.cost,
-            image_url: productData.imageUrl,
-            category: productData.category,
-            description: productData.description,
-            is_promo: productData.isPromo,
-            promo_price: productData.promoPrice,
-            is_active: productData.isActive,
-            is_best_seller: productData.isBestSeller,
-            min_stock_level: productData.minStockLevel,
-            qty_per_unit: productData.qtyPerUnit,
-          })
-          .eq('id', productId)
-          .select()
-          .single() as any,
-        20000,
-        'Gagal update produk (timeout)'
+      // Retry logic helper
+      const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
+        let lastError;
+        for (let i = 0; i < maxRetries; i++) {
+          try {
+            return await operation();
+          } catch (error: any) {
+            console.warn(`[updateProduct] Attempt ${i + 1} failed:`, error);
+            lastError = error;
+            // Wait before retry (exponential backoff: 1s, 2s, 4s)
+            if (i < maxRetries - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+            }
+          }
+        }
+        throw lastError;
+      };
+
+      const { data, error } = await retryOperation(() =>
+        withTimeout(
+          supabase
+            .from('products')
+            .update({
+              name: productData.name,
+              price: productData.price,
+              cost: productData.cost,
+              image_url: productData.imageUrl,
+              category: productData.category,
+              description: productData.description,
+              is_promo: productData.isPromo,
+              promo_price: productData.promoPrice,
+              is_active: productData.isActive,
+              is_best_seller: productData.isBestSeller,
+              min_stock_level: productData.minStockLevel,
+              qty_per_unit: productData.qtyPerUnit,
+            })
+            .eq('id', productId)
+            .select()
+            .single() as any,
+          45000, // 45s timeout - increased for slow connections and large images
+          'Gagal update produk (timeout). Coba lagi dengan koneksi yang lebih stabil.'
+        )
       );
 
       if (error) throw error;
