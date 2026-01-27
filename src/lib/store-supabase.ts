@@ -61,6 +61,7 @@ interface WarungActions {
   deleteProduct: (productId: string) => Promise<void>;
   addSale: (saleData: SaleFormValues) => Promise<Sale>;
   addPublicSale: (saleData: SaleFormValues) => Promise<any>;
+  confirmSale: (saleId: string) => Promise<void>;
   deleteSale: (saleId: string) => Promise<void>;
   addPurchase: (purchaseData: PurchaseFormValues) => Promise<Purchase>;
   updatePurchase: (purchaseId: string, purchaseData: PurchaseFormValues) => Promise<Purchase>;
@@ -148,6 +149,11 @@ function toSale(row: any, items: any[]): Sale {
     profit: Number(row.profit),
     saleType: row.sale_type || 'retail',
     notes: row.notes || '',
+    customerName: row.customer_name || undefined,
+    customerPhone: row.customer_phone || undefined,
+    customerAddress: row.customer_address || undefined,
+    paymentProofUrl: row.payment_proof_url || undefined,
+    status: row.status || 'completed',
     createdAt: new Date(row.created_at).getTime(),
     items: items.map(item => ({
       productId: item.product_id,
@@ -188,10 +194,29 @@ function toReconciliation(row: any): Reconciliation {
   };
 }
 
-// Timeout helper - increased default timeout for slow connections
+// Ensure session is valid before database operations
+async function ensureSession(): Promise<boolean> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      // Try to refresh session
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data.session) {
+        console.warn('[ensureSession] Session expired, need re-login');
+        return false;
+      }
+    }
+    return true;
+  } catch (err) {
+    console.error('[ensureSession] Error checking session:', err);
+    return false;
+  }
+}
+
+// Timeout helper with retry for session errors - increased default timeout
 async function withTimeout<T>(
   promise: Promise<T> | PromiseLike<T>,
-  timeoutMs: number = 30000,
+  timeoutMs: number = 60000, // Increased to 60s default
   errorMessage: string = 'Request timed out'
 ): Promise<T> {
   let timeoutId: NodeJS.Timeout;
@@ -205,8 +230,16 @@ async function withTimeout<T>(
     const result = await Promise.race([promise, timeoutPromise]);
     clearTimeout(timeoutId!);
     return result;
-  } catch (error) {
+  } catch (error: any) {
     clearTimeout(timeoutId!);
+    // If auth error, try to refresh session
+    if (error?.message?.includes('JWT') || error?.message?.includes('session') || error?.code === 'PGRST301') {
+      console.warn('[withTimeout] Auth error detected, refreshing session...');
+      const refreshed = await ensureSession();
+      if (!refreshed) {
+        throw new Error('Session expired. Please login again.');
+      }
+    }
     throw error;
   }
 }
@@ -922,6 +955,12 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
+      // Ensure valid session before database operations
+      const sessionValid = await ensureSession();
+      if (!sessionValid) {
+        throw new Error('Session expired. Silakan login kembali.');
+      }
+
       // Calculate totals
       const products = get().products;
       let total = 0;
@@ -1014,6 +1053,10 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               price: item.price,
             })),
             notes: saleData.notes || '',
+            customer_name: saleData.customerName || '',
+            customer_phone: saleData.customerPhone || '',
+            customer_address: saleData.customerAddress || '',
+            payment_proof_url: saleData.paymentProofUrl || '',
           },
         });
 
@@ -1042,6 +1085,36 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         return data;
       } catch (err) {
         console.error('[addPublicSale] Failed to create public sale:', err);
+        throw err;
+      }
+    },
+
+    confirmSale: async (saleId: string) => {
+      const storeId = get().currentStoreId;
+      if (!storeId) throw new Error('No store selected');
+
+      try {
+        const { error } = await withTimeout(
+          supabase
+            .from('sales')
+            .update({ status: 'completed' })
+            .eq('id', saleId)
+            .eq('store_id', storeId),
+          15000,
+          'Gagal mengkonfirmasi pesanan (timeout)'
+        );
+
+        if (error) throw error;
+
+        // Update local state
+        set((state) => {
+          const saleIndex = state.sales.findIndex(s => s.id === saleId);
+          if (saleIndex !== -1) {
+            state.sales[saleIndex].status = 'completed';
+          }
+        });
+      } catch (err) {
+        console.error('[confirmSale] Failed to confirm sale:', err);
         throw err;
       }
     },

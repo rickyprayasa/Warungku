@@ -53,6 +53,11 @@ export interface Sale {
   createdAt: number;
   saleType?: 'retail' | 'display'; // Display = bulk sale for items on display
   notes?: string; // Optional notes/remarks for the sale
+  customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
+  paymentProofUrl?: string;
+  status?: 'pending' | 'completed' | 'cancelled';
 }
 export const saleItemSchema = z.object({
   productId: z.string(),
@@ -69,6 +74,10 @@ export const saleSchema = z.object({
     price: z.number(),
   })).min(1, "Sale must have at least one item."),
   notes: z.string().optional(),
+  customerName: z.string().optional(),
+  customerPhone: z.string().optional(),
+  customerAddress: z.string().optional(),
+  paymentProofUrl: z.string().optional(),
 });
 export type SaleFormValues = z.infer<typeof saleSchema>;
 // Types for Purchases

@@ -19,7 +19,7 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
   const openCart = useCartStore((state) => state.openCart);
   const storeProfile = useWarungStore((state) => state.storeProfile);
   
-  const isCartEnabled = storeProfile.cartEnabled ?? false;
+  const isCartEnabled = storeProfile.cartEnabled ?? true;
   const availableStock = product.totalStock ?? 0;
   const isOutOfStock = availableStock <= 0;
 

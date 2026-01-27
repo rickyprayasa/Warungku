@@ -10,7 +10,7 @@ export function FloatingCart() {
   const itemCount = getItemCount();
   const total = getTotal();
 
-  const isCartEnabled = storeProfile.cartEnabled ?? false;
+  const isCartEnabled = storeProfile.cartEnabled ?? true;
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('id-ID', {

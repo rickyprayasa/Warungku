@@ -13,6 +13,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { StoreProvider } from '@/contexts/StoreContext';
 import { PlanProvider } from '@/contexts/PlanContext';
 import { AdminProvider } from '@/contexts/AdminContext';
+import { SessionProvider } from '@/components/SessionProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { shouldRetryQuery, getRetryDelay } from '@/lib/query-utils';
 import '@/index.css'
@@ -379,13 +380,15 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <AdminProvider>
-            <StoreProvider>
-              <PlanProvider>
-                <RouterProvider router={router} />
-              </PlanProvider>
-            </StoreProvider>
-          </AdminProvider>
+          <SessionProvider>
+            <AdminProvider>
+              <StoreProvider>
+                <PlanProvider>
+                  <RouterProvider router={router} />
+                </PlanProvider>
+              </StoreProvider>
+            </AdminProvider>
+          </SessionProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

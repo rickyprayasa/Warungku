@@ -190,7 +190,7 @@ export function CartSheet() {
               className="w-full h-12 bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-base shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
             >
               <CreditCard className="w-5 h-5 mr-2" />
-              Bayar dengan QRIS
+              Lanjut ke Pembayaran
             </Button>
           </div>
         )}
