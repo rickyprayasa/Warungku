@@ -36,6 +36,8 @@ import {
     Save,
     Trash2,
     ExternalLink,
+    Clock,
+    AlertTriangle,
 } from 'lucide-react';
 import {
     Select,
@@ -57,6 +59,7 @@ interface UserWithStore {
         name: string;
         slug: string;
         plan: string;
+        plan_expires_at: string | null;
         created_at: string;
     };
 }
@@ -86,6 +89,7 @@ export function AdminUsersPage() {
     const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<UserWithStore | null>(null);
     const [newPlan, setNewPlan] = useState('free');
+    const [planDuration, setPlanDuration] = useState<number>(1); // months
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
     useEffect(() => {
@@ -110,6 +114,7 @@ export function AdminUsersPage() {
                     name: item.store_name,
                     slug: item.store_slug,
                     plan: item.store_plan,
+                    plan_expires_at: item.plan_expires_at || null,
                     created_at: item.store_created_at,
                 },
             }));
@@ -171,7 +176,16 @@ export function AdminUsersPage() {
 
     const handleEditRole = (user: UserWithStore) => {
         setEditingUser(user);
-        setNewPlan(user.plan || 'free');
+        setNewPlan(user.store?.plan || 'free');
+        // Calculate current remaining months if plan has expiry
+        if (user.store?.plan_expires_at) {
+            const expiry = new Date(user.store.plan_expires_at);
+            const now = new Date();
+            const monthsLeft = Math.max(1, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+            setPlanDuration(monthsLeft);
+        } else {
+            setPlanDuration(1);
+        }
         setIsEditRoleOpen(true);
     };
 
@@ -188,13 +202,19 @@ export function AdminUsersPage() {
             return;
         }
 
-        console.log('Updating plan:', { storeId, newPlan, editingUser });
+        // Calculate expiry date based on duration
+        const expiryDate = new Date();
+        expiryDate.setMonth(expiryDate.getMonth() + planDuration);
+        const expiryIso = expiryDate.toISOString();
+
+        console.log('Updating plan:', { storeId, newPlan, planDuration, expiryDate: expiryIso });
 
         setIsUpdatingPlan(true);
         try {
             const { data, error } = await supabase.rpc('admin_update_store_plan', {
                 p_store_id: storeId,
-                p_new_plan: newPlan
+                p_new_plan: newPlan,
+                p_expires_at: expiryIso
             });
 
             console.log('Update result:', { data, error });
@@ -206,7 +226,7 @@ export function AdminUsersPage() {
                 throw new Error((data as any)?.message || 'Failed to update plan');
             }
 
-            toast.success(`Plan berhasil diubah ke ${newPlan}`);
+            toast.success(`Plan berhasil diubah ke ${newPlan} (${planDuration} bulan)`);
             setIsEditRoleOpen(false);
             setEditingUser(null);
             fetchUsers();
@@ -346,6 +366,22 @@ export function AdminUsersPage() {
         });
     };
 
+    const formatExpiryDate = (dateString: string | null) => {
+        if (!dateString) return null;
+        return new Date(dateString).toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        });
+    };
+
+    const getDaysUntilExpiry = (dateString: string | null) => {
+        if (!dateString) return null;
+        const expiry = new Date(dateString);
+        const now = new Date();
+        return Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    };
+
     const getPlanBadgeColor = (plan: string) => {
         switch (plan) {
             case 'pro':
@@ -436,6 +472,7 @@ export function AdminUsersPage() {
                                     <TableHead className="font-mono font-bold">Store</TableHead>
                                     <TableHead className="font-mono font-bold">Email</TableHead>
                                     <TableHead className="font-mono font-bold">Plan</TableHead>
+                                    <TableHead className="font-mono font-bold">Expires</TableHead>
                                     <TableHead className="font-mono font-bold">Joined</TableHead>
                                     <TableHead className="font-mono font-bold text-right">Actions</TableHead>
                                 </TableRow>
@@ -465,6 +502,42 @@ export function AdminUsersPage() {
                                             <Badge className={`rounded-none font-mono uppercase text-xs ${getPlanBadgeColor(user.store?.plan || 'demo')}`}>
                                                 {getPlanLabel(user.store?.plan || 'Demo')}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">
+                                            {(() => {
+                                                const expiryDate = user.store?.plan_expires_at;
+                                                const daysLeft = getDaysUntilExpiry(expiryDate);
+                                                const formatted = formatExpiryDate(expiryDate);
+
+                                                if (!expiryDate) {
+                                                    return <span className="text-muted-foreground">-</span>;
+                                                }
+
+                                                if (daysLeft !== null && daysLeft <= 0) {
+                                                    return (
+                                                        <div className="flex items-center gap-1 text-red-600">
+                                                            <AlertTriangle className="w-3 h-3" />
+                                                            <span>Expired</span>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                if (daysLeft !== null && daysLeft <= 7) {
+                                                    return (
+                                                        <div className="flex items-center gap-1 text-amber-600">
+                                                            <Clock className="w-3 h-3" />
+                                                            <span>{formatted} ({daysLeft}d)</span>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div className="flex items-center gap-1 text-green-600">
+                                                        <Clock className="w-3 h-3" />
+                                                        <span>{formatted}</span>
+                                                    </div>
+                                                );
+                                            })()}
                                         </TableCell>
                                         <TableCell className="font-mono text-sm">
                                             {formatDate(user.created_at)}
@@ -694,6 +767,60 @@ export function AdminUsersPage() {
                                         <SelectItem value="enterprise">Enterprise</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+
+                            {/* Duration Selection */}
+                            <div className="space-y-2">
+                                <Label>Durasi Langganan</Label>
+                                <div className="flex gap-2">
+                                    {[1, 3, 6, 12].map((months) => (
+                                        <Button
+                                            key={months}
+                                            type="button"
+                                            variant={planDuration === months ? 'default' : 'outline'}
+                                            onClick={() => setPlanDuration(months)}
+                                            className={`flex-1 rounded-none border-2 border-brand-black font-mono text-sm ${
+                                                planDuration === months 
+                                                    ? 'bg-brand-orange text-brand-black' 
+                                                    : 'bg-white'
+                                            }`}
+                                        >
+                                            {months} bln
+                                        </Button>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <Label htmlFor="custom-duration" className="text-xs">Custom:</Label>
+                                    <Input
+                                        id="custom-duration"
+                                        type="number"
+                                        min={1}
+                                        max={60}
+                                        value={planDuration}
+                                        onChange={(e) => setPlanDuration(Math.max(1, parseInt(e.target.value) || 1))}
+                                        className="w-20 h-8 rounded-none border-2 border-brand-black font-mono text-sm text-center"
+                                    />
+                                    <span className="text-xs text-muted-foreground font-mono">bulan</span>
+                                </div>
+                            </div>
+
+                            {/* Expiry Preview */}
+                            <div className="p-3 bg-blue-50 border-2 border-blue-300">
+                                <p className="text-xs font-mono text-blue-800">
+                                    <Clock className="w-3 h-3 inline mr-1" />
+                                    <strong>Plan akan berakhir:</strong>
+                                </p>
+                                <p className="text-sm font-mono text-blue-700 font-bold">
+                                    {(() => {
+                                        const expiry = new Date();
+                                        expiry.setMonth(expiry.getMonth() + planDuration);
+                                        return expiry.toLocaleDateString('id-ID', {
+                                            day: 'numeric',
+                                            month: 'long',
+                                            year: 'numeric'
+                                        });
+                                    })()}
+                                </p>
                             </div>
 
                             <div className="p-3 bg-gray-50 border-2 border-gray-200">

@@ -11,8 +11,9 @@ import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
 import { SettingsDialog } from './SettingsDialog';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Clock, Calendar } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import rsquareLogo from '@/assets/rsquare-logo-80.png';
 import {
     Tooltip,
@@ -230,7 +231,7 @@ export function Sidebar() {
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Transaksi</p>
                     </div>
                 )}
-                <NavItem to="/dashboard" tab="sales" icon={DollarSign} label="Penjualan" collapsed={sidebarCollapsed} />
+                <NavItemWithBadge to="/dashboard" tab="sales" icon={DollarSign} label="Penjualan" collapsed={sidebarCollapsed} />
                 <NavItem to="/dashboard" tab="purchases" icon={ShoppingCart} label="Pembelian" collapsed={sidebarCollapsed} />
                 <NavItem to="/dashboard" tab="requests" icon={Inbox} label="Request" collapsed={sidebarCollapsed} />
 
@@ -410,6 +411,128 @@ export function Sidebar() {
             </div>
         </aside>
     );
+}
+
+// Hook to count pending orders
+function usePendingOrders() {
+    const sales = useWarungStore((state) => state.sales);
+    const currentStoreId = useWarungStore((state) => state.currentStoreId);
+    const [pendingCount, setPendingCount] = useState(0);
+
+    // Calculate pending orders from store sales
+    useEffect(() => {
+        const pending = sales.filter(s => s.status?.toLowerCase() === 'pending').length;
+        setPendingCount(pending);
+    }, [sales]);
+
+    // Realtime subscription for new orders
+    useEffect(() => {
+        if (!currentStoreId) return;
+
+        const channel = supabase
+            .channel('pending-orders')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'sales',
+                    filter: `store_id=eq.${currentStoreId}`
+                },
+                (payload) => {
+                    if ((payload.new as any).status === 'pending') {
+                        setPendingCount(prev => prev + 1);
+                        // Refresh sales data
+                        useWarungStore.getState().fetchSales();
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'sales',
+                    filter: `store_id=eq.${currentStoreId}`
+                },
+                (payload) => {
+                    // Refresh when status changes
+                    useWarungStore.getState().fetchSales();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [currentStoreId]);
+
+    return pendingCount;
+}
+
+// NavItem with badge indicator for pending orders
+function NavItemWithBadge({ to, icon: Icon, label, tab, collapsed, className }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean; className?: string }) {
+    const location = useLocation();
+    const pendingCount = usePendingOrders();
+
+    const isActive = () => {
+        if (tab) {
+            const searchParams = new URLSearchParams(location.search);
+            return location.pathname === to && searchParams.get('tab') === tab;
+        }
+        return location.pathname === to && !location.search;
+    };
+
+    const active = isActive();
+
+    const content = (
+        <NavLink
+            to={tab ? `${to}?tab=${tab}` : to}
+            preventScrollReset
+            className={cn(
+                'flex items-center gap-3 font-mono uppercase font-bold text-xs px-4 py-2.5 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10 relative',
+                active
+                    ? 'border-brand-orange bg-brand-orange/20 text-brand-black'
+                    : 'text-muted-foreground hover:text-brand-black',
+                collapsed && 'justify-center',
+                className
+            )}
+        >
+            <div className="relative">
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {pendingCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
+            </div>
+            {!collapsed && (
+                <>
+                    {label}
+                    {pendingCount > 0 && (
+                        <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                            {pendingCount}
+                        </span>
+                    )}
+                </>
+            )}
+        </NavLink>
+    );
+
+    if (collapsed) {
+        return (
+            <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        {content}
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="font-mono">
+                        {label} {pendingCount > 0 && `(${pendingCount} pending)`}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    }
+
+    return content;
 }
 
 function NavItem({ to, icon: Icon, label, tab, collapsed, className }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean; className?: string }) {

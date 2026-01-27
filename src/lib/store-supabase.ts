@@ -362,9 +362,12 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       // Check if we are in public store mode FIRST (no async needed)
       // Public store URLs are anything that's NOT in internalRoutes
-      const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
-      const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
-      const isPublicStore = !isInternalRoute && window.location.pathname !== '/';
+      const pathname = window.location.pathname;
+      const internalRoutes = ['/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
+      const isInternalRoute = pathname === '/' || internalRoutes.some(route => pathname.startsWith(route)) || pathname.startsWith('/admin');
+      const isPublicStore = !isInternalRoute;
+
+      console.log('[FETCH PRODUCTS] Route check:', { pathname, isInternalRoute, isPublicStore });
 
       // SECURITY: Only check membership for internal (dashboard) routes
       // For public store, RLS already protects modification, reading is allowed
