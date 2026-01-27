@@ -30,12 +30,12 @@ export function MobileBottomNav() {
     const moreTabs = [
         ...staticMoreTabs,
         // Add store link only if store has slug
-        ...(store?.slug ? [{ 
-            value: "store", 
-            label: "Lihat Toko", 
-            icon: ExternalLink, 
+        ...(store?.slug ? [{
+            value: "store",
+            label: "Lihat Toko",
+            icon: ExternalLink,
             path: `/${store.slug}`,
-            isExternal: true 
+            isExternal: true
         }] : [])
     ];
 
@@ -117,7 +117,11 @@ export function MobileBottomNav() {
     const handleNavigation = (tab: any) => {
         // If it's an external link (like store URL), open in new tab
         if (tab.isExternal) {
-            window.open(tab.path, '_blank', 'noopener,noreferrer');
+            const width = 1200;
+            const height = 800;
+            const left = (window.screen.width - width) / 2;
+            const top = (window.screen.height - height) / 2;
+            window.open(tab.path, 'rsquare_store_preview', `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no`);
         } else {
             navigate(tab.path);
         }

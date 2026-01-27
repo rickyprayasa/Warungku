@@ -146,8 +146,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Skip fetching user store if we are in public store mode
       if (typeof window !== 'undefined') {
-        const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
-        const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
+        const internalRoutes = ['/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
+        const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin') || window.location.pathname === '/';
         if (!isInternalRoute && window.location.pathname !== '/') {
           console.log('[AuthContext] Skipping user store fetch in public mode');
           return null;
