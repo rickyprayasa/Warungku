@@ -115,13 +115,20 @@ export function MobileBottomNav() {
     }, [location]);
 
     const handleNavigation = (tab: any) => {
-        // If it's an external link (like store URL), open in new tab
+        // If it's an external link (like store URL), open in new browser window
         if (tab.isExternal) {
-            const width = 1200;
-            const height = 800;
-            const left = (window.screen.width - width) / 2;
-            const top = (window.screen.height - height) / 2;
-            window.open(tab.path, 'rsquare_store_preview', `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no`);
+            // Open in new browser window - use original approach that worked
+            const width = window.screen.width - 100; // Almost full screen
+            const height = window.screen.height - 100;
+            const left = 50;
+            const top = 50;
+
+            // Use timestamp to ensure new window each time
+            const windowName = `store_window_${Date.now()}`;
+
+            window.open(tab.path, windowName,
+                `width=${width},height=${height},left=${left},top=${top}`
+            );
         } else {
             navigate(tab.path);
         }

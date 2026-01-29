@@ -586,19 +586,26 @@ function NavItem({ to, icon: Icon, label, tab, collapsed, className }: { to: str
 
 // External link NavItem (opens in new tab)
 function ExternalNavItem({ href, icon: Icon, label, collapsed }: { href: string; icon: any; label: string; collapsed: boolean }) {
+    const handleOpenStore = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+        // Open in new browser window - use original approach that worked
+        const width = window.screen.width - 100; // Almost full screen
+        const height = window.screen.height - 100;
+        const left = 50;
+        const top = 50;
+
+        // Use timestamp to ensure new window each time
+        const windowName = `store_window_${Date.now()}`;
+
+        window.open(href, windowName,
+            `width=${width},height=${height},left=${left},top=${top}`
+        );
+    };
+
     const content = (
         <a
             href={href}
-            onClick={(e) => {
-                e.preventDefault();
-                // Open in a new window (popup) to simulate a "cleaner" browser instance
-                // This also helps with the user's perception of "not verifying auth" although session is shared
-                const width = 1200;
-                const height = 800;
-                const left = (window.screen.width - width) / 2;
-                const top = (window.screen.height - height) / 2;
-                window.open(href, 'rsquare_store_preview', `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no`);
-            }}
+            onClick={handleOpenStore}
             className={cn(
                 'flex items-center gap-3 font-mono uppercase font-bold text-xs px-4 py-2.5 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10 text-muted-foreground hover:text-brand-black',
                 collapsed && 'justify-center'
