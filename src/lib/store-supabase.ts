@@ -244,6 +244,107 @@ async function withTimeout<T>(
   }
 }
 
+// FIFO Stock Deduction Helper - deducts stock from oldest batches first
+async function deductStockFIFO(productId: string, qtyToDeduct: number): Promise<void> {
+  try {
+    // Get batches sorted by created_at (oldest first for FIFO)
+    const { data: batches, error } = await supabase
+      .from('stock_details')
+      .select('*')
+      .eq('product_id', productId)
+      .gt('quantity', 0)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('[deductStockFIFO] Failed to get batches:', error);
+      return;
+    }
+
+    if (!batches || batches.length === 0) {
+      console.warn('[deductStockFIFO] No stock batches found for product:', productId);
+      return;
+    }
+
+    let remaining = qtyToDeduct;
+
+    for (const batch of batches) {
+      if (remaining <= 0) break;
+
+      const deductFromBatch = Math.min(batch.quantity, remaining);
+      const newQuantity = batch.quantity - deductFromBatch;
+      remaining -= deductFromBatch;
+
+      console.log(`[deductStockFIFO] Batch ${batch.id}: ${batch.quantity} -> ${newQuantity} (deducted ${deductFromBatch})`);
+
+      // Update batch quantity
+      const { error: updateError } = await supabase
+        .from('stock_details')
+        .update({ quantity: newQuantity })
+        .eq('id', batch.id);
+
+      if (updateError) {
+        console.error('[deductStockFIFO] Failed to update batch:', updateError);
+      }
+    }
+
+    if (remaining > 0) {
+      console.warn(`[deductStockFIFO] Could not deduct full quantity. Remaining: ${remaining}`);
+    }
+  } catch (err) {
+    console.error('[deductStockFIFO] Error:', err);
+  }
+}
+
+// FIFO Stock Restoration Helper - restores stock when sale is deleted
+// Since we don't track which batch was used, we add to newest batch or create new one
+async function restoreStockFIFO(
+  storeId: string,
+  productId: string,
+  qtyToRestore: number,
+  unitCost: number
+): Promise<void> {
+  try {
+    // Get the newest batch for this product
+    const { data: newestBatch, error } = await supabase
+      .from('stock_details')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 = no rows found
+      console.error('[restoreStockFIFO] Failed to get newest batch:', error);
+    }
+
+    if (newestBatch) {
+      // Add to existing batch
+      const newQuantity = newestBatch.quantity + qtyToRestore;
+      console.log(`[restoreStockFIFO] Restoring to batch ${newestBatch.id}: ${newestBatch.quantity} -> ${newQuantity}`);
+
+      await supabase
+        .from('stock_details')
+        .update({ quantity: newQuantity })
+        .eq('id', newestBatch.id);
+    } else {
+      // Create new batch
+      console.log(`[restoreStockFIFO] Creating new batch for product ${productId} with qty ${qtyToRestore}`);
+
+      await supabase
+        .from('stock_details')
+        .insert({
+          store_id: storeId,
+          product_id: productId,
+          quantity: qtyToRestore,
+          unit_cost: unitCost,
+        });
+    }
+  } catch (err) {
+    console.error('[restoreStockFIFO] Error:', err);
+  }
+}
+
 export const useWarungStore = create<WarungState & WarungActions>()(
   immer((set, get) => ({
     products: [],
@@ -1019,6 +1120,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const product = products.find(p => p.id === item.productId);
         if (product) {
           const qtyToDeduct = item.quantity * (product.qtyPerUnit || 1);
+
+          // FIFO: Deduct from stock_details (oldest batches first)
+          await deductStockFIFO(item.productId, qtyToDeduct);
+
+          // Also update product total_stock
           await withTimeout(
             supabase
               .from('products')
@@ -1146,11 +1252,19 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       if (error) throw error;
 
       // Restore stock
+      const storeId = get().currentStoreId;
       const products = get().products;
       for (const item of items || []) {
         const product = products.find(p => p.id === item.product_id);
         if (product) {
           const qtyToRestore = item.quantity * (product.qtyPerUnit || 1);
+
+          // FIFO: Restore to stock_details
+          if (storeId) {
+            await restoreStockFIFO(storeId, item.product_id, qtyToRestore, item.cost || product.cost || 0);
+          }
+
+          // Also update product total_stock
           await withTimeout(
             supabase
               .from('products')

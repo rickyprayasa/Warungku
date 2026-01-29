@@ -769,59 +769,62 @@ export function AdminUsersPage() {
                                 </Select>
                             </div>
 
-                            {/* Duration Selection */}
-                            <div className="space-y-2">
-                                <Label>Durasi Langganan</Label>
-                                <div className="flex gap-2">
-                                    {[1, 3, 6, 12].map((months) => (
-                                        <Button
-                                            key={months}
-                                            type="button"
-                                            variant={planDuration === months ? 'default' : 'outline'}
-                                            onClick={() => setPlanDuration(months)}
-                                            className={`flex-1 rounded-none border-2 border-brand-black font-mono text-sm ${
-                                                planDuration === months 
-                                                    ? 'bg-brand-orange text-brand-black' 
-                                                    : 'bg-white'
-                                            }`}
-                                        >
-                                            {months} bln
-                                        </Button>
-                                    ))}
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <Label htmlFor="custom-duration" className="text-xs">Custom:</Label>
-                                    <Input
-                                        id="custom-duration"
-                                        type="number"
-                                        min={1}
-                                        max={60}
-                                        value={planDuration}
-                                        onChange={(e) => setPlanDuration(Math.max(1, parseInt(e.target.value) || 1))}
-                                        className="w-20 h-8 rounded-none border-2 border-brand-black font-mono text-sm text-center"
-                                    />
-                                    <span className="text-xs text-muted-foreground font-mono">bulan</span>
-                                </div>
-                            </div>
+                            {/* Duration Selection - Only for paid plans */}
+                            {newPlan !== 'free' && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label>Durasi Langganan</Label>
+                                        <div className="flex gap-2">
+                                            {[1, 3, 6, 12].map((months) => (
+                                                <Button
+                                                    key={months}
+                                                    type="button"
+                                                    variant={planDuration === months ? 'default' : 'outline'}
+                                                    onClick={() => setPlanDuration(months)}
+                                                    className={`flex-1 rounded-none border-2 border-brand-black font-mono text-sm ${planDuration === months
+                                                            ? 'bg-brand-orange text-brand-black'
+                                                            : 'bg-white'
+                                                        }`}
+                                                >
+                                                    {months} bln
+                                                </Button>
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Label htmlFor="custom-duration" className="text-xs">Custom:</Label>
+                                            <Input
+                                                id="custom-duration"
+                                                type="number"
+                                                min={1}
+                                                max={60}
+                                                value={planDuration}
+                                                onChange={(e) => setPlanDuration(Math.max(1, parseInt(e.target.value) || 1))}
+                                                className="w-20 h-8 rounded-none border-2 border-brand-black font-mono text-sm text-center"
+                                            />
+                                            <span className="text-xs text-muted-foreground font-mono">bulan</span>
+                                        </div>
+                                    </div>
 
-                            {/* Expiry Preview */}
-                            <div className="p-3 bg-blue-50 border-2 border-blue-300">
-                                <p className="text-xs font-mono text-blue-800">
-                                    <Clock className="w-3 h-3 inline mr-1" />
-                                    <strong>Plan akan berakhir:</strong>
-                                </p>
-                                <p className="text-sm font-mono text-blue-700 font-bold">
-                                    {(() => {
-                                        const expiry = new Date();
-                                        expiry.setMonth(expiry.getMonth() + planDuration);
-                                        return expiry.toLocaleDateString('id-ID', {
-                                            day: 'numeric',
-                                            month: 'long',
-                                            year: 'numeric'
-                                        });
-                                    })()}
-                                </p>
-                            </div>
+                                    {/* Expiry Preview */}
+                                    <div className="p-3 bg-blue-50 border-2 border-blue-300">
+                                        <p className="text-xs font-mono text-blue-800">
+                                            <Clock className="w-3 h-3 inline mr-1" />
+                                            <strong>Plan akan berakhir:</strong>
+                                        </p>
+                                        <p className="text-sm font-mono text-blue-700 font-bold">
+                                            {(() => {
+                                                const expiry = new Date();
+                                                expiry.setMonth(expiry.getMonth() + planDuration);
+                                                return expiry.toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'long',
+                                                    year: 'numeric'
+                                                });
+                                            })()}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
 
                             <div className="p-3 bg-gray-50 border-2 border-gray-200">
                                 <p className="text-xs text-gray-700 font-bold">
