@@ -62,7 +62,8 @@ export function BatchStockInfo({ productId, productName, totalStock, stockMethod
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(value);
+      maximumFractionDigits: 0,
+    }).format(Math.round(value));
   };
 
   const formatDate = (timestamp: number) => {
@@ -78,8 +79,8 @@ export function BatchStockInfo({ productId, productName, totalStock, stockMethod
   const calculateMetrics = () => {
     if (stockDetails.length === 0) return null;
 
-    const totalValue = stockDetails.reduce((sum, batch) => sum + (batch.unitCost * batch.quantity), 0);
-    const avgCost = totalValue / totalStock;
+    const totalValue = Math.round(stockDetails.reduce((sum, batch) => sum + (batch.unitCost * batch.quantity), 0));
+    const avgCost = Math.round((totalValue / totalStock) * 100) / 100;
     const oldestBatch = stockDetails[stockDetails.length - 1];
     const newestBatch = stockDetails[0];
     const batchCount = stockDetails.length;

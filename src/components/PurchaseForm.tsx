@@ -46,7 +46,7 @@ export function PurchaseForm({ onSuccess, purchase }: PurchaseFormProps) {
       unitsPerPack: purchase?.unitsPerPack || 1,
       // If pack mode, unitCost field represents price per pack
       unitCost: initialIsPackMode && purchase?.unitCost && purchase?.unitsPerPack
-        ? purchase.unitCost * purchase.unitsPerPack
+        ? Math.round(purchase.unitCost * purchase.unitsPerPack)
         : (purchase?.unitCost || 0),
       supplierId: purchase?.supplierId || '',
     },

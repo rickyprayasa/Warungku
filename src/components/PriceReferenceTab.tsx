@@ -87,7 +87,8 @@ export function PriceReferenceTab() {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0,
-        }).format(value);
+            maximumFractionDigits: 0,
+        }).format(Math.round(value));
     };
 
     const StatCard = ({ title, value, icon: Icon, color, bgColor }: any) => (
