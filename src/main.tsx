@@ -14,6 +14,7 @@ import { StoreProvider } from '@/contexts/StoreContext';
 import { PlanProvider } from '@/contexts/PlanContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { SessionProvider } from '@/components/SessionProvider';
+import { OfflineStatusIndicator } from '@/components/OfflineStatusIndicator';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { shouldRetryQuery, getRetryDelay } from '@/lib/query-utils';
 import '@/index.css'
@@ -385,6 +386,7 @@ createRoot(document.getElementById('root')!).render(
               <StoreProvider>
                 <PlanProvider>
                   <RouterProvider router={router} />
+                  <OfflineStatusIndicator />
                 </PlanProvider>
               </StoreProvider>
             </AdminProvider>

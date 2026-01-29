@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { LogIn, RefreshCw, AlertTriangle } from 'lucide-react';
+import { LogIn, RefreshCw, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
+import { offlineSync } from '@/lib/offline-sync';
+import { useWarungStore } from '@/lib/store-supabase';
 
 interface SessionContextType {
     showReLoginModal: () => void;
@@ -107,6 +109,62 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const interval = setInterval(refreshIfActive, 30 * 60 * 1000); // Refresh every 30 minutes
         return () => clearInterval(interval);
     }, [lastActivity]);
+
+    // Offline Sync - Listen for online events and sync queue
+    useEffect(() => {
+        const handleOnline = async () => {
+            console.log('[OfflineSync] Online detected, checking for pending items...');
+            const pendingCount = offlineSync.getPendingCount();
+
+            if (pendingCount > 0) {
+                toast.info(`Menemukan ${pendingCount} data offline. Menyinkronkan...`, {
+                    icon: <Wifi className="w-4 h-4" />,
+                    duration: 3000
+                });
+
+                try {
+                    // Get the store and process the queue
+                    const { processOfflineQueue } = useWarungStore.getState();
+                    await processOfflineQueue();
+
+                    toast.success('Sinkronisasi offline berhasil!', {
+                        icon: <Wifi className="w-4 h-4" />,
+                    });
+                } catch (error) {
+                    console.error('[OfflineSync] Sync failed:', error);
+                    toast.error('Gagal menyinkronkan data offline. Coba lagi nanti.');
+                }
+            }
+        };
+
+        const handleOffline = () => {
+            console.log('[OfflineSync] Offline detected');
+            toast.warning('Anda sedang offline. Data akan disimpan secara lokal.', {
+                icon: <WifiOff className="w-4 h-4" />,
+                duration: 3000
+            });
+        };
+
+        // Listen for online/offline events
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        // Check for pending items on mount (for users returning to the app)
+        const checkPendingOnMount = async () => {
+            const pendingCount = offlineSync.getPendingCount();
+            if (pendingCount > 0 && navigator.onLine) {
+                console.log('[OfflineSync] Found pending items on mount, syncing...');
+                await handleOnline();
+            }
+        };
+
+        checkPendingOnMount();
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     const showReLoginModal = useCallback(() => {
         setIsModalOpen(true);

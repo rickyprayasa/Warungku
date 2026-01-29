@@ -3,6 +3,18 @@ import { immer } from 'zustand/middleware/immer';
 import { supabase } from './supabase';
 import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload, Reconciliation, ReconciliationPayload } from '@shared/types';
 import { AuditLogger } from './audit-logger';
+import { offlineSync } from './offline-sync';
+
+// Helper to check if error is network related
+function isNetworkError(error: any): boolean {
+  return (
+    !navigator.onLine ||
+    error?.message?.includes('timeout') ||
+    error?.message?.includes('Network request failed') ||
+    error?.message?.includes('Failed to fetch') ||
+    error?.code === 'PGRST301' // Connection error sometimes
+  );
+}
 
 interface WarungState {
   products: Product[];
@@ -75,6 +87,7 @@ interface WarungActions {
   adjustStock: (productId: string, quantity: number, unitCost: number, isFromProductForm?: boolean) => Promise<void>;
   fetchReconciliations: () => Promise<void>;
   createReconciliation: (payload: ReconciliationPayload) => Promise<Reconciliation>;
+  processOfflineQueue: () => Promise<void>;
 }
 
 // Helper to convert Supabase snake_case to camelCase
@@ -927,43 +940,80 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         throw lastError;
       };
 
-      const { data, error } = await retryOperation(() =>
-        withTimeout(
-          supabase
-            .from('products')
-            .insert({
-              store_id: storeId,
-              name: productData.name,
-              price: productData.price,
-              cost: productData.cost || 0,
-              image_url: productData.imageUrl || '',
-              category: productData.category || '',
-              description: productData.description || '',
-              is_promo: productData.isPromo || false,
-              promo_price: productData.promoPrice,
-              is_active: productData.isActive !== false,
-              is_best_seller: productData.isBestSeller || false,
-              min_stock_level: productData.minStockLevel || 10,
-              qty_per_unit: productData.qtyPerUnit || 1,
-            })
-            .select()
-            .single() as any,
-          45000, // 45s timeout - increased for slow connections and large images
-          'Gagal menyimpan produk (timeout). Coba lagi dengan koneksi yang lebih stabil.'
-        )
-      );
+      try {
+        const { data, error } = await retryOperation(() =>
+          withTimeout(
+            supabase
+              .from('products')
+              .insert({
+                store_id: storeId,
+                name: productData.name,
+                price: productData.price,
+                cost: productData.cost || 0,
+                image_url: productData.imageUrl || '',
+                category: productData.category || '',
+                description: productData.description || '',
+                is_promo: productData.isPromo || false,
+                promo_price: productData.promoPrice,
+                is_active: productData.isActive !== false,
+                is_best_seller: productData.isBestSeller || false,
+                min_stock_level: productData.minStockLevel || 10,
+                qty_per_unit: productData.qtyPerUnit || 1,
+              })
+              .select()
+              .single() as any,
+            45000, // 45s timeout - increased for slow connections and large images
+            'Gagal menyimpan produk (timeout). Coba lagi dengan koneksi yang lebih stabil.'
+          )
+        );
 
-      if (error) throw error;
-      const newProduct = toProduct(data);
-      set((state) => { state.products.push(newProduct); });
+        if (error) throw error;
+        const newProduct = toProduct(data);
+        set((state) => { state.products.push(newProduct); });
 
-      // Log audit event
-      const user = await supabase.auth.getUser();
-      if (user.data.user) {
-        await AuditLogger.logProductCreate(user.data.user.id, storeId, newProduct.id, newProduct);
+        // Log audit event
+        const user = await supabase.auth.getUser();
+        if (user.data.user) {
+          await AuditLogger.logProductCreate(user.data.user.id, storeId, newProduct.id, newProduct);
+        }
+
+        return newProduct;
+      } catch (error: any) {
+        // Handle Offline / Network Error
+        if (isNetworkError(error)) {
+          console.log('[addProduct] Network error detected, switching to offline mode');
+
+          // Create temporary product object for optimistic UI
+          const tempId = `temp-${Date.now()}`;
+          const tempProduct: Product = {
+            id: tempId,
+            name: productData.name,
+            price: productData.price,
+            cost: productData.cost || 0,
+            imageUrl: productData.imageUrl || '',
+            category: productData.category || '',
+            description: productData.description || '',
+            isPromo: productData.isPromo || false,
+            promoPrice: productData.promoPrice,
+            isActive: productData.isActive !== false,
+            isBestSeller: productData.isBestSeller || false,
+            totalStock: 0,
+            minStockLevel: productData.minStockLevel || 10,
+            qtyPerUnit: productData.qtyPerUnit || 1,
+            createdAt: Date.now(),
+          };
+
+          // Add to offline queue
+          offlineSync.addToQueue('ADD_PRODUCT', productData);
+
+          // Optimistic Update
+          set((state) => { state.products.unshift(tempProduct); });
+
+          return tempProduct;
+        }
+
+        throw error;
       }
-
-      return newProduct;
     },
 
     updateProduct: async (productId, productData) => {
@@ -1059,13 +1109,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const storeId = get().currentStoreId;
       if (!storeId) throw new Error('No store selected');
 
-      // Ensure valid session before database operations
-      const sessionValid = await ensureSession();
-      if (!sessionValid) {
-        throw new Error('Session expired. Silakan login kembali.');
-      }
-
-      // Calculate totals
+      // Calculate totals first
       const products = get().products;
       let total = 0;
       let profit = 0;
@@ -1084,64 +1128,126 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         };
       });
 
-      // Insert sale
-      const { data: saleRow, error: saleError } = await withTimeout(
-        supabase
-          .from('sales')
-          .insert({
-            store_id: storeId,
+      try {
+        // Ensure valid session before database operations
+        // If offline, ensureSession might fail, so we skip it if navigator is offline
+        if (navigator.onLine) {
+          const sessionValid = await ensureSession();
+          if (!sessionValid) {
+            throw new Error('Session expired. Silakan login kembali.');
+          }
+        } else {
+          // Force throw to trigger offline handling
+          throw new Error('Network request failed (offline)');
+        }
+
+        // Insert sale
+        const { data: saleRow, error: saleError } = await withTimeout(
+          supabase
+            .from('sales')
+            .insert({
+              store_id: storeId,
+              total,
+              profit,
+              sale_type: (saleData as any).saleType || 'retail',
+              notes: saleData.notes || '',
+            })
+            .select()
+            .single() as any,
+          30000,
+          'Gagal menyimpan penjualan (timeout)'
+        );
+
+        if (saleError) throw saleError;
+
+        // Insert sale items
+        const { error: itemsError } = await withTimeout(
+          supabase
+            .from('sale_items')
+            .insert(items.map(item => ({ ...item, sale_id: saleRow.id }))),
+          30000,
+          'Gagal menyimpan detail penjualan (timeout)'
+        );
+
+        if (itemsError) throw itemsError;
+
+        // Update stock
+        for (const item of saleData.items) {
+          const product = products.find(p => p.id === item.productId);
+          if (product) {
+            const qtyToDeduct = item.quantity * (product.qtyPerUnit || 1);
+
+            // FIFO: Deduct from stock_details (oldest batches first)
+            await deductStockFIFO(item.productId, qtyToDeduct);
+
+            // Also update product total_stock
+            await withTimeout(
+              supabase
+                .from('products')
+                .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
+                .eq('id', item.productId),
+              15000,
+              'Gagal update stok produk (timeout)'
+            );
+          }
+        }
+
+        const newSale = toSale(saleRow, items.map(i => ({ ...i, sale_id: saleRow.id })));
+        set((state) => { state.sales.unshift(newSale); });
+
+        // Refresh products
+        await get().fetchProducts();
+        return newSale;
+
+      } catch (error: any) {
+        // Handle Offline / Network Error
+        if (isNetworkError(error)) {
+          console.log('[addSale] Network error detected, switching to offline mode');
+
+          // Create temporary sale object for optimistic UI
+          const tempId = `temp-${Date.now()}`;
+          const tempSale: Sale = {
+            id: tempId,
+            storeId,
             total,
             profit,
-            sale_type: (saleData as any).saleType || 'retail',
-            notes: saleData.notes || '',
-          })
-          .select()
-          .single() as any,
-        30000,
-        'Gagal menyimpan penjualan (timeout)'
-      );
+            saleType: (saleData as any).saleType || 'retail',
+            items: saleData.items.map(item => ({
+              id: `temp-item-${Math.random()}`,
+              saleId: tempId,
+              productId: item.productId,
+              productName: item.productName,
+              quantity: item.quantity,
+              price: item.price,
+              cost: products.find(p => p.id === item.productId)?.cost || 0,
+            })),
+            date: Date.now(),
+            createdAt: Date.now(),
+            notes: saleData.notes,
+          };
 
+          // Add to offline queue
+          offlineSync.addToQueue('ADD_SALE', saleData);
 
-      if (saleError) throw saleError;
+          // Optimistic Update
+          set((state) => {
+            state.sales.unshift(tempSale);
 
-      // Insert sale items
-      const { error: itemsError } = await withTimeout(
-        supabase
-          .from('sale_items')
-          .insert(items.map(item => ({ ...item, sale_id: saleRow.id }))),
-        30000,
-        'Gagal menyimpan detail penjualan (timeout)'
-      );
+            // Optimistic Stock Update
+            for (const item of saleData.items) {
+              const product = state.products.find(p => p.id === item.productId);
+              if (product) {
+                const qtyToDeduct = item.quantity * (product.qtyPerUnit || 1);
+                product.totalStock = Math.max(0, (product.totalStock || 0) - qtyToDeduct);
+              }
+            }
+          });
 
-      if (itemsError) throw itemsError;
-
-      // Update stock
-      for (const item of saleData.items) {
-        const product = products.find(p => p.id === item.productId);
-        if (product) {
-          const qtyToDeduct = item.quantity * (product.qtyPerUnit || 1);
-
-          // FIFO: Deduct from stock_details (oldest batches first)
-          await deductStockFIFO(item.productId, qtyToDeduct);
-
-          // Also update product total_stock
-          await withTimeout(
-            supabase
-              .from('products')
-              .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
-              .eq('id', item.productId),
-            15000,
-            'Gagal update stok produk (timeout)'
-          );
+          return tempSale;
         }
+
+        throw error;
       }
-
-      const newSale = toSale(saleRow, items.map(i => ({ ...i, sale_id: saleRow.id })));
-      set((state) => { state.sales.unshift(newSale); });
-
-      // Refresh products
-      await get().fetchProducts();
-      return newSale;
     },
 
     addPublicSale: async (saleData) => {
@@ -1300,103 +1406,145 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         totalCost = Math.round(purchaseData.quantity * purchaseData.unitCost);
       }
 
-      // Insert purchase
-      const { data, error } = await withTimeout(
-        supabase
-          .from('purchases')
-          .insert({
-            store_id: storeId,
-            product_id: purchaseData.productId,
-            product_name: product.name,
-            quantity: purchaseData.quantity,
-            unit_cost: purchaseData.unitCost,
-            total_cost: totalCost,
-            pack_quantity: purchaseData.packQuantity,
-            units_per_pack: purchaseData.unitsPerPack,
-            supplier_id: purchaseData.supplierId || null,
-            notes: purchaseData.notes || '',
-          })
-          .select('*, suppliers(name)')
-          .single() as any,
-        20000,
-        'Gagal menyimpan data pembelian (timeout)'
-      );
+      try {
+        // Insert purchase
+        const { data, error } = await withTimeout(
+          supabase
+            .from('purchases')
+            .insert({
+              store_id: storeId,
+              product_id: purchaseData.productId,
+              product_name: product.name,
+              quantity: purchaseData.quantity,
+              unit_cost: purchaseData.unitCost,
+              total_cost: totalCost,
+              pack_quantity: purchaseData.packQuantity,
+              units_per_pack: purchaseData.unitsPerPack,
+              supplier_id: purchaseData.supplierId || null,
+              notes: purchaseData.notes || '',
+            })
+            .select('*, suppliers(name)')
+            .single() as any,
+          20000,
+          'Gagal menyimpan data pembelian (timeout)'
+        );
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Add stock detail
-      await withTimeout(
-        supabase
-          .from('stock_details')
-          .insert({
-            store_id: storeId,
-            product_id: purchaseData.productId,
-            purchase_id: data.id,
-            quantity: purchaseData.quantity,
-            unit_cost: purchaseData.unitCost,
-          }),
-        10000,
-        'Gagal menyimpan detail stok'
-      );
+        // Add stock detail
+        await withTimeout(
+          supabase
+            .from('stock_details')
+            .insert({
+              store_id: storeId,
+              product_id: purchaseData.productId,
+              purchase_id: data.id,
+              quantity: purchaseData.quantity,
+              unit_cost: purchaseData.unitCost,
+            }),
+          10000,
+          'Gagal menyimpan detail stok'
+        );
 
-      // Fetch latest stock to ensure accuracy
-      const { data: latestProduct, error: fetchError } = await supabase
-        .from('products')
-        .select('total_stock')
-        .eq('id', purchaseData.productId)
-        .single();
-
-      if (fetchError) {
-        console.error('[addPurchase] Error fetching product stock:', fetchError);
-      }
-
-      const currentStock = latestProduct?.total_stock || 0;
-      const newStock = currentStock + purchaseData.quantity;
-      console.log('[addPurchase] Updating stock:', { productId: purchaseData.productId, currentStock, quantity: purchaseData.quantity, newStock });
-
-      // Update product stock and cost - use simple update without .select() to avoid RLS issues
-      const { error: stockUpdateError } = await withTimeout(
-        supabase
+        // Fetch latest stock to ensure accuracy
+        const { data: latestProduct, error: fetchError } = await supabase
           .from('products')
-          .update({
-            total_stock: newStock,
-            cost: purchaseData.unitCost  // Update the cost to the latest purchase cost
-          })
-          .eq('id', purchaseData.productId) as any,
-        10000,
-        'Gagal update stok produk'
-      );
+          .select('total_stock')
+          .eq('id', purchaseData.productId)
+          .single();
 
-      if (stockUpdateError) {
-        console.error('[addPurchase] Error updating product stock:', stockUpdateError);
-        throw stockUpdateError;
-      }
-
-      // Verify the update was successful by fetching the product
-      const { data: verifyProduct } = await supabase
-        .from('products')
-        .select('total_stock')
-        .eq('id', purchaseData.productId)
-        .single();
-
-      console.log('[addPurchase] Stock update verification - expected:', newStock, 'actual:', verifyProduct?.total_stock);
-
-      const newPurchase = toPurchase(data);
-
-      set((state) => {
-        state.purchases.unshift(newPurchase);
-        // Optimistically update product stock and cost in local state
-        const p = state.products.find(p => p.id === purchaseData.productId);
-        if (p) {
-          p.totalStock = newStock;
-          p.cost = purchaseData.unitCost;  // Update the cost to the latest purchase cost
-          console.log('[addPurchase] Optimistic update - set product stock to:', p.totalStock, 'and cost to:', p.cost);
+        if (fetchError) {
+          console.error('[addPurchase] Error fetching product stock:', fetchError);
         }
-      });
 
-      // Refresh products to ensure UI is in sync
-      await get().fetchProducts();
-      return newPurchase;
+        const currentStock = latestProduct?.total_stock || 0;
+        const newStock = currentStock + purchaseData.quantity;
+        console.log('[addPurchase] Updating stock:', { productId: purchaseData.productId, currentStock, quantity: purchaseData.quantity, newStock });
+
+        // Update product stock and cost - use simple update without .select() to avoid RLS issues
+        const { error: stockUpdateError } = await withTimeout(
+          supabase
+            .from('products')
+            .update({
+              total_stock: newStock,
+              cost: purchaseData.unitCost  // Update the cost to the latest purchase cost
+            })
+            .eq('id', purchaseData.productId) as any,
+          10000,
+          'Gagal update stok produk'
+        );
+
+        if (stockUpdateError) {
+          console.error('[addPurchase] Error updating product stock:', stockUpdateError);
+          throw stockUpdateError;
+        }
+
+        // Verify the update was successful by fetching the product
+        const { data: verifyProduct } = await supabase
+          .from('products')
+          .select('total_stock')
+          .eq('id', purchaseData.productId)
+          .single();
+
+        console.log('[addPurchase] Stock update verification - expected:', newStock, 'actual:', verifyProduct?.total_stock);
+
+        const newPurchase = toPurchase(data);
+
+        set((state) => {
+          state.purchases.unshift(newPurchase);
+          // Optimistically update product stock and cost in local state
+          const p = state.products.find(p => p.id === purchaseData.productId);
+          if (p) {
+            p.totalStock = newStock;
+            p.cost = purchaseData.unitCost;  // Update the cost to the latest purchase cost
+            console.log('[addPurchase] Optimistic update - set product stock to:', p.totalStock, 'and cost to:', p.cost);
+          }
+        });
+
+        // Refresh products to ensure UI is in sync
+        await get().fetchProducts();
+        return newPurchase;
+      } catch (error: any) {
+        // Handle Offline / Network Error
+        if (isNetworkError(error)) {
+          console.log('[addPurchase] Network error detected, switching to offline mode');
+
+          // Create temporary purchase object for optimistic UI
+          const tempId = `temp-${Date.now()}`;
+          const tempPurchase: Purchase = {
+            id: tempId,
+            productId: purchaseData.productId,
+            productName: product.name,
+            quantity: purchaseData.quantity,
+            unitCost: purchaseData.unitCost,
+            totalCost: totalCost,
+            packQuantity: purchaseData.packQuantity,
+            unitsPerPack: purchaseData.unitsPerPack,
+            supplierId: purchaseData.supplierId,
+            supplier: undefined,
+            notes: purchaseData.notes || '',
+            createdAt: Date.now(),
+          };
+
+          // Add to offline queue
+          offlineSync.addToQueue('ADD_PURCHASE', purchaseData);
+
+          // Optimistic Update
+          set((state) => {
+            state.purchases.unshift(tempPurchase);
+            // Optimistically update product stock and cost in local state
+            const p = state.products.find(p => p.id === purchaseData.productId);
+            if (p) {
+              p.totalStock = (p.totalStock || 0) + purchaseData.quantity;
+              p.cost = purchaseData.unitCost;
+            }
+          });
+
+          return tempPurchase;
+        }
+
+        throw error;
+      }
     },
 
     updatePurchase: async (purchaseId, purchaseData) => {
@@ -1959,6 +2107,62 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       await get().fetchSales();
 
       return newRecon;
+    },
+
+    processOfflineQueue: async () => {
+      const queue = offlineSync.getQueue();
+      if (queue.length === 0 || !navigator.onLine) {
+        return;
+      }
+
+      console.log('[processOfflineQueue] Processing', queue.length, 'items');
+
+      await offlineSync.processQueue(async (item) => {
+        switch (item.type) {
+          case 'ADD_SALE':
+            // Re-add the sale using the original addSale logic
+            // We need to temporarily bypass offline mode for this
+            await get().addSale(item.payload);
+            break;
+
+          case 'ADD_PRODUCT':
+            await get().addProduct(item.payload);
+            break;
+
+          case 'UPDATE_PRODUCT':
+            // For updates, we need productId which should be in payload
+            if ((item.payload as any).productId) {
+              await get().updateProduct((item.payload as any).productId, item.payload);
+            }
+            break;
+
+          case 'ADD_PURCHASE':
+            await get().addPurchase(item.payload);
+            break;
+
+          case 'UPDATE_PURCHASE':
+            if ((item.payload as any).purchaseId) {
+              await get().updatePurchase((item.payload as any).purchaseId, item.payload);
+            }
+            break;
+
+          case 'ADD_SUPPLIER':
+            await get().addSupplier(item.payload);
+            break;
+
+          case 'ADD_REQUEST':
+            await get().addJajananRequest(item.payload);
+            break;
+
+          default:
+            console.warn('[processOfflineQueue] Unknown operation type:', item.type);
+        }
+      });
+
+      // Refresh data after syncing
+      await get().fetchProducts();
+      await get().fetchSales();
+      await get().fetchPurchases();
     },
   }))
 );
