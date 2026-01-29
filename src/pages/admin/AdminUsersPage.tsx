@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,8 +73,6 @@ interface UserDetails {
 }
 
 export function AdminUsersPage() {
-    const [users, setUsers] = useState<UserWithStore[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(0);
     const [rowsPerPage] = useState(10);
@@ -92,13 +91,10 @@ export function AdminUsersPage() {
     const [planDuration, setPlanDuration] = useState<number>(1); // months
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
-
-    const fetchUsers = async () => {
-        setIsLoading(true);
-        try {
+    // Use TanStack Query for fetching users - more robust and auto-refetches on mount
+    const { data: users = [], isLoading, refetch: refetchUsers } = useQuery({
+        queryKey: ['admin', 'users'],
+        queryFn: async () => {
             const { data, error } = await supabase.rpc('get_all_users_for_admin');
 
             if (error) throw error;
@@ -119,14 +115,14 @@ export function AdminUsersPage() {
                 },
             }));
 
-            setUsers(mappedData);
-        } catch (error) {
-            console.error('Error fetching users:', error);
-            toast.error('Gagal memuat data users');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+            return mappedData;
+        },
+        staleTime: 0, // Always consider data stale - refetch on every mount/window focus
+        gcTime: 1000 * 60 * 5, // 5 minutes cache
+        retry: 2, // Retry failed requests up to 2 times
+        refetchOnMount: 'always', // Always refetch when component mounts
+        refetchOnWindowFocus: true, // Refetch when window regains focus
+    });
 
     const handleResetPassword = async (email: string, userId: string) => {
         if (!confirm(`Kirim link reset password ke ${email}?`)) return;
@@ -229,7 +225,7 @@ export function AdminUsersPage() {
             toast.success(`Plan berhasil diubah ke ${newPlan} (${planDuration} bulan)`);
             setIsEditRoleOpen(false);
             setEditingUser(null);
-            fetchUsers();
+            refetchUsers();
         } catch (error: any) {
             console.error('Error updating plan:', error);
             toast.error(`Gagal mengubah plan: ${error.message}`);
@@ -260,7 +256,7 @@ export function AdminUsersPage() {
             }
 
             toast.success(`User ${user.email} berhasil dihapus`);
-            fetchUsers();
+            refetchUsers();
         } catch (error: any) {
             console.error('Error deleting user:', error);
             toast.error(`Gagal menghapus user: ${error.message}`);
