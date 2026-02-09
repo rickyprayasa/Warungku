@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from './ui/button';
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2, MessageSquare, CheckCircle, Clock, User, Eye, X } from 'lucide-react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2, MessageSquare, CheckCircle, Clock, User, Eye, X, Printer, MessageCircle } from 'lucide-react';
 import type { Sale } from '@shared/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ReceiptTemplate, handleWhatsAppShare, handlePrintReceipt } from './ReceiptTemplate';
 
 interface SalesDataTableProps {
   sales: Sale[];
@@ -28,8 +29,10 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
   const deleteSale = useWarungStore((state) => state.deleteSale);
   const confirmSale = useWarungStore((state) => state.confirmSale);
+  const storeProfile = useWarungStore((state) => state.storeProfile);
 
   const pageCount = Math.ceil(sales.length / rowsPerPage);
 
@@ -199,37 +202,82 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                   </div>
                 </div>
 
+                {/* Receipt Section - Shown when showReceipt is true */}
+                {showReceipt && (
+                  <div className="border-t-2 border-brand-black/20 pt-4">
+                    <ReceiptTemplate
+                      sale={selectedSale}
+                      storeName={storeProfile.name || 'Toko'}
+                      storeAddress={storeProfile.address}
+                      storePhone={storeProfile.phone}
+                      storeLogo={storeProfile.logoUrl}
+                    />
+                  </div>
+                )}
+
                 {/* Actions */}
-                <div className="flex gap-2 pt-2 border-t-2 border-brand-black/20">
-                  {selectedSale.status === 'pending' && (
+                <div className="flex flex-col gap-2 pt-2 border-t-2 border-brand-black/20">
+                  {/* Print & Share Row */}
+                  <div className="flex gap-2">
                     <Button
-                      onClick={() => handleConfirm(selectedSale.id)}
-                      className="flex-1 bg-green-500 text-white rounded-none font-bold hover:bg-green-600"
+                      onClick={() => {
+                        setShowReceipt(true);
+                        // Small delay to ensure receipt is rendered
+                        setTimeout(() => handlePrintReceipt(), 100);
+                      }}
+                      className="flex-1 bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold hover:bg-orange-400"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Konfirmasi
+                      <Printer className="w-4 h-4 mr-2" />
+                      Cetak Struk
                     </Button>
-                  )}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" className="flex-1 rounded-none border-2 border-destructive text-destructive hover:bg-destructive/10">
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Hapus
+                    <Button
+                      onClick={async () => {
+                        await handleWhatsAppShare(
+                          selectedSale,
+                          storeProfile.name || 'Toko',
+                          storeProfile.address,
+                          storeProfile.phone
+                        );
+                      }}
+                      className="flex-1 bg-green-500 text-white border-2 border-brand-black rounded-none font-bold hover:bg-green-600"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                  </div>
+
+                  {/* Confirm & Delete Row */}
+                  <div className="flex gap-2">
+                    {selectedSale.status === 'pending' && (
+                      <Button
+                        onClick={() => handleConfirm(selectedSale.id)}
+                        className="flex-1 bg-blue-500 text-white rounded-none font-bold hover:bg-blue-600"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Konfirmasi
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-none border-4 border-brand-black">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus Penjualan?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tindakan ini akan menghapus data penjualan dan <strong>mengembalikan stok barang</strong> ke gudang.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(selectedSale.id)} className="rounded-none bg-destructive">Hapus</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" className="flex-1 rounded-none border-2 border-destructive text-destructive hover:bg-destructive/10">
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Hapus
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-none border-4 border-brand-black">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Hapus Penjualan?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tindakan ini akan menghapus data penjualan dan <strong>mengembalikan stok barang</strong> ke gudang.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-none border-2 border-brand-black">Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(selectedSale.id)} className="rounded-none bg-destructive">Hapus</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </div>
             </>
