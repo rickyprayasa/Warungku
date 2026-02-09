@@ -13,9 +13,12 @@ import { useWarungStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { PlusCircle, Trash2, Package, Check, ChevronsUpDown, Info } from 'lucide-react';
+import { PlusCircle, Trash2, Package, Check, ChevronsUpDown, Info, Printer, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ReceiptTemplate, handleWhatsAppShare, handlePrintReceipt } from './ReceiptTemplate';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import type { Sale } from '@shared/types';
 
 interface SaleFormProps {
   onSuccess: () => void;
@@ -32,7 +35,12 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
   const sortedProducts = [...products].sort((a, b) => a.name.localeCompare(b.name));
 
   const [isDisplaySale, setIsDisplaySale] = useState(false);
+  const [printAfterSave, setPrintAfterSave] = useState(false);
+  const [whatsappAfterSave, setWhatsappAfterSave] = useState(false);
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [savedSale, setSavedSale] = useState<Sale | null>(null);
   const [notes, setNotes] = useState('');
+  const storeProfile = useWarungStore((state) => state.storeProfile);
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
@@ -268,6 +276,54 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
           className="h-16 rounded-none border-2 border-brand-black font-mono text-sm resize-none mb-3"
         />
 
+        {/* Receipt Options */}
+        <div className="flex gap-4 mb-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="print-mode"
+              checked={printAfterSave}
+              onCheckedChange={setPrintAfterSave}
+            />
+            <label htmlFor="print-mode" className="text-sm font-medium flex items-center cursor-pointer">
+              <Printer className="w-4 h-4 mr-1" /> Cetak
+            </label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="wa-mode"
+              checked={whatsappAfterSave}
+              onCheckedChange={setWhatsappAfterSave}
+            />
+            <label htmlFor="wa-mode" className="text-sm font-medium flex items-center cursor-pointer">
+              <MessageCircle className="w-4 h-4 mr-1" /> WhatsApp
+            </label>
+          </div>
+        </div>
+
+        {/* Receipt Options */}
+        <div className="flex gap-4 mb-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="print-mode"
+              checked={printAfterSave}
+              onCheckedChange={setPrintAfterSave}
+            />
+            <label htmlFor="print-mode" className="text-sm font-medium flex items-center cursor-pointer">
+              <Printer className="w-4 h-4 mr-1" /> Cetak
+            </label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="wa-mode"
+              checked={whatsappAfterSave}
+              onCheckedChange={setWhatsappAfterSave}
+            />
+            <label htmlFor="wa-mode" className="text-sm font-medium flex items-center cursor-pointer">
+              <MessageCircle className="w-4 h-4 mr-1" /> WhatsApp
+            </label>
+          </div>
+        </div>
+
         {/* Footer - Total & Submit */}
         <div className="flex items-center justify-between border-t-4 border-brand-black pt-3">
           <div className="font-mono">
@@ -287,6 +343,48 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
         </div>
       </form>
     </Form>
+
+    {/* Receipt Dialog */ }
+  <Dialog open={showReceiptDialog} onOpenChange={(open) => {
+    setShowReceiptDialog(open);
+    if (!open) onSuccess();
+  }}>
+    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      {savedSale && (
+        <div className="flex flex-col gap-4">
+          <ReceiptTemplate
+            sale={savedSale}
+            storeName={storeProfile.name || 'Toko'}
+            storeAddress={storeProfile.address}
+            storePhone={storeProfile.phone}
+            storeLogo={storeProfile.logoUrl}
+          />
+          <div className="flex gap-2">
+            <Button onClick={() => handlePrintReceipt()} className="flex-1">
+              <Printer className="w-4 h-4 mr-2" /> Cetak
+            </Button>
+            <Button
+              onClick={() => handleWhatsAppShare(
+                savedSale,
+                storeProfile.name || 'Toko',
+                storeProfile.address,
+                storeProfile.phone
+              )}
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+            </Button>
+          </div>
+          <Button variant="outline" onClick={() => {
+            setShowReceiptDialog(false);
+            onSuccess();
+          }}>
+            Tutup
+          </Button>
+        </div>
+      )}
+    </DialogContent>
+  </Dialog>
   );
 }
 
