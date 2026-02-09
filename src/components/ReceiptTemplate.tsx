@@ -219,8 +219,29 @@ export async function handleWhatsAppShare(
     }
   }
 
-  // Fallback: Open WhatsApp with text message (no PDF)
+  // Fallback: Open WhatsApp with text message AND download PDF
   const isMobile = isMobileDevice();
+
+  // On desktop/fallback, download the PDF so user can attach it manually
+  if (!isMobile || !canShareFiles()) {
+    try {
+      const pdfBlob = await generateReceiptPDF();
+      if (pdfBlob) {
+        const fileName = `Struk_${storeName.replace(/\s+/g, '_')}_${sale.id.slice(-6).toUpperCase()}.pdf`;
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast.success('PDF Struk berhasil diunduh');
+      }
+    } catch (e) {
+      console.error('Failed to download PDF:', e);
+    }
+  }
 
   let waUrl: string;
   if (cleanPhone) {
