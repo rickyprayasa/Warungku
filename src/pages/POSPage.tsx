@@ -75,6 +75,12 @@ export function POSPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
+  const itemTerm = useMemo(() => {
+    const category = storeProfile.category || 'Warung';
+    const isFood = ['Warung', 'F&B', 'Makan', 'Minum', 'Resto', 'Cafe'].some(k => category.includes(k));
+    return isFood ? 'Jajanan' : 'Produk';
+  }, [storeProfile.category]);
+
   const categories = useMemo(() => {
     const allCategories = products.map((p) => p.category);
     return ['All', ...Array.from(new Set(allCategories))];
@@ -86,6 +92,7 @@ export function POSPage() {
   }, [selectedCategory, searchTerm, sortOrder]);
 
   const filteredProducts = useMemo(() => {
+    // ... existing filter logic ...
     let filtered = products;
     if (searchTerm) {
       filtered = filtered.filter(p =>
@@ -123,14 +130,11 @@ export function POSPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCategory, searchTerm, sortOrder]);
+  // ... existing useEffect ...
 
   return (
-    <div className="bg-muted/40 relative overflow-x-hidden">
-      <SnackIconBackground />
+    <div className="bg-transparent relative overflow-x-hidden">
+      <SnackIconBackground category={storeProfile.category} />
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8 md:py-10 lg:py-12 pb-8">
@@ -141,9 +145,9 @@ export function POSPage() {
                 ) : (
                   <h1 className="text-5xl font-display font-black text-brand-black mb-4">{storeProfile.name}</h1>
                 )}
-                <h2 className="text-4xl font-display font-bold text-brand-black">Menu Jajanan</h2>
+                <h2 className="text-4xl font-display font-bold text-brand-black">Menu {itemTerm}</h2>
               </div>
-              <p className="text-muted-foreground font-mono">Lihat detail jajanan yang tersedia atau ajukan yang baru.</p>
+              <p className="text-muted-foreground font-mono">Lihat detail {itemTerm.toLowerCase()} yang tersedia atau ajukan yang baru.</p>
             </div>
 
             <div className="max-w-2xl mx-auto mb-6 space-y-4">
@@ -151,7 +155,7 @@ export function POSPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Cari nama atau kategori jajanan..."
+                  placeholder={`Cari nama atau kategori ${itemTerm.toLowerCase()}...`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full rounded-none border-2 border-brand-black h-12 pl-10 font-mono"
@@ -263,19 +267,19 @@ export function POSPage() {
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
               className="flex items-center gap-2 mb-2"
             >
-              <p className="font-mono text-sm font-bold text-brand-orange">Punya ide jajanan?</p>
+              <p className="font-mono text-sm font-bold text-brand-orange">Punya ide {itemTerm.toLowerCase()}?</p>
               <ArrowDown className="w-5 h-5 text-brand-orange" />
             </motion.div>
             <Dialog open={isRequestDialogOpen} onOpenChange={setRequestDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="text-brand-black border-2 border-dashed border-brand-black rounded-none font-bold uppercase text-sm hover:bg-brand-orange hover:border-solid active:translate-x-0.5 active:translate-y-0.5 transition-all h-11">
                   <PlusCircle className="w-4 h-4 mr-2" />
-                  Request Jajanan
+                  Request {itemTerm}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white">
                 <DialogHeader>
-                  <DialogTitle className="font-display text-2xl font-bold">Request Jajanan Baru</DialogTitle>
+                  <DialogTitle className="font-display text-2xl font-bold">Request {itemTerm} Baru</DialogTitle>
                 </DialogHeader>
                 <RequestJajananForm onSuccess={() => setRequestDialogOpen(false)} />
               </DialogContent>

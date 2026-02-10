@@ -1,13 +1,35 @@
 import { useEffect, useState } from 'react';
-import { Cookie, CakeSlice, Coffee, GlassWater, Sandwich, Lollipop } from 'lucide-react';
+import {
+  Cookie, CakeSlice, Coffee, GlassWater, Sandwich, Lollipop, // F&B
+  Hammer, Wrench, PaintBucket, Ruler, HardHat, BrickWall, // Material
+  Zap, Lightbulb, Plug, Battery, Radio, // Listrik
+  Smartphone, Laptop, Tablet, Headphones, Watch, // Elektronik
+  Shirt, Scissors, Tag, ShoppingBag, Glasses, // Pakaian
+  Settings, UserCog, Briefcase, // Jasa
+  Box, Star, Circle, Store // Lainnya
+} from 'lucide-react';
 import { motion } from 'framer-motion';
-const icons = [Cookie, CakeSlice, Coffee, GlassWater, Sandwich, Lollipop];
+
+const iconSets: Record<string, React.ElementType[]> = {
+  'Warung': [Cookie, CakeSlice, Coffee, GlassWater, Sandwich, Lollipop],
+  'F&B': [Cookie, CakeSlice, Coffee, GlassWater, Sandwich, Lollipop],
+  'Material/Bangunan': [Hammer, Wrench, PaintBucket, Ruler, HardHat, BrickWall],
+  'Listrik': [Zap, Lightbulb, Plug, Battery, Radio],
+  'Elektronik': [Smartphone, Laptop, Tablet, Headphones, Watch],
+  'Pakaian': [Shirt, Scissors, Tag, ShoppingBag, Glasses],
+  'Jasa': [Wrench, Settings, UserCog, Briefcase],
+  'Lainnya': [Box, Star, Circle, Store]
+};
+
 interface IconStyle {
   id: number;
   Icon: React.ElementType;
   style: React.CSSProperties;
 }
-const generateRandomStyles = (count: number, isMobile: boolean): IconStyle[] => {
+
+const generateRandomStyles = (count: number, isMobile: boolean, category: string): IconStyle[] => {
+  const icons = iconSets[category] || iconSets['Warung'];
+
   return Array.from({ length: count }, (_, i) => {
     const Icon = icons[Math.floor(Math.random() * icons.length)];
     // Smaller icons on mobile
@@ -36,25 +58,30 @@ const generateRandomStyles = (count: number, isMobile: boolean): IconStyle[] => 
     };
   });
 };
-export function SnackIconBackground() {
+
+export function SnackIconBackground({ category = 'Warung' }: { category?: string }) {
   const [iconStyles, setIconStyles] = useState<IconStyle[]>([]);
+
   useEffect(() => {
     // Detect if mobile based on window width
     const isMobile = window.innerWidth < 768;
     // Use fewer icons on mobile (12) vs desktop (30)
     const iconCount = isMobile ? 12 : 30;
-    setIconStyles(generateRandomStyles(iconCount, isMobile));
+
+    // Initial generation
+    setIconStyles(generateRandomStyles(iconCount, isMobile, category));
 
     // Re-generate on resize
     const handleResize = () => {
       const isMobileNow = window.innerWidth < 768;
       const count = isMobileNow ? 12 : 30;
-      setIconStyles(generateRandomStyles(count, isMobileNow));
+      setIconStyles(generateRandomStyles(count, isMobileNow, category));
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [category]); // Re-run if category changes
+
   return (
     <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
       {iconStyles.map(({ id, Icon, style }) => (

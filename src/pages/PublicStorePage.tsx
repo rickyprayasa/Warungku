@@ -79,6 +79,7 @@ export function PublicStorePage() {
               accountNumber: loadedStore.accountNumber || '',
               accountName: loadedStore.accountName || '',
               phoneNumber: loadedStore.phoneNumber || '',
+              category: loadedStore.category || 'Warung',
             };
           });
           console.log('[PublicStorePage] Profile set from loaded data');
@@ -215,12 +216,38 @@ export function PublicStorePage() {
     );
   }
 
+  const getBackgroundStyle = () => {
+    const category = publicStore.category || 'Warung';
+
+    // Background patterns
+    const patterns: Record<string, string> = {
+      'Warung': `background-color: #ffffff;`,
+      'Material/Bangunan': `background-color: #ffffff;`,
+      'Listrik': `background-color: #ffffff;`,
+      'Elektronik': `background-color: #ffffff;`,
+      'Pakaian': `background-color: #ffffff;`,
+      'F&B': `background-color: #ffffff;`,
+      'Jasa': `background-color: #ffffff;`,
+      'Lainnya': `background-color: #ffffff;`
+    };
+
+    return patterns[category] || patterns['Warung'];
+  };
+
   return (
-    <div className="relative min-h-screen bg-brand-white text-brand-black overflow-x-hidden">
+    <div className="relative min-h-screen text-brand-black overflow-x-hidden transition-all duration-500" style={{ backgroundColor: '#ffffff' }}>
+      {/* Dynamic Background Pattern Layer */}
+      <style>{`
+        .store-bg-pattern {
+          ${getBackgroundStyle()}
+        }
+      `}</style>
+      <div className="fixed inset-0 pointer-events-none store-bg-pattern" />
+
       <FloatingCart />
       <CartSheet />
 
-      <div className="flex flex-col min-h-screen min-w-0 overflow-x-hidden">
+      <div className="flex flex-col min-h-screen min-w-0 overflow-x-hidden relative z-10">
         <AppHeader storeName={publicStore.name} logoUrl={publicStore.logoUrl} />
 
         <main className="pt-16 md:pt-20 flex-1">

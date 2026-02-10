@@ -49,20 +49,21 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 
+interface StoreData {
+    id: string;
+    name: string;
+    slug: string;
+    plan: string;
+    plan_expires_at: string | null;
+    created_at: string;
+}
+
 interface UserWithStore {
     id: string;
     user_id: string;
-    plan: string;
     created_at: string;
     email: string;
-    store: {
-        id: string;
-        name: string;
-        slug: string;
-        plan: string;
-        plan_expires_at: string | null;
-        created_at: string;
-    };
+    stores: StoreData[];
 }
 
 interface UserDetails {
@@ -87,6 +88,7 @@ export function AdminUsersPage() {
     const [filterPlan, setFilterPlan] = useState<string | null>(null);
     const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<UserWithStore | null>(null);
+    const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
     const [newPlan, setNewPlan] = useState('free');
     const [planDuration, setPlanDuration] = useState<number>(1); // months
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -99,29 +101,42 @@ export function AdminUsersPage() {
 
             if (error) throw error;
 
-            const mappedData = (data || []).map((item: any) => ({
-                id: item.id,
-                user_id: item.user_id,
-                plan: item.store_plan,
-                created_at: item.created_at,
-                email: item.email,
-                store: {
-                    id: item.store_id,
-                    name: item.store_name,
-                    slug: item.store_slug,
-                    plan: item.store_plan,
-                    plan_expires_at: item.plan_expires_at || null,
-                    created_at: item.store_created_at,
-                },
-            }));
+            const usersMap = new Map<string, UserWithStore>();
 
-            return mappedData;
+            (data || []).forEach((item: any) => {
+                if (!usersMap.has(item.user_id)) {
+                    usersMap.set(item.user_id, {
+                        id: item.user_id,
+                        user_id: item.user_id,
+                        email: item.email,
+                        created_at: item.created_at,
+                        stores: []
+                    });
+                }
+
+                if (item.store_id) {
+                    const user = usersMap.get(item.user_id)!;
+                    // Avoid duplicate stores
+                    if (!user.stores.find(s => s.id === item.store_id)) {
+                        user.stores.push({
+                            id: item.store_id,
+                            name: item.store_name,
+                            slug: item.store_slug,
+                            plan: item.store_plan,
+                            plan_expires_at: item.plan_expires_at || null,
+                            created_at: item.store_created_at,
+                        });
+                    }
+                }
+            });
+
+            return Array.from(usersMap.values());
         },
         staleTime: 0, // Always consider data stale - refetch on every mount/window focus
-        gcTime: 1000 * 60 * 5, // 5 minutes cache
-        retry: 2, // Retry failed requests up to 2 times
-        refetchOnMount: 'always', // Always refetch when component mounts
-        refetchOnWindowFocus: true, // Refetch when window regains focus
+        gcTime: 1000 * 60 * 5,
+        retry: 2,
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
     });
 
     const handleResetPassword = async (email: string, userId: string) => {
@@ -172,16 +187,27 @@ export function AdminUsersPage() {
 
     const handleEditRole = (user: UserWithStore) => {
         setEditingUser(user);
-        setNewPlan(user.store?.plan || 'free');
-        // Calculate current remaining months if plan has expiry
-        if (user.store?.plan_expires_at) {
-            const expiry = new Date(user.store.plan_expires_at);
-            const now = new Date();
-            const monthsLeft = Math.max(1, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)));
-            setPlanDuration(monthsLeft);
+
+        // Default to first store if available
+        const defaultStore = user.stores[0];
+        setSelectedStoreId(defaultStore?.id || null);
+
+        if (defaultStore) {
+            setNewPlan(defaultStore.plan || 'free');
+            // Calculate current remaining months
+            if (defaultStore.plan_expires_at) {
+                const expiry = new Date(defaultStore.plan_expires_at);
+                const now = new Date();
+                const monthsLeft = Math.max(1, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+                setPlanDuration(monthsLeft);
+            } else {
+                setPlanDuration(1);
+            }
         } else {
+            setNewPlan('free');
             setPlanDuration(1);
         }
+
         setIsEditRoleOpen(true);
     };
 
@@ -191,10 +217,10 @@ export function AdminUsersPage() {
             return;
         }
 
-        const storeId = editingUser.store?.id;
+        const storeId = selectedStoreId || editingUser.stores[0]?.id;
         if (!storeId) {
             toast.error('Store ID tidak ditemukan');
-            console.error('Store ID missing:', editingUser);
+            console.error('Store ID missing for user:', editingUser.email);
             return;
         }
 
@@ -207,7 +233,7 @@ export function AdminUsersPage() {
 
         setIsUpdatingPlan(true);
         try {
-            const { data, error } = await supabase.rpc('admin_update_store_plan', {
+            const { data, error } = await (supabase.rpc as any)('admin_update_store_plan', {
                 p_store_id: storeId,
                 p_new_plan: newPlan,
                 p_expires_at: expiryIso
@@ -225,6 +251,7 @@ export function AdminUsersPage() {
             toast.success(`Plan berhasil diubah ke ${newPlan} (${planDuration} bulan)`);
             setIsEditRoleOpen(false);
             setEditingUser(null);
+            setSelectedStoreId(null);
             refetchUsers();
         } catch (error: any) {
             console.error('Error updating plan:', error);
@@ -234,23 +261,44 @@ export function AdminUsersPage() {
         }
     };
 
+    const handleDeleteStore = async (storeId: string, storeName: string) => {
+        if (!confirm(`Hapus store "${storeName}"?\n\nPeringatan: Data store ini akan hilang permanen!`)) return;
+
+        try {
+            const { error } = await (supabase as any).from('stores').delete().eq('id', storeId);
+            if (error) throw error;
+
+            toast.success(`Store "${storeName}" berhasil dihapus`);
+
+            // If we are viewing details, we should update the view or close it
+            // For now, let's close it to be safe as data changed
+            setDetailOpen(false);
+
+            refetchUsers();
+        } catch (error: any) {
+            console.error('Error deleting store:', error);
+            toast.error(`Gagal menghapus store: ${error.message}`);
+        }
+    };
+
     const handleDeleteUser = async (user: UserWithStore) => {
-        const confirmText = `Hapus user "${user.email}" dan store "${user.store?.name}"?\n\nPeringatan: Semua data terkait akan ikut terhapus!`;
+        const storeCount = user.stores.length;
+        const confirmText = `Hapus user "${user.email}" dan ${storeCount} store milik user ini?\n\nPeringatan: Semua data terkait akan ikut terhapus!`;
         if (!confirm(confirmText)) return;
 
         setIsDeleting(user.user_id);
         try {
-            // Use RPC function to delete user and store
-            const { data, error } = await supabase.rpc('admin_delete_user_and_store', {
+            // Delete user cascade (assuming backend handles deletion for user ID)
+            // Passing first store ID if required by legacy RPC logic, but user ID is key
+            const { data, error } = await (supabase.rpc as any)('admin_delete_user_and_store', {
                 p_user_id: user.user_id,
-                p_store_id: user.store?.id
+                p_store_id: user.stores[0]?.id // Fallback
             });
 
             console.log('Delete result:', { data, error });
 
             if (error) throw error;
 
-            // Check if the RPC call was successful
             if (!data || (data as any).success !== true) {
                 throw new Error((data as any)?.message || 'Failed to delete user');
             }
@@ -277,7 +325,7 @@ export function AdminUsersPage() {
             let salesCount = 0;
             let purchasesCount = 0;
 
-            // Try RPC first, fallback to direct queries if RPC doesn't exist
+            // Use RPC if available, or fetch for each store
             try {
                 const { data, error } = await (supabase.rpc as any)('get_user_statistics', {
                     p_user_id: userId,
@@ -292,30 +340,27 @@ export function AdminUsersPage() {
                     throw new Error('RPC not available');
                 }
             } catch (rpcError) {
-                // Fallback: Direct queries if RPC not available
-                console.log('RPC not available, using fallback queries');
+                console.log('RPC check failed, summing stats from stores');
 
-                if (user.store?.id) {
-                    // Get product count
+                // Aggregate counts from all stores
+                for (const store of user.stores) {
                     const { count: pCount } = await supabase
                         .from('products')
                         .select('id', { count: 'exact', head: true })
-                        .eq('store_id', user.store.id);
-                    productCount = pCount || 0;
+                        .eq('store_id', store.id);
+                    productCount += (pCount || 0);
 
-                    // Get sales count
                     const { count: sCount } = await supabase
                         .from('sales')
                         .select('id', { count: 'exact', head: true })
-                        .eq('store_id', user.store.id);
-                    salesCount = sCount || 0;
+                        .eq('store_id', store.id);
+                    salesCount += (sCount || 0);
 
-                    // Get purchases count
                     const { count: puCount } = await supabase
                         .from('purchases')
                         .select('id', { count: 'exact', head: true })
-                        .eq('store_id', user.store.id);
-                    purchasesCount = puCount || 0;
+                        .eq('store_id', store.id);
+                    purchasesCount += (puCount || 0);
                 }
             }
 
@@ -338,11 +383,16 @@ export function AdminUsersPage() {
         const query = searchQuery.toLowerCase();
         return users.filter(
             (u) =>
-                u.store?.name?.toLowerCase().includes(query) ||
-                u.store?.slug?.toLowerCase().includes(query) ||
-                u.plan?.toLowerCase().includes(query) ||
-                u.email?.toLowerCase().includes(query)
-        );
+                u.email?.toLowerCase().includes(query) ||
+                u.stores.some(s =>
+                    s.name.toLowerCase().includes(query) ||
+                    s.slug.toLowerCase().includes(query) ||
+                    (s.plan && s.plan.toLowerCase().includes(query))
+                )
+        ).filter(u => {
+            if (!filterPlan) return true;
+            return u.stores.some(s => s.plan === filterPlan);
+        });
     }, [users, searchQuery, filterPlan]);
 
     const paginatedUsers = useMemo(() => {
@@ -465,80 +515,99 @@ export function AdminUsersPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-b-2 border-brand-black bg-gray-50">
-                                    <TableHead className="font-mono font-bold">Store</TableHead>
+                                    <TableHead className="font-mono font-bold">Stores</TableHead>
                                     <TableHead className="font-mono font-bold">Email</TableHead>
-                                    <TableHead className="font-mono font-bold">Plan</TableHead>
-                                    <TableHead className="font-mono font-bold">Expires</TableHead>
+                                    <TableHead className="font-mono font-bold">Plans</TableHead>
+                                    <TableHead className="font-mono font-bold">Expiry Info</TableHead>
                                     <TableHead className="font-mono font-bold">Joined</TableHead>
                                     <TableHead className="font-mono font-bold text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {paginatedUsers.map((user) => (
-                                    <TableRow key={user.id} className="border-b-2 border-brand-black last:border-b-0">
-                                        <TableCell className="font-mono font-bold">
-                                            {user.store?.name || '-'}
-                                            {user.store?.slug ? (
-                                                <a
-                                                    href={`/${user.store.slug}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs text-blue-600 hover:text-blue-800 font-normal flex items-center gap-1 hover:underline"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    /{user.store.slug}
-                                                    <ExternalLink className="w-3 h-3" />
-                                                </a>
-                                            ) : (
-                                                <div className="text-xs text-muted-foreground font-normal">/-</div>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="font-mono text-sm">{user.email}</TableCell>
-                                        <TableCell>
-                                            <Badge className={`rounded-none font-mono uppercase text-xs ${getPlanBadgeColor(user.store?.plan || 'demo')}`}>
-                                                {getPlanLabel(user.store?.plan || 'Demo')}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="font-mono text-xs">
-                                            {(() => {
-                                                const expiryDate = user.store?.plan_expires_at;
-                                                const daysLeft = getDaysUntilExpiry(expiryDate);
-                                                const formatted = formatExpiryDate(expiryDate);
-
-                                                if (!expiryDate) {
-                                                    return <span className="text-muted-foreground">-</span>;
-                                                }
-
-                                                if (daysLeft !== null && daysLeft <= 0) {
-                                                    return (
-                                                        <div className="flex items-center gap-1 text-red-600">
-                                                            <AlertTriangle className="w-3 h-3" />
-                                                            <span>Expired</span>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                if (daysLeft !== null && daysLeft <= 7) {
-                                                    return (
-                                                        <div className="flex items-center gap-1 text-amber-600">
-                                                            <Clock className="w-3 h-3" />
-                                                            <span>{formatted} ({daysLeft}d)</span>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <div className="flex items-center gap-1 text-green-600">
-                                                        <Clock className="w-3 h-3" />
-                                                        <span>{formatted}</span>
+                                    <TableRow key={user.id} className="border-b-2 border-brand-black last:border-b-0 align-top">
+                                        <TableCell className="font-mono font-bold align-top">
+                                            <div className="space-y-3">
+                                                {user.stores.map((store, idx) => (
+                                                    <div key={store.id} className={idx > 0 ? "pt-2 border-t border-gray-200" : ""}>
+                                                        <div className="font-bold">{store.name || 'Untitled Store'}</div>
+                                                        {store.slug ? (
+                                                            <a
+                                                                href={`/${store.slug}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-xs text-blue-600 hover:text-blue-800 font-normal flex items-center gap-1 hover:underline mt-0.5"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                /{store.slug}
+                                                                <ExternalLink className="w-3 h-3" />
+                                                            </a>
+                                                        ) : (
+                                                            <div className="text-xs text-muted-foreground font-normal">/-</div>
+                                                        )}
                                                     </div>
-                                                );
-                                            })()}
+                                                ))}
+                                                {user.stores.length === 0 && <span className="text-muted-foreground text-xs">No Stores</span>}
+                                            </div>
                                         </TableCell>
-                                        <TableCell className="font-mono text-sm">
+                                        <TableCell className="font-mono text-sm align-top">{user.email}</TableCell>
+                                        <TableCell className="align-top">
+                                            <div className="space-y-3">
+                                                {user.stores.map((store, idx) => (
+                                                    <div key={store.id} className={idx > 0 ? "pt-2 border-t border-transparent" : ""}>
+                                                        <Badge className={`rounded-none font-mono uppercase text-xs ${getPlanBadgeColor(store.plan || 'demo')}`}>
+                                                            {getPlanLabel(store.plan || 'Demo')}
+                                                        </Badge>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs align-top">
+                                            <div className="space-y-3">
+                                                {user.stores.map((store, idx) => (
+                                                    <div key={store.id} className={idx > 0 ? "pt-2 border-t border-transparent" : ""}>
+                                                        {(() => {
+                                                            const expiryDate = store.plan_expires_at;
+                                                            const daysLeft = getDaysUntilExpiry(expiryDate);
+                                                            const formatted = formatExpiryDate(expiryDate);
+
+                                                            if (!expiryDate) {
+                                                                return <span className="text-muted-foreground block h-[22px] flex items-center">-</span>;
+                                                            }
+
+                                                            if (daysLeft !== null && daysLeft <= 0) {
+                                                                return (
+                                                                    <div className="flex items-center gap-1 text-red-600 h-[22px]">
+                                                                        <AlertTriangle className="w-3 h-3" />
+                                                                        <span>Expired</span>
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            if (daysLeft !== null && daysLeft <= 7) {
+                                                                return (
+                                                                    <div className="flex items-center gap-1 text-amber-600 h-[22px]">
+                                                                        <Clock className="w-3 h-3" />
+                                                                        <span>{formatted}</span>
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return (
+                                                                <div className="flex items-center gap-1 text-green-600 h-[22px]">
+                                                                    <Clock className="w-3 h-3" />
+                                                                    <span>{formatted}</span>
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-sm align-top">
                                             {formatDate(user.created_at)}
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right align-top">
                                             <div className="flex justify-end gap-2">
                                                 <Button
                                                     variant="outline"
@@ -627,7 +696,7 @@ export function AdminUsersPage() {
                     <DialogHeader className="border-b-2 border-brand-black pb-4">
                         <DialogTitle className="font-display text-xl flex items-center gap-2">
                             <Store className="w-6 h-6" />
-                            {selectedUser?.user.store?.name}
+                            Details for {selectedUser?.user.email}
                         </DialogTitle>
                     </DialogHeader>
                     {selectedUser && (
@@ -651,9 +720,34 @@ export function AdminUsersPage() {
                             </div>
 
                             <div className="p-3 bg-purple-50 border-2 border-purple-200">
-                                <p className="text-xs font-mono text-purple-800 font-bold">Store Name</p>
-                                <p className="text-sm font-mono text-purple-600">{selectedUser.user.store?.name || 'No Store'}</p>
-                                <p className="text-xs text-muted-foreground font-mono text-purple-600">/{selectedUser.user.store?.slug || '-'}</p>
+                                <p className="text-xs font-mono text-purple-800 font-bold mb-2">Stores Owned:</p>
+                                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                    {selectedUser.user.stores.map(store => (
+                                        <div key={store.id} className="border-b border-purple-200 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0 flex justify-between items-start group">
+                                            <div>
+                                                <p className="text-sm font-mono text-purple-600 font-bold">{store.name}</p>
+                                                <p className="text-xs text-muted-foreground font-mono text-purple-600">/{store.slug || '-'}</p>
+                                                <div className="flex gap-2 mt-1">
+                                                    <Badge variant="outline" className="text-[10px] h-5 px-1 border-purple-300 text-purple-700">
+                                                        {store.plan}
+                                                    </Badge>
+                                                    <span className="text-[10px] text-gray-400">
+                                                        {new Date(store.created_at).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleDeleteStore(store.id, store.name)}
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-8 w-8 ml-2"
+                                                title="Hapus Store Ini"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="p-3 bg-gray-50 border-2 border-gray-200">
@@ -749,6 +843,39 @@ export function AdminUsersPage() {
                             </div>
 
                             <div className="space-y-2">
+                                <Label>Select Store</Label>
+                                <Select
+                                    value={selectedStoreId || ''}
+                                    onValueChange={(val) => {
+                                        setSelectedStoreId(val);
+                                        const store = editingUser.stores.find(s => s.id === val);
+                                        if (store) {
+                                            setNewPlan(store.plan || 'free');
+                                            if (store.plan_expires_at) {
+                                                const expiry = new Date(store.plan_expires_at);
+                                                const now = new Date();
+                                                const monthsLeft = Math.max(1, Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+                                                setPlanDuration(monthsLeft);
+                                            } else {
+                                                setPlanDuration(1);
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full border-2 border-brand-black rounded-none font-mono">
+                                        <SelectValue placeholder="Pilih toko..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {editingUser.stores.map(store => (
+                                            <SelectItem key={store.id} value={store.id}>
+                                                {store.name} ({store.plan})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
                                 <Label htmlFor="edit-plan">Plan</Label>
                                 <Select
                                     value={newPlan}
@@ -778,8 +905,8 @@ export function AdminUsersPage() {
                                                     variant={planDuration === months ? 'default' : 'outline'}
                                                     onClick={() => setPlanDuration(months)}
                                                     className={`flex-1 rounded-none border-2 border-brand-black font-mono text-sm ${planDuration === months
-                                                            ? 'bg-brand-orange text-brand-black'
-                                                            : 'bg-white'
+                                                        ? 'bg-brand-orange text-brand-black'
+                                                        : 'bg-white'
                                                         }`}
                                                 >
                                                     {months} bln

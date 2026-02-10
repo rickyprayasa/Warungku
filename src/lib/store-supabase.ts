@@ -38,6 +38,7 @@ interface WarungState {
     accountName?: string;
     phoneNumber?: string;
     slug?: string;
+    category?: string;
   };
   opnameMode: 'retail' | 'display' | 'terpadu';
   isLoading: boolean;
@@ -291,7 +292,7 @@ async function deductStockFIFO(productId: string, qtyToDeduct: number): Promise<
 
       // Update batch quantity
       const { error: updateError } = await supabase
-        .from('stock_details')
+        .from('stock_details' as any)
         .update({ quantity: newQuantity })
         .eq('id', batch.id);
 
@@ -337,7 +338,7 @@ async function restoreStockFIFO(
       console.log(`[restoreStockFIFO] Restoring to batch ${newestBatch.id}: ${newestBatch.quantity} -> ${newQuantity}`);
 
       await supabase
-        .from('stock_details')
+        .from('stock_details' as any)
         .update({ quantity: newQuantity })
         .eq('id', newestBatch.id);
     } else {
@@ -345,7 +346,7 @@ async function restoreStockFIFO(
       console.log(`[restoreStockFIFO] Creating new batch for product ${productId} with qty ${qtyToRestore}`);
 
       await supabase
-        .from('stock_details')
+        .from('stock_details' as any)
         .insert({
           store_id: storeId,
           product_id: productId,
@@ -508,13 +509,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         // Use withTimeout to prevent hanging indefinitely
         const { data, error } = await withTimeout(
           supabase
-            .from('products')
+            .from('products' as any)
             .select('*')
             .eq('store_id', storeId)
             .order('created_at', { ascending: false }) as any,
           15000, // 15s timeout
           'Gagal memuat produk'
-        );
+        ) as any;
 
         if (error) {
           console.error('[FETCH PRODUCTS] Supabase error:', error);
@@ -560,13 +561,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         // Fetch sales with timeout
         const { data: salesData, error: salesError } = await withTimeout(
           supabase
-            .from('sales')
+            .from('sales' as any)
             .select('*')
             .eq('store_id', storeId)
             .order('created_at', { ascending: false }) as any,
           15000,
           'Gagal memuat penjualan'
-        );
+        ) as any;
 
         if (salesError) throw salesError;
 
@@ -577,7 +578,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         if (saleIds.length > 0) {
           const { data, error: itemsError } = await withTimeout(
             supabase
-              .from('sale_items')
+              .from('sale_items' as any)
               .select('*')
               .in('sale_id', saleIds) as any,
             15000,
@@ -755,6 +756,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               accountNumber: settingsMap.account_number || '',
               accountName: settingsMap.account_name || '',
               phoneNumber: settingsMap.phone_number || '',
+              category: settingsMap.store_category || 'Warung',
             }
           });
         }
@@ -798,7 +800,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       try {
         const { error } = await supabase
-          .from('settings')
+          .from('settings' as any)
           .upsert({
             store_id: storeId,
             key: 'initial_balance',
@@ -843,7 +845,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           // Use withTimeout to prevent hanging - 60s for large logo uploads
           const { error, data } = await withTimeout(
             supabase
-              .from('stores')
+              .from('stores' as any)
               .update({
                 name: profile.name,
                 address: profile.address,
@@ -876,13 +878,56 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         // Use a separate try-catch for settings to not fail the whole operation if settings fail
         try {
+          console.log('[updateStoreProfile] Upserting payment settings...');
           const { error: settingsError } = await supabase
             .from('settings')
             .upsert(settingsToUpsert, { onConflict: 'store_id,key' } as any);
 
-          if (settingsError) console.error('Failed to save settings:', settingsError);
+          if (settingsError) console.error('Failed to save payment settings:', settingsError);
+          else console.log('[updateStoreProfile] Payment settings saved successfully');
         } catch (settingsErr) {
-          console.error('Exception saving settings:', settingsErr);
+          console.error('Exception saving payment settings:', settingsErr);
+        }
+
+        // Save store_category separately to avoid any batch upsert issues
+        try {
+          const categoryValue = profile.category || 'Warung';
+          console.log('[updateStoreProfile] Saving store_category:', categoryValue);
+
+          // Try upsert first
+          const { error: catError } = await (supabase
+            .from('settings')
+            .upsert(
+              { store_id: storeId, key: 'store_category', value: categoryValue },
+              { onConflict: 'store_id,key' }
+            ) as any);
+
+          if (catError) {
+            console.error('[updateStoreProfile] Upsert store_category failed:', catError);
+            // Fallback: try insert, then update if conflict
+            const { error: insertError } = await supabase
+              .from('settings')
+              .insert({ store_id: storeId, key: 'store_category', value: categoryValue } as any);
+
+            if (insertError) {
+              console.error('[updateStoreProfile] Insert store_category failed:', insertError);
+              // Last resort: update
+              const { error: updateError } = await (supabase as any)
+                .from('settings')
+                .update({ value: categoryValue } as any)
+                .eq('store_id', storeId)
+                .eq('key', 'store_category');
+
+              if (updateError) console.error('[updateStoreProfile] Update store_category failed:', updateError);
+              else console.log('[updateStoreProfile] store_category updated via UPDATE');
+            } else {
+              console.log('[updateStoreProfile] store_category inserted via INSERT');
+            }
+          } else {
+            console.log('[updateStoreProfile] store_category saved via UPSERT ✓');
+          }
+        } catch (catErr) {
+          console.error('[updateStoreProfile] Exception saving store_category:', catErr);
         }
 
         set({ storeProfile: profile });
@@ -897,13 +942,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       if (!storeId) throw new Error('No store selected');
 
       try {
-        const { error } = await supabase
+        const { error } = await ((supabase as any)
           .from('settings')
           .upsert({
             store_id: storeId,
             key: 'opname_mode',
             value: mode,
-          }, { onConflict: 'store_id,key' } as any);
+          }, { onConflict: 'store_id,key' }) as any);
 
         if (error) throw error;
         set({ opnameMode: mode });
@@ -944,7 +989,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const { data, error } = await retryOperation(() =>
           withTimeout(
             supabase
-              .from('products')
+              .from('products' as any)
               .insert({
                 store_id: storeId,
                 name: productData.name,
@@ -1038,7 +1083,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       const { data, error } = await retryOperation(() =>
         withTimeout(
           supabase
-            .from('products')
+            .from('products' as any)
             .update({
               name: productData.name,
               price: productData.price,
@@ -1084,7 +1129,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
     deleteProduct: async (productId) => {
       const { error } = await withTimeout(
         supabase
-          .from('products')
+          .from('products' as any)
           .delete()
           .eq('id', productId),
         20000,
@@ -1144,7 +1189,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         // Insert sale
         const { data: saleRow, error: saleError } = await withTimeout(
           supabase
-            .from('sales')
+            .from('sales' as any)
             .insert({
               store_id: storeId,
               total,
@@ -1156,18 +1201,18 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .single() as any,
           30000,
           'Gagal menyimpan penjualan (timeout)'
-        );
+        ) as any;
 
         if (saleError) throw saleError;
 
         // Insert sale items
         const { error: itemsError } = await withTimeout(
           supabase
-            .from('sale_items')
+            .from('sale_items' as any)
             .insert(items.map(item => ({ ...item, sale_id: saleRow.id }))),
           30000,
           'Gagal menyimpan detail penjualan (timeout)'
-        );
+        ) as any;
 
         if (itemsError) throw itemsError;
 
@@ -1182,7 +1227,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
             // Also update product total_stock
             await withTimeout(
-              supabase
+              (supabase as any)
                 .from('products')
                 .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
                 .eq('id', item.productId),
@@ -1311,13 +1356,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       try {
         const { error } = await withTimeout(
           supabase
-            .from('sales')
+            .from('sales' as any)
             .update({ status: 'completed' })
             .eq('id', saleId)
             .eq('store_id', storeId),
           15000,
           'Gagal mengkonfirmasi pesanan (timeout)'
-        );
+        ) as any;
 
         if (error) throw error;
 
@@ -1338,7 +1383,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       // Get sale items first for stock restoration
       const { data: items } = await withTimeout(
         supabase
-          .from('sale_items')
+          .from('sale_items' as any)
           .select('*')
           .eq('sale_id', saleId) as any,
         10000,
@@ -1348,7 +1393,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       // Delete sale (cascade deletes items)
       const { error } = await withTimeout(
         supabase
-          .from('sales')
+          .from('sales' as any)
           .delete()
           .eq('id', saleId),
         20000,
@@ -1373,7 +1418,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           // Also update product total_stock
           await withTimeout(
             supabase
-              .from('products')
+              .from('products' as any)
               .update({ total_stock: (product.totalStock || 0) + qtyToRestore })
               .eq('id', item.product_id),
             10000,
@@ -1409,7 +1454,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       try {
         // Insert purchase
         const { data, error } = await withTimeout(
-          supabase
+          (supabase as any)
             .from('purchases')
             .insert({
               store_id: storeId,
@@ -1427,7 +1472,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .single() as any,
           20000,
           'Gagal menyimpan data pembelian (timeout)'
-        );
+        ) as any;
 
         if (error) throw error;
 
@@ -1444,7 +1489,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             }),
           10000,
           'Gagal menyimpan detail stok'
-        );
+        ) as any;
 
         // Fetch latest stock to ensure accuracy
         const { data: latestProduct, error: fetchError } = await supabase
@@ -1560,7 +1605,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .single() as any,
         10000,
         'Gagal mengambil data pembelian lama'
-      );
+      ) as any;
 
       if (!oldPurchase) throw new Error('Purchase not found');
 
@@ -1600,7 +1645,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .single() as any,
         20000,
         'Gagal mengupdate data pembelian'
-      );
+      ) as any;
 
       if (error) throw error;
 
@@ -1616,7 +1661,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .eq('purchase_id', purchaseId),
         10000,
         'Gagal mengupdate detail stok'
-      );
+      ) as any;
 
       // Update product stock and cost if relevant
       const productUpdates: { total_stock?: number; cost?: number } = {};
@@ -1683,7 +1728,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .single() as any,
         10000,
         'Gagal mengambil data pembelian (timeout)'
-      );
+      ) as any;
 
       if (!purchase) throw new Error('Purchase not found');
 
@@ -1695,7 +1740,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .eq('purchase_id', purchaseId),
         10000,
         'Gagal menghapus detail stok (timeout)'
-      );
+      ) as any;
 
       // Delete purchase
       const { error } = await withTimeout(
@@ -1705,7 +1750,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .eq('id', purchaseId),
         20000,
         'Gagal menghapus pembelian (timeout)'
-      );
+      ) as any;
 
       if (error) throw error;
 
@@ -1719,7 +1764,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .eq('id', purchase.product_id),
           10000,
           'Gagal update stok produk (timeout)'
-        );
+        ) as any;
       }
 
       set((state) => { state.purchases = state.purchases.filter((p) => p.id !== purchaseId); });
@@ -1744,7 +1789,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .single(),
         20000,
         'Gagal menyimpan pemasok (timeout)'
-      );
+      ) as any;
 
       if (error) throw error;
       const newSupplier = toSupplier(data);
@@ -1767,7 +1812,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .single(),
         20000,
         'Gagal update pemasok (timeout)'
-      );
+      ) as any;
 
       if (error) throw error;
       const updatedSupplier = toSupplier(data);
@@ -1786,7 +1831,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .eq('id', supplierId),
         20000,
         'Gagal menghapus pemasok (timeout)'
-      );
+      ) as any;
 
       if (error) throw error;
       set((state) => { state.suppliers = state.suppliers.filter((s) => s.id !== supplierId); });
@@ -1833,7 +1878,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         query,
         20000,
         'Gagal menyimpan request (timeout)'
-      );
+      ) as any;
 
       if (error) throw error;
 
@@ -1869,7 +1914,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .single(),
         20000,
         'Gagal update status request (timeout)'
-      );
+      ) as any;
 
       if (error) throw error;
       const updatedRequest = toJajananRequest(data);
@@ -1909,7 +1954,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             }),
           10000,
           'Gagal menyimpan detail stok (timeout)'
-        );
+        ) as any;
       }
 
       // Update product stock
@@ -1920,7 +1965,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           .eq('id', productId),
         10000,
         'Gagal update stok produk (timeout)'
-      );
+      ) as any;
 
       await get().fetchProducts();
     },
@@ -1935,7 +1980,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       try {
         set({ isLoading: true, error: null });
         const { data, error } = await supabase
-          .from('reconciliations')
+          .from('reconciliations' as any)
           .select('*')
           .eq('store_id', storeId)
           .order('created_at', { ascending: false });
@@ -2027,7 +2072,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         // Update product stock
         if (difference !== 0) {
-          await supabase
+          await (supabase as any)
             .from('products')
             .update({ total_stock: physicalStock })
             .eq('id', product.id);
@@ -2046,7 +2091,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           notes: '[REKON] Penjualan cash dari rekonsiliasi terpadu'
         };
 
-        const { data: sale, error: saleError } = await supabase
+        const { data: sale, error: saleError } = await (supabase as any)
           .from('sales')
           .insert(saleData)
           .select()
@@ -2062,7 +2107,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             ...item
           }));
 
-          const { error: itemsError } = await supabase
+          const { error: itemsError } = await (supabase as any)
             .from('sale_items')
             .insert(saleItems);
 
@@ -2079,7 +2124,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       // Let's stick to the requirement: Unidentified = Actual Cash - Total Stock Value (assuming 0 start)
       const unidentifiedAmount = payload.actualCash - totalStockValue;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('reconciliations')
         .insert({
           store_id: storeId,

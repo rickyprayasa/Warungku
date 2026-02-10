@@ -167,13 +167,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let memberData, memberError;
       try {
         const result = await withTimeout(
-          supabase
-            .from('store_members')
+          (supabase
+            .from('store_members') as any)
             .select('store_id, role')
             .eq('user_id', userId)
-            .single(),
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
           30000 // 30s timeout - increased for slow connections
-        );
+        ) as any;
         memberData = result.data;
         memberError = result.error;
       } catch (timeoutErr: any) {

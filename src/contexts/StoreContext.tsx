@@ -18,6 +18,7 @@ interface PublicStore {
   accountNumber?: string;
   accountName?: string;
   phoneNumber?: string; // E-wallet phone number
+  category?: string;
 }
 
 interface StoreContextType {
@@ -54,26 +55,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.log('[StoreContext] Fetching settings for store:', storeId);
 
       // Try RPC first (for public access bypassing RLS)
-      const { data: rpcData, error: rpcError } = await supabase
-        .rpc('get_public_store_settings', { p_store_id: storeId });
+      const { data: rpcData, error: rpcError } = await (supabase
+        .rpc('get_public_store_settings', { p_store_id: storeId }) as any);
 
       let settingsData = rpcData;
 
       if (rpcError) {
         console.warn('[StoreContext] RPC get_public_store_settings failed, falling back to direct query:', rpcError);
         // Fallback to direct query (might fail due to RLS if not authenticated)
-        const { data: directData, error: directError } = await supabase
+        const { data: directData, error: directError } = await (supabase
           .from('settings')
           .select('key, value')
-          .eq('store_id', storeId);
+          .eq('store_id', storeId) as any);
 
         if (directError) {
           console.error('[StoreContext] Error fetching settings (direct):', directError);
         }
         settingsData = directData;
-      }
+      } else {
+        // RPC succeeded but may not return all keys (e.g. store_category).
+        // Supplement with direct query to fill in any missing keys.
+        try {
+          const { data: directData } = await (supabase
+            .from('settings')
+            .select('key, value')
+            .eq('store_id', storeId) as any);
 
-      console.log('[StoreContext] Raw settings data:', settingsData);
+          if (directData && Array.isArray(directData)) {
+            const rpcKeys = new Set((settingsData || []).map((r: any) => r.key));
+            const missing = directData.filter((d: any) => !rpcKeys.has(d.key));
+            if (missing.length > 0) {
+              console.log('[StoreContext] Supplementing RPC with direct query keys:', missing.map((m: any) => m.key));
+              settingsData = [...(settingsData || []), ...missing];
+            }
+          }
+        } catch (e) {
+          // Direct query might fail due to RLS for unauthenticated users, that's ok
+          console.warn('[StoreContext] Direct query supplement failed (RLS):', e);
+        }
+      }
 
       const settingsMap = (settingsData || []).reduce((acc: any, curr: any) => {
         acc[curr.key] = curr.value;
@@ -95,9 +115,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         accountNumber: settingsMap.account_number || '',
         accountName: settingsMap.account_name || '',
         phoneNumber: settingsMap.phone_number || '',
+        category: settingsMap.store_category || 'Warung',
       };
 
-      console.log('[StoreContext] Processed settings:', result);
       return result;
     } catch (error) {
       console.error('Failed to fetch store settings:', error);
@@ -107,6 +127,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         accountNumber: '',
         accountName: '',
         phoneNumber: '',
+        category: 'Warung',
       };
     }
   };
@@ -229,22 +250,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.log('[StoreContext] Starting normal store lookup for slug:', slug);
 
       // Use the same approach as demo mode - simpler and proven to work
-      const { data, error } = await supabase
+      const { data, error } = await (supabase
         .from('stores')
         .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
         .eq('slug', slug)
-        .maybeSingle();
+        .maybeSingle() as any);
 
       console.log('[StoreContext] Query result - data:', data, 'error:', error);
 
       // If exact match failed, try case-insensitive
       if (!data && !error) {
         console.log('[StoreContext] Exact match failed, trying case-insensitive for:', slug);
-        const { data: ilikData, error: ilikError } = await supabase
+        const { data: ilikData, error: ilikError } = await (supabase
           .from('stores')
           .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
           .ilike('slug', slug)
-          .maybeSingle();
+          .maybeSingle() as any);
 
         console.log('[StoreContext] Case-insensitive result - data:', ilikData, 'error:', ilikError);
 

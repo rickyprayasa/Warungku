@@ -128,11 +128,14 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
   // Calculate effective plan (pro during trial)
   const effectivePlan = useMemo((): PlanType => {
-    if (trialStatus.isTrialActive) {
+    // Only return 'pro' if trial is active AND not expired
+    if (trialStatus.isTrialActive &&
+      trialStatus.daysRemainingInTrial !== null &&
+      trialStatus.daysRemainingInTrial > 0) {
       return 'pro'; // Trial users get pro features
     }
     return plan;
-  }, [plan, trialStatus.isTrialActive]);
+  }, [plan, trialStatus.isTrialActive, trialStatus.daysRemainingInTrial]);
 
   const refreshPlan = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -195,7 +198,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const isTrialActive = data?.is_trial_active || false;
+        let isTrialActive = data?.is_trial_active || false;
         const trialEndsAt = data?.trial_ends_at ? new Date(data.trial_ends_at) : null;
 
         // Calculate days remaining
@@ -205,9 +208,24 @@ export function PlanProvider({ children }: { children: ReactNode }) {
           const diffTime = trialEndsAt.getTime() - now.getTime();
           daysRemainingInTrial = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-          // If trial has ended, set to 0
-          if (daysRemainingInTrial < 0) {
+          // If trial has ended, set to 0 and deactivate
+          if (daysRemainingInTrial <= 0) {
             daysRemainingInTrial = 0;
+
+            // Auto-expire trial in DB if currently active
+            if (isTrialActive) {
+              console.log('[PlanContext] Trial expired, deactivating in DB...');
+              supabase
+                .from('stores')
+                .update({ is_trial_active: false })
+                .eq('id', store.id)
+                .then(({ error }) => {
+                  if (error) console.error('Failed to deactivate expired trial:', error);
+                });
+
+              // Deactivate locally
+              isTrialActive = false;
+            }
           }
         }
 
@@ -232,22 +250,22 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const currentMonthTransactionCount = useMemo(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    
+
     return sales.filter(sale => sale.createdAt >= startOfMonth).length;
   }, [sales]);
 
   const canAddProduct = currentProductCount < limits.maxProducts;
   const canAddTransaction = currentMonthTransactionCount < limits.maxTransactionsPerMonth;
-  
+
   const productLimitReached = currentProductCount >= limits.maxProducts;
   const transactionLimitReached = currentMonthTransactionCount >= limits.maxTransactionsPerMonth;
 
-  const productUsagePercent = limits.maxProducts === Infinity 
-    ? 0 
+  const productUsagePercent = limits.maxProducts === Infinity
+    ? 0
     : Math.min(100, (currentProductCount / limits.maxProducts) * 100);
-  
-  const transactionUsagePercent = limits.maxTransactionsPerMonth === Infinity 
-    ? 0 
+
+  const transactionUsagePercent = limits.maxTransactionsPerMonth === Infinity
+    ? 0
     : Math.min(100, (currentMonthTransactionCount / limits.maxTransactionsPerMonth) * 100);
 
   const isFreePlan = plan === 'free' || plan === 'demo';
