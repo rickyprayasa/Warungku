@@ -1,4 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { SalesDataTable } from '@/components/SalesDataTable';
+import { OnboardingTour } from '@/components/OnboardingTour';
+import { POSSaleForm } from '@/components/POSSaleForm';
+import { PurchaseForm } from '@/components/PurchaseForm';
+import { ProductForm } from '@/components/ProductForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useWarungStore } from '@/lib/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,14 +14,22 @@ import { DashboardSkeleton } from '@/components/ui/skeleton';
 import {
   TrendingUp,
   TrendingDown,
-  DollarSign,
   Package,
   ShoppingCart,
-  Users,
-  BarChart3,
-  Calendar,
+  DollarSign,
   ArrowRightLeft,
-  Timer,
+  Banknote,
+  Truck,
+  Inbox,
+  Warehouse,
+  ClipboardCheck,
+  BarChart3,
+  Tag,
+  QrCode,
+  Crown,
+  Settings,
+  MessageCircle,
+  PlusCircle,
   Lock,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -30,13 +44,18 @@ import { getFastMovingProducts, getLowDSLProducts } from '@/lib/stock-analysis';
 import { usePlan } from '@/contexts/PlanContext';
 import { PlanUpgradePrompt } from '@/components/PlanUpgradePrompt';
 
-export function AnalyticsDashboard() {
+export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
   const { limits } = usePlan();
   const products = useWarungStore((state) => state.products);
   const sales = useWarungStore((state) => state.sales);
   const purchases = useWarungStore((state) => state.purchases);
   const isLoading = useWarungStore((state) => state.isLoading);
+  const fetchSales = useWarungStore((state) => state.fetchSales);
+  const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [isSaleDialogOpen, setSaleDialogOpen] = useState(false);
+  const [isPurchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
+  const [isProductDialogOpen, setProductDialogOpen] = useState(false);
 
   // Check if user can access analytics
   if (!limits.canAccessAnalytics) {
@@ -323,17 +342,20 @@ export function AnalyticsDashboard() {
           <h1 className="text-2xl md:text-3xl font-display font-bold text-brand-black uppercase tracking-wider">Analytics & Report</h1>
           <p className="text-sm font-mono text-muted-foreground">Analisis performa dengan filter periode</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <DateRangePicker date={dateRange} onDateChange={setDateRange} />
+        <div className="flex flex-row items-center gap-2">
+          <OnboardingTour isActive={isActive} />
+          <div className="flex-1 min-w-0">
+            <DateRangePicker date={dateRange} onDateChange={setDateRange} />
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="w-full overflow-x-auto pb-2 gap-2 scrollbar-hide flex">
         <Button
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('today')}
-          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all whitespace-nowrap flex-shrink-0"
         >
           Hari Ini
         </Button>
@@ -341,7 +363,7 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('yesterday')}
-          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all whitespace-nowrap flex-shrink-0"
         >
           Kemarin
         </Button>
@@ -349,7 +371,7 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('7days')}
-          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all whitespace-nowrap flex-shrink-0"
         >
           7 Hari
         </Button>
@@ -357,7 +379,7 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('30days')}
-          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all whitespace-nowrap flex-shrink-0"
         >
           30 Hari
         </Button>
@@ -365,14 +387,18 @@ export function AnalyticsDashboard() {
           variant="outline"
           size="sm"
           onClick={() => setPresetRange('month')}
-          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+          className="rounded-lg border-2 border-brand-black font-mono font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all whitespace-nowrap flex-shrink-0"
         >
           Bulan Ini
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-3">
-        <TabsList className="grid w-full md:grid-cols-3 rounded-lg border-2 border-brand-black p-1 h-auto bg-white gap-1">
+      <Tabs defaultValue="sales" className="space-y-3">
+        <TabsList className="grid w-full grid-cols-3 rounded-lg border-2 border-brand-black p-1 h-auto bg-white gap-1">
+          <TabsTrigger value="sales" className="rounded-lg data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black font-bold text-xs md:text-sm py-2.5 border-2 border-transparent data-[state=active]:border-brand-black uppercase tracking-wider transition-all">
+            <DollarSign className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+            Penjualan
+          </TabsTrigger>
           <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black font-bold text-xs md:text-sm py-2.5 border-2 border-transparent data-[state=active]:border-brand-black uppercase tracking-wider transition-all">
             <BarChart3 className="w-3 h-3 md:w-4 md:h-4 mr-1" />
             Overview
@@ -380,10 +406,6 @@ export function AnalyticsDashboard() {
           <TabsTrigger value="products" className="rounded-lg data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black font-bold text-xs md:text-sm py-2.5 border-2 border-transparent data-[state=active]:border-brand-black uppercase tracking-wider transition-all">
             <Package className="w-3 h-3 md:w-4 md:h-4 mr-1" />
             Produk
-          </TabsTrigger>
-          <TabsTrigger value="sales" className="rounded-lg data-[state=active]:bg-brand-orange data-[state=active]:text-brand-black font-bold text-xs md:text-sm py-2.5 border-2 border-transparent data-[state=active]:border-brand-black uppercase tracking-wider transition-all">
-            <DollarSign className="w-3 h-3 md:w-4 md:h-4 mr-1" />
-            Penjualan
           </TabsTrigger>
         </TabsList>
 
@@ -791,62 +813,62 @@ export function AnalyticsDashboard() {
                   );
                 }
 
-                 return (
-                   <>
-                     <div className="md:hidden space-y-3">
-                       {combinedList.map((item, index) => {
-                         let badgeColor = "bg-gray-200";
-                         if (item.category === 'bestseller') badgeColor = "bg-brand-orange";
-                         if (item.category === 'fastmoving') badgeColor = "bg-blue-500";
-                         if (item.category === 'lowdsl') badgeColor = "bg-red-500";
+                return (
+                  <>
+                    <div className="md:hidden space-y-3">
+                      {combinedList.map((item, index) => {
+                        let badgeColor = "bg-gray-200";
+                        if (item.category === 'bestseller') badgeColor = "bg-brand-orange";
+                        if (item.category === 'fastmoving') badgeColor = "bg-blue-500";
+                        if (item.category === 'lowdsl') badgeColor = "bg-red-500";
 
-                         return (
-                           <div key={`${item.product?.name || item.name}-${index}`} className="border-2 border-brand-black bg-white p-3 rounded-lg">
-                             <div className="flex justify-between items-start mb-3">
-                               <div className="flex-1 min-w-0">
-                                 <div className="flex items-center gap-2 mb-1">
-                                   <Badge className={`rounded-lg ${badgeColor} text-brand-black font-bold text-xs px-2 py-0.5 border-2 border-brand-black`}>
-                                     #{index + 1}
-                                   </Badge>
-                                   <span className={`text-[10px] font-mono font-bold ${item.category === 'bestseller' ? 'text-brand-orange' : item.category === 'fastmoving' ? 'text-blue-600' : 'text-red-600'}`}>
-                                     {item.category === 'bestseller' && 'TERLARIS'}
-                                     {item.category === 'fastmoving' && 'LARIS CEPAT'}
-                                     {item.category === 'lowdsl' && 'PERLU RESTOCK'}
-                                   </span>
-                                 </div>
-                                 <h3 className="font-bold text-sm leading-tight truncate">{item.product?.name || item.name}</h3>
-                               </div>
-                             </div>
+                        return (
+                          <div key={`${item.product?.name || item.name}-${index}`} className="border-2 border-brand-black bg-white p-3 rounded-lg">
+                            <div className="flex justify-between items-start mb-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge className={`rounded-lg ${badgeColor} text-brand-black font-bold text-xs px-2 py-0.5 border-2 border-brand-black`}>
+                                    #{index + 1}
+                                  </Badge>
+                                  <span className={`text-[10px] font-mono font-bold ${item.category === 'bestseller' ? 'text-brand-orange' : item.category === 'fastmoving' ? 'text-blue-600' : 'text-red-600'}`}>
+                                    {item.category === 'bestseller' && 'TERLARIS'}
+                                    {item.category === 'fastmoving' && 'LARIS CEPAT'}
+                                    {item.category === 'lowdsl' && 'PERLU RESTOCK'}
+                                  </span>
+                                </div>
+                                <h3 className="font-bold text-sm leading-tight truncate">{item.product?.name || item.name}</h3>
+                              </div>
+                            </div>
 
-                             <div className="grid grid-cols-4 gap-2 text-[10px]">
-                               <div>
-                                 <p className="text-muted-foreground font-mono">Terjual</p>
-                                 <p className="font-bold font-mono text-sm">{formatNumber(item.quantity || 0)}</p>
-                               </div>
-                               <div>
-                                 <p className="text-muted-foreground font-mono">Kecepatan</p>
-                                 <p className="font-bold font-mono text-sm">{(item.velocity || 0).toFixed(1)}/hari</p>
-                               </div>
-                               <div>
-                                 <p className="text-muted-foreground font-mono">Habis Dalam</p>
-                                 <p className={`font-bold font-mono text-sm ${(item.product?.totalStock || 0) === 0 ? 'text-red-600' : (item.dsl !== null && item.dsl < 7) ? 'text-red-600' : ''}`}>
-                                   {(item.product?.totalStock || 0) === 0 ? 'HABIS' : (item.dsl !== null) ? `${item.dsl.toFixed(1)}h` : 'N/A'}
-                                 </p>
-                               </div>
-                               <div>
-                                 <p className="text-muted-foreground font-mono">Stok</p>
-                                 <p className="font-bold font-mono text-sm">{item.product?.totalStock || 0}</p>
-                               </div>
-                             </div>
+                            <div className="grid grid-cols-4 gap-2 text-[10px]">
+                              <div>
+                                <p className="text-muted-foreground font-mono">Terjual</p>
+                                <p className="font-bold font-mono text-sm">{formatNumber(item.quantity || 0)}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground font-mono">Kecepatan</p>
+                                <p className="font-bold font-mono text-sm">{(item.velocity || 0).toFixed(1)}/hari</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground font-mono">Habis Dalam</p>
+                                <p className={`font-bold font-mono text-sm ${(item.product?.totalStock || 0) === 0 ? 'text-red-600' : (item.dsl !== null && item.dsl < 7) ? 'text-red-600' : ''}`}>
+                                  {(item.product?.totalStock || 0) === 0 ? 'HABIS' : (item.dsl !== null) ? `${item.dsl.toFixed(1)}h` : 'N/A'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground font-mono">Stok</p>
+                                <p className="font-bold font-mono text-sm">{item.product?.totalStock || 0}</p>
+                              </div>
+                            </div>
 
-                             <div className="mt-3 pt-2 border-t border-dashed border-brand-black/30 flex justify-between items-center">
-                               <span className="text-[10px] text-muted-foreground font-mono">Pendapatan</span>
-                               <span className="font-bold font-mono text-sm">{formatCurrency(item.revenue || 0)}</span>
-                             </div>
-                           </div>
-                         );
-                       })}
-                     </div>
+                            <div className="mt-3 pt-2 border-t border-dashed border-brand-black/30 flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground font-mono">Pendapatan</span>
+                              <span className="font-bold font-mono text-sm">{formatCurrency(item.revenue || 0)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
 
                     <div className="hidden md:block overflow-x-auto">
                       <table className="w-full min-w-[700px]">
@@ -953,9 +975,8 @@ export function AnalyticsDashboard() {
                                   <p className="font-bold font-mono text-sm">{(item.velocity || 0).toFixed(2)} unit/hari</p>
                                 </td>
                                 <td className="p-2 text-center">
-                                  <p className={`font-bold font-mono text-sm ${
-                                    (item.product?.totalStock || 0) === 0 ? 'text-red-600' : (item.dsl !== null && item.dsl < 7) ? 'text-red-600' : ''
-                                  }`}>
+                                  <p className={`font-bold font-mono text-sm ${(item.product?.totalStock || 0) === 0 ? 'text-red-600' : (item.dsl !== null && item.dsl < 7) ? 'text-red-600' : ''
+                                    }`}>
                                     {(item.product?.totalStock || 0) === 0 ? 'HABIS' : (item.dsl !== null && item.dsl !== undefined) ? `${item.dsl.toFixed(1)} hari` : 'N/A'}
                                   </p>
                                 </td>
@@ -981,45 +1002,76 @@ export function AnalyticsDashboard() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="sales" className="space-y-3">
-          <div className="grid gap-2 md:grid-cols-2">
-            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="font-display text-base md:text-lg">Ringkasan Penjualan</CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3 space-y-2">
-                <div className="flex justify-between items-center p-2 border border-brand-black bg-gray-50">
-                  <span className="font-mono text-xs md:text-sm">Hari Ini</span>
-                  <span className="font-bold font-mono text-sm md:text-base">{metrics.todaySalesCount}</span>
+        <TabsContent value="sales" className="space-y-4">
+          {/* Quick Action Buttons */}
+          <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2">
+            <Dialog open={isSaleDialogOpen} onOpenChange={setSaleDialogOpen}>
+              <DialogTrigger asChild>
+                <Button id="tour-add-sale" className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-xs sm:text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12 md:h-10 col-span-2 md:col-span-1">
+                  <PlusCircle className="w-4 h-4 mr-1.5" />
+                  Catat Penjualan
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[95vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-none border-4 border-brand-black bg-brand-white flex flex-col">
+                <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
+                  <DialogTitle className="font-display text-2xl font-bold">Catat Penjualan Baru</DialogTitle>
+                </DialogHeader>
+                <div className="p-6 flex-1 overflow-hidden h-full">
+                  <POSSaleForm onSuccess={() => {
+                    setSaleDialogOpen(false);
+                    fetchSales();
+                  }} />
                 </div>
-                <div className="flex justify-between items-center p-2 border border-brand-black bg-gray-50">
-                  <span className="font-mono text-xs md:text-sm">Bulan Ini</span>
-                  <span className="font-bold font-mono text-sm md:text-base">{metrics.thisMonthSalesCount}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 border border-brand-black bg-gray-50">
-                  <span className="font-mono text-xs md:text-sm">Profit Hari Ini</span>
-                  <span className="font-bold font-mono text-sm md:text-base text-green-600">{formatCurrency(metrics.todayProfit)}</span>
-                </div>
-                <div className="flex justify-between items-center p-2 border border-brand-black bg-gray-50">
-                  <span className="font-mono text-xs md:text-sm">Profit Bulan Ini</span>
-                  <span className="font-bold font-mono text-sm md:text-base text-green-600">{formatCurrency(metrics.thisMonthProfit)}</span>
-                </div>
-              </CardContent>
-            </Card>
+              </DialogContent>
+            </Dialog>
 
-            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="font-display text-base md:text-lg">Pendapatan Bulan Ini</CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                <div className="text-2xl md:text-3xl font-bold font-mono text-brand-orange">
-                  {formatCurrency(metrics.thisMonthRevenue)}
-                </div>
-                <p className="text-[10px] md:text-xs text-muted-foreground font-mono mt-1">
-                  Total pendapatan bulan ini
-                </p>
-              </CardContent>
-            </Card>
+            <Dialog open={isPurchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
+              <DialogTrigger asChild>
+                <Button id="tour-add-purchase" variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-xs sm:text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12 md:h-10">
+                  <ShoppingCart className="w-4 h-4 mr-1.5" />
+                  Catat Pembelian
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
+                <DialogHeader>
+                  <DialogTitle className="font-display text-2xl font-bold">Catat Pembelian Baru</DialogTitle>
+                </DialogHeader>
+                <PurchaseForm onSuccess={() => {
+                  setPurchaseDialogOpen(false);
+                  fetchPurchases();
+                }} />
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isProductDialogOpen} onOpenChange={setProductDialogOpen}>
+              <DialogTrigger asChild>
+                <Button id="tour-add-product" variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-xs sm:text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12 md:h-10">
+                  <Package className="w-4 h-4 mr-1.5" />
+                  Tambah Produk
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
+                <DialogHeader>
+                  <DialogTitle className="font-display text-2xl font-bold">Tambah Produk Baru</DialogTitle>
+                </DialogHeader>
+                <ProductForm onSuccess={() => setProductDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Sales History Table */}
+          <div>
+            <h3 className="text-lg font-display font-bold text-brand-black mb-1">Riwayat Penjualan Terbaru</h3>
+            <p className="font-mono text-xs text-muted-foreground mb-3">Transaksi penjualan terbaru dari toko Anda.</p>
+            {isLoading ? (
+              <div className="border-4 border-brand-black p-4 space-y-2">
+                <div className="h-10 w-full bg-gray-200 animate-pulse rounded" />
+                <div className="h-10 w-full bg-gray-200 animate-pulse rounded" />
+                <div className="h-10 w-full bg-gray-200 animate-pulse rounded" />
+              </div>
+            ) : (
+              <SalesDataTable sales={sales} />
+            )}
           </div>
         </TabsContent>
       </Tabs>

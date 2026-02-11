@@ -37,8 +37,12 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
   const pageCount = Math.ceil(sales.length / rowsPerPage);
 
   // Sort sales: pending first, then by date descending
+  // Sort sales: pending first, then by date descending. Also deduplicate to prevent key errors.
   const sortedSales = useMemo(() => {
-    return [...sales].sort((a, b) => {
+    // Deduplicate by ID first
+    const uniqueSales = Array.from(new Map(sales.map(s => [s.id, s])).values());
+    
+    return uniqueSales.sort((a, b) => {
       if (a.status === 'pending' && b.status !== 'pending') return -1;
       if (a.status !== 'pending' && b.status === 'pending') return 1;
       return b.createdAt - a.createdAt;

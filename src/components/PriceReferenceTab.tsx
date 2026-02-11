@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useWarungStore } from '@/lib/store';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tag, TrendingUp, TrendingDown, Hash, Minus, Package, Eye, Search, Filter, FileText } from 'lucide-react';
@@ -63,7 +64,7 @@ interface PriceHistoryItem {
     purchaseHistory: PurchaseDetail[];
 }
 
-export function PriceReferenceTab() {
+export function PriceReferenceTab({ isActive }: { isActive?: boolean }) {
     const products = useWarungStore((state) => state.products);
     const purchases = useWarungStore((state) => state.purchases);
     const suppliers = useWarungStore((state) => state.suppliers);
@@ -260,18 +261,42 @@ export function PriceReferenceTab() {
         });
     }, [priceHistoryData, searchQuery, selectedSupplier]);
 
+    const priceTourSteps = [
+        {
+            element: '#tour-price-stats',
+            popover: {
+                title: 'Statistik Harga',
+                description: 'Lihat ringkasan pergerakan harga produk dari supplier untuk keputusan belanja yang lebih baik.',
+                side: 'bottom',
+                align: 'center'
+            }
+        },
+        {
+            element: '#tour-price-search',
+            popover: {
+                title: 'Cari Riwayat',
+                description: 'Cari riwayat harga berdasarkan nama produk atau nama supplier.',
+                side: 'bottom',
+                align: 'start'
+            }
+        }
+    ];
+
     return (
         <div className="space-y-6">
             <div className="bg-white border-2 border-brand-black rounded-lg p-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                <h3 className="text-2xl font-bold text-brand-black uppercase tracking-tight mb-2">
-                    Referensi Harga
-                </h3>
+                <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-2xl font-bold text-brand-black uppercase tracking-tight">
+                        Referensi Harga
+                    </h3>
+                    <OnboardingTour tourId="price-ref-tour" steps={priceTourSteps} loading={isLoading} isActive={isActive} />
+                </div>
                 <p className="font-mono text-sm text-muted-foreground">
                     Pantau history harga pembelian dari berbagai supplier.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4" id="tour-price-stats">
                 <StatCard
                     title="Total Produk"
                     value={priceHistoryData.length}
@@ -296,7 +321,7 @@ export function PriceReferenceTab() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
+                <div className="relative flex-1" id="tour-price-search">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                         placeholder="Cari produk atau supplier..."

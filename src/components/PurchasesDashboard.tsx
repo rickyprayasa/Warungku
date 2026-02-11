@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useWarungStore } from '@/lib/store';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { Button } from '@/components/ui/button';
 import { Download, PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -10,7 +11,7 @@ import { exportToCSV } from '@/lib/csv-export';
 import { DateRangePicker } from './ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
 import { subDays } from 'date-fns';
-export function PurchasesDashboard() {
+export function PurchasesDashboard({ isActive }: { isActive?: boolean }) {
   const purchases = useWarungStore((state) => state.purchases);
   const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
   const isLoading = useWarungStore((state) => state.isLoading);
@@ -38,6 +39,36 @@ export function PurchasesDashboard() {
     }));
     exportToCSV(dataToExport, 'purchases_report');
   };
+
+  const purchaseTourSteps = [
+    {
+      element: '#tour-purchase-add',
+      popover: {
+        title: 'Catat Pembelian',
+        description: 'Catat stok masuk atau pembelian barang dari supplier di sini.',
+        side: 'bottom',
+        align: 'end'
+      }
+    },
+    {
+      element: '#tour-purchase-export',
+      popover: {
+        title: 'Ekspor Laporan',
+        description: 'Unduh laporan pembelian untuk arsip atau analisa pengeluaran.',
+        side: 'bottom',
+        align: 'end'
+      }
+    },
+    {
+      element: '#tour-purchase-filter',
+      popover: {
+        title: 'Filter Periode',
+        description: 'Tampilkan riwayat pembelian berdasarkan rentang waktu tertentu.',
+        side: 'bottom',
+        align: 'end'
+      }
+    }
+  ];
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
@@ -46,14 +77,17 @@ export function PurchasesDashboard() {
           <p className="font-mono text-sm text-muted-foreground">Lacak semua transaksi pembelian stok barang.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <DateRangePicker date={dateRange} onDateChange={setDateRange} />
-          <Button onClick={handleExport} variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
+          <div id="tour-purchase-filter">
+            <DateRangePicker date={dateRange} onDateChange={setDateRange} />
+          </div>
+          <OnboardingTour tourId="purchases-page-tour" steps={purchaseTourSteps} loading={isLoading} isActive={isActive} />
+          <Button id="tour-purchase-export" onClick={handleExport} variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
             <Download className="w-4 h-4 mr-2" />
             Ekspor
           </Button>
           <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
+              <Button id="tour-purchase-add" className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
                 <PlusCircle className="w-4 h-4 mr-2" />
                 Catat Pembelian
               </Button>

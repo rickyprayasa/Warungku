@@ -202,8 +202,8 @@ export function Sidebar() {
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Utama</p>
                     </div>
                 )}
-                <NavItem to="/pos" icon={Store} label="Kasir (POS)" collapsed={sidebarCollapsed} />
-                <NavItem to="/dashboard" tab="analytics" icon={BarChart3} label="Dasbor" collapsed={sidebarCollapsed} />
+                <NavItem id="tour-pos" to="/pos" icon={Store} label="Kasir (POS)" collapsed={sidebarCollapsed} />
+                <NavItem id="tour-dashboard" to="/dashboard" tab="analytics" icon={BarChart3} label="Dasbor" collapsed={sidebarCollapsed} />
 
                 {/* Link to Public Store */}
                 {store?.slug && (
@@ -221,7 +221,7 @@ export function Sidebar() {
                         <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Inventaris</p>
                     </div>
                 )}
-                <NavItem to="/dashboard" tab="products" icon={Package} label="Produk" collapsed={sidebarCollapsed} />
+                <NavItem id="tour-products" to="/dashboard" tab="products" icon={Package} label="Produk" collapsed={sidebarCollapsed} />
                 <NavItem to="/dashboard" tab="suppliers" icon={Truck} label="Pemasok" collapsed={sidebarCollapsed} />
                 <NavItem to="/dashboard" tab="price-reference" icon={Tag} label="Ref. Harga" collapsed={sidebarCollapsed} />
 
@@ -273,7 +273,7 @@ export function Sidebar() {
                             <div className="flex gap-1">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <div className="flex-1">
+                                        <div className="flex-1" id="tour-store-profile">
                                             <StoreProfileDialog compact />
                                         </div>
                                     </TooltipTrigger>
@@ -471,7 +471,7 @@ function usePendingOrders() {
 }
 
 // NavItem with badge indicator for pending orders
-function NavItemWithBadge({ to, icon: Icon, label, tab, collapsed, className }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean; className?: string }) {
+function NavItemWithBadge({ to, icon: Icon, label, tab, collapsed, className, id }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean; className?: string; id?: string }) {
     const location = useLocation();
     const pendingCount = usePendingOrders();
 
@@ -488,6 +488,7 @@ function NavItemWithBadge({ to, icon: Icon, label, tab, collapsed, className }: 
     const content = (
         <NavLink
             to={tab ? `${to}?tab=${tab}` : to}
+            id={id}
             preventScrollReset
             className={cn(
                 'flex items-center gap-3 font-mono uppercase font-bold text-xs px-4 py-2.5 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10 relative',
@@ -535,7 +536,7 @@ function NavItemWithBadge({ to, icon: Icon, label, tab, collapsed, className }: 
     return content;
 }
 
-function NavItem({ to, icon: Icon, label, tab, collapsed, className }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean; className?: string }) {
+function NavItem({ to, icon: Icon, label, tab, collapsed, className, id }: { to: string; icon: any; label: string; tab?: string; collapsed: boolean; className?: string; id?: string }) {
     const location = useLocation();
 
     const isActive = () => {
@@ -551,6 +552,7 @@ function NavItem({ to, icon: Icon, label, tab, collapsed, className }: { to: str
     const content = (
         <NavLink
             to={tab ? `${to}?tab=${tab}` : to}
+            id={id}
             preventScrollReset
             className={cn(
                 'flex items-center gap-3 font-mono uppercase font-bold text-xs px-4 py-2.5 border-l-4 border-transparent transition-all duration-200 w-full text-left hover:bg-brand-orange/10',

@@ -12,6 +12,7 @@ import { useWarungStore } from '@/lib/store-supabase';
 interface SessionContextType {
     showReLoginModal: () => void;
     isSessionValid: boolean;
+    isModalOpen: boolean;
     lastActivity: number;
     refreshSession: () => Promise<boolean>;
 }
@@ -240,7 +241,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <SessionContext.Provider value={{ showReLoginModal, isSessionValid, lastActivity, refreshSession }}>
+        <SessionContext.Provider value={{ showReLoginModal, isSessionValid, isModalOpen, lastActivity, refreshSession }}>
             {children}
 
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

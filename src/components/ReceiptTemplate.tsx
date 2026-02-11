@@ -1,8 +1,10 @@
 import { useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { Sale } from '@shared/types';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { cn } from '@/lib/utils';
 
 interface ReceiptTemplateProps {
   sale: Sale;
@@ -80,7 +82,8 @@ export function handlePrintReceipt() {
 }
 
 // Generate PDF from receipt element
-export async function generateReceiptPDF(receiptElementId: string = 'receipt-print-area'): Promise<Blob | null> {
+// Generate PDF from receipt element
+export async function generateReceiptPDF(receiptElementId: string = 'receipt-preview-area'): Promise<jsPDF | null> {
   const element = document.getElementById(receiptElementId);
   if (!element) {
     toast.error('Struk tidak ditemukan');
@@ -123,7 +126,7 @@ export async function generateReceiptPDF(receiptElementId: string = 'receipt-pri
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
     toast.dismiss('pdf-loading');
-    return pdf.output('blob');
+    return pdf;
   } catch (error) {
     toast.dismiss('pdf-loading');
     toast.error('Gagal membuat PDF');
@@ -131,6 +134,8 @@ export async function generateReceiptPDF(receiptElementId: string = 'receipt-pri
     return null;
   }
 }
+
+
 
 // Detect if device is mobile
 function isMobileDevice(): boolean {
@@ -197,9 +202,10 @@ export async function handleWhatsAppShare(
   if (isMobileDevice() && canShareFiles()) {
     try {
       // Generate PDF for mobile share
-      const pdfBlob = await generateReceiptPDF();
-      if (pdfBlob) {
-        const fileName = `Struk_${storeName.replace(/\s+/g, '_')}_${sale.id.slice(-6).toUpperCase()}.pdf`;
+      const pdf = await generateReceiptPDF();
+      if (pdf) {
+        const pdfBlob = pdf.output('blob');
+        const fileName = `Struk_${storeName.replace(/[^a-zA-Z0-9]/g, '_')}_${sale.id.slice(-6).toUpperCase()}.pdf`;
         const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
         if (navigator.canShare({ files: [pdfFile] })) {
@@ -225,10 +231,14 @@ export async function handleWhatsAppShare(
   // On desktop/fallback, download the PDF so user can attach it manually
   if (!isMobile || !canShareFiles()) {
     try {
-      const pdfBlob = await generateReceiptPDF();
-      if (pdfBlob) {
-        const fileName = `Struk_${storeName.replace(/\s+/g, '_')}_${sale.id.slice(-6).toUpperCase()}.pdf`;
-        const url = URL.createObjectURL(pdfBlob);
+      const pdf = await generateReceiptPDF();
+      if (pdf) {
+        const safeName = storeName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const fileName = `struk_${safeName}_${sale.id.slice(-6)}.pdf`;
+
+        // Manual blob download to ensure filename is respected
+        const blob = pdf.output('blob');
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = fileName;
@@ -236,6 +246,7 @@ export async function handleWhatsAppShare(
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+
         toast.success('PDF Struk berhasil diunduh');
       }
     } catch (e) {
@@ -258,123 +269,171 @@ export async function handleWhatsAppShare(
   toast.success('Membuka WhatsApp...');
 }
 
-export function ReceiptTemplate({
+const ReceiptContent = ({
   sale,
   storeName,
   storeAddress,
   storePhone,
   storeLogo,
-  onClose,
-}: ReceiptTemplateProps) {
-  const receiptRef = useRef<HTMLDivElement>(null);
-
+  id,
+  className
+}: ReceiptTemplateProps & { id?: string; className?: string }) => {
   return (
-    <div className="flex flex-col items-center">
-      {/* Receipt Content - Shown when printing */}
-      <div
-        ref={receiptRef}
-        id="receipt-print-area"
-        className="bg-white p-3 border-2 border-dashed border-gray-300 print:border-none print:p-0 mx-auto"
-        style={{ width: '280px', maxWidth: '100%' }} // Fixed width ~72mm at 96dpi
-      >
-        {/* Header */}
-        <div className="text-center mb-4">
-          {storeLogo ? (
-            <img src={storeLogo} alt={storeName} className="h-12 w-auto mx-auto mb-2 object-contain" />
-          ) : null}
-          <h2 className="font-bold text-lg uppercase">{storeName}</h2>
-          {storeAddress && <p className="text-xs text-gray-600">{storeAddress}</p>}
-          {storePhone && <p className="text-xs text-gray-600">📞 {storePhone}</p>}
+    <div
+      id={id}
+      className={cn(
+        "bg-white p-3 border-2 border-dashed border-gray-300 w-[280px] max-w-full print:w-full print:max-w-[80mm] print:mx-auto print:border-none print:p-0",
+        className
+      )}
+    >
+      {/* Header */}
+      <div className="text-center mb-4">
+        {storeLogo ? (
+          <img src={storeLogo} alt={storeName} className="h-12 w-auto mx-auto mb-2 object-contain" />
+        ) : null}
+        <h2 className="font-bold text-lg uppercase">{storeName}</h2>
+        {storeAddress && <p className="text-xs text-gray-600">{storeAddress}</p>}
+        {storePhone && <p className="text-xs text-gray-600">📞 {storePhone}</p>}
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-dashed border-gray-400 my-2" />
+
+      {/* Transaction Info */}
+      <div className="text-xs font-mono mb-2">
+        <div className="flex justify-between">
+          <span>Tanggal:</span>
+          <span>{formatDate(sale.createdAt)}</span>
         </div>
-
-        {/* Separator */}
-        <div className="border-t border-dashed border-gray-400 my-2" />
-
-        {/* Transaction Info */}
-        <div className="text-xs font-mono mb-2">
-          <div className="flex justify-between">
-            <span>Tanggal:</span>
-            <span>{formatDate(sale.createdAt)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>No. Transaksi:</span>
-            <span>#{sale.id.slice(-6).toUpperCase()}</span>
-          </div>
-        </div>
-
-        {/* Separator */}
-        <div className="border-t border-dashed border-gray-400 my-2" />
-
-        {/* Items */}
-        <div className="space-y-1 text-xs font-mono">
-          {sale.items.map((item, index) => (
-            <div key={index}>
-              <div className="font-bold">{item.productName}</div>
-              <div className="flex justify-between text-gray-600">
-                <span>
-                  {item.quantity} x {formatCurrency(item.price)}
-                </span>
-                <span>{formatCurrency(item.price * item.quantity)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Separator */}
-        <div className="border-t border-dashed border-gray-400 my-2" />
-
-        {/* Total */}
-        <div className="flex justify-between font-bold text-sm font-mono">
-          <span>TOTAL</span>
-          <span>{formatCurrency(sale.total)}</span>
-        </div>
-
-        {/* Separator */}
-        <div className="border-t border-dashed border-gray-400 my-2" />
-
-        {/* Customer Info */}
-        {(sale.customerName || sale.customerPhone || sale.customerAddress) && (
-          <>
-            <div className="text-xs font-mono space-y-0.5">
-              {sale.customerName && (
-                <div className="flex justify-between">
-                  <span>Pembeli:</span>
-                  <span>{sale.customerName}</span>
-                </div>
-              )}
-              {sale.customerPhone && (
-                <div className="flex justify-between">
-                  <span>HP:</span>
-                  <span>{sale.customerPhone}</span>
-                </div>
-              )}
-              {sale.customerAddress && (
-                <div className="flex justify-between">
-                  <span>Alamat:</span>
-                  <span className="text-right max-w-[60%]">{sale.customerAddress}</span>
-                </div>
-              )}
-            </div>
-            <div className="border-t border-dashed border-gray-400 my-2" />
-          </>
-        )}
-
-        {/* Notes */}
-        {sale.notes && (
-          <>
-            <div className="text-xs font-mono italic text-gray-600">
-              Catatan: {sale.notes}
-            </div>
-            <div className="border-t border-dashed border-gray-400 my-2" />
-          </>
-        )}
-
-        {/* Footer */}
-        <div className="text-center text-xs font-mono text-gray-600 mt-4">
-          <p className="font-bold">Terima kasih!</p>
-          <p>Sampai jumpa kembali</p>
+        <div className="flex justify-between">
+          <span>No. Transaksi:</span>
+          <span>#{sale.id.slice(-6).toUpperCase()}</span>
         </div>
       </div>
+
+      {/* Separator */}
+      <div className="border-t border-dashed border-gray-400 my-2" />
+
+      {/* Items */}
+      <div className="space-y-1 text-xs font-mono">
+        {sale.items.map((item, index) => (
+          <div key={index}>
+            <div className="font-bold">{item.productName}</div>
+            <div className="flex justify-between text-gray-600">
+              <span>
+                {item.quantity} x {formatCurrency(item.price)}
+              </span>
+              <span>{formatCurrency(item.price * item.quantity)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-dashed border-gray-400 my-2" />
+
+      {/* Total */}
+      <div className="flex justify-between font-bold text-sm font-mono">
+        <span>TOTAL</span>
+        <span>{formatCurrency(sale.total)}</span>
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-dashed border-gray-400 my-2" />
+
+      {/* Customer Info */}
+      {(sale.customerName || sale.customerPhone || sale.customerAddress) && (
+        <>
+          <div className="text-xs font-mono space-y-0.5">
+            {sale.customerName && (
+              <div className="flex justify-between">
+                <span>Pembeli:</span>
+                <span>{sale.customerName}</span>
+              </div>
+            )}
+            {sale.customerPhone && (
+              <div className="flex justify-between">
+                <span>HP:</span>
+                <span>{sale.customerPhone}</span>
+              </div>
+            )}
+            {sale.customerAddress && (
+              <div className="flex justify-between">
+                <span>Alamat:</span>
+                <span className="text-right max-w-[60%]">{sale.customerAddress}</span>
+              </div>
+            )}
+          </div>
+          <div className="border-t border-dashed border-gray-400 my-2" />
+        </>
+      )}
+
+      {/* Notes */}
+      {sale.notes && (
+        <>
+          <div className="text-xs font-mono italic text-gray-600">
+            Catatan: {sale.notes}
+          </div>
+          <div className="border-t border-dashed border-gray-400 my-2" />
+        </>
+      )}
+
+      {/* Footer */}
+      <div className="text-center text-xs font-mono text-gray-600 mt-4">
+        <p className="font-bold">Terima kasih!</p>
+        <p>Sampai jumpa kembali</p>
+      </div>
+    </div>
+  );
+};
+
+export function ReceiptTemplate(props: ReceiptTemplateProps) {
+  return (
+    <div className="flex flex-col items-center">
+      <style>{`
+        @media print {
+          @page {
+            size: auto; 
+            margin: 0mm;
+          }
+          body {
+            visibility: hidden;
+            height: auto;
+          }
+          /* Hide everything */
+          body * {
+            visibility: hidden;
+          }
+          /* Show receipt portal content only */
+          #receipt-print-area, #receipt-print-area * {
+            visibility: visible;
+          }
+          #receipt-print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: auto;
+            margin: 0;
+            padding: 5mm; 
+            border: none;
+            background: white;
+          }
+        }
+      `}</style>
+
+      {/* Screen Version - Hidden on Print */}
+      <div className="print:hidden">
+        <ReceiptContent {...props} id="receipt-preview-area" className="mx-auto" />
+      </div>
+
+      {/* Print Version - Portal to Body - Visible only on Print */}
+      {createPortal(
+        <div className="hidden print:block">
+          <ReceiptContent {...props} id="receipt-print-area" />
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

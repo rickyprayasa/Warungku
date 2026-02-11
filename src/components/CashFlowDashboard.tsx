@@ -1,4 +1,5 @@
 import { useWarungStore } from "@/lib/store";
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { TrendingUp, TrendingDown, Scale, ArrowRight, ArrowLeft, MoreVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Calendar, Filter, X } from "lucide-react";
@@ -26,7 +27,7 @@ interface Transaction {
   details: Sale | Purchase;
 }
 
-export function CashFlowDashboard() {
+export function CashFlowDashboard({ isActive }: { isActive?: boolean }) {
   const sales = useWarungStore((state) => state.sales);
   const purchases = useWarungStore((state) => state.purchases);
   const isLoading = useWarungStore((state) => state.isLoading);
@@ -313,14 +314,38 @@ export function CashFlowDashboard() {
     );
   }
 
+  const cashFlowTourSteps = [
+    {
+      element: '#tour-cashflow-kpi',
+      popover: {
+        title: 'Ringkasan Kas',
+        description: 'Lihat total uang masuk, uang keluar, dan arus kas bersih toko Anda.',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
+      element: '#tour-cashflow-filter',
+      popover: {
+        title: 'Filter Laporan',
+        description: 'Filter laporan arus kas berdasarkan periode waktu tertentu.',
+        side: 'bottom',
+        align: 'start'
+      }
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h3 className="text-2xl font-display font-bold text-brand-black mb-2">Laporan Arus Kas</h3>
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-2xl font-display font-bold text-brand-black">Laporan Arus Kas</h3>
+          <OnboardingTour tourId="cashflow-page-tour" steps={cashFlowTourSteps} loading={isLoading} isActive={isActive} />
+        </div>
         <p className="font-mono text-sm text-muted-foreground">Analisis pergerakan uang masuk dan keluar.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6" id="tour-cashflow-kpi">
         {kpiData.map((kpi, index) => (
           <Card key={index} className="border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white relative overflow-hidden">
             <div className={`absolute top-0 right-0 p-2 ${kpi.bgColor} border-l-2 border-b-2 border-brand-black`}>
@@ -338,7 +363,7 @@ export function CashFlowDashboard() {
 
       {/* Filter Section */}
       <div className="border-2 border-brand-black bg-white p-4 rounded-lg">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3" id="tour-cashflow-filter">
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-brand-black" />
             <h4 className="text-lg font-display font-bold text-brand-black">Filter Tanggal</h4>

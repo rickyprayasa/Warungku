@@ -288,22 +288,18 @@ export function AdminUsersPage() {
 
         setIsDeleting(user.user_id);
         try {
-            // Delete user cascade (assuming backend handles deletion for user ID)
-            // Passing first store ID if required by legacy RPC logic, but user ID is key
-            const { data, error } = await (supabase.rpc as any)('admin_delete_user_and_store', {
-                p_user_id: user.user_id,
-                p_store_id: user.stores[0]?.id // Fallback
-            });
+            // Delete all stores manually since RPC is missing/broken
+            // This will cascade delete most data
+            const deletePromises = user.stores.map(store =>
+                supabase.from('stores').delete().eq('id', store.id)
+            );
 
-            console.log('Delete result:', { data, error });
+            await Promise.all(deletePromises);
 
-            if (error) throw error;
+            // Note: We cannot delete from auth.users from client-side without Service Role
+            // But deleting the stores removes the "Application Data" for this user.
 
-            if (!data || (data as any).success !== true) {
-                throw new Error((data as any)?.message || 'Failed to delete user');
-            }
-
-            toast.success(`User ${user.email} berhasil dihapus`);
+            toast.success(`Data toko untuk user ${user.email} berhasil dihapus`);
             refetchUsers();
         } catch (error: any) {
             console.error('Error deleting user:', error);
@@ -378,10 +374,13 @@ export function AdminUsersPage() {
     };
 
     const filteredUsers = useMemo(() => {
-        if (!searchQuery && !filterPlan) return users;
+        // Filter out super admin
+        let result = users.filter(u => u.email !== 'admin@rsquareidea.my.id');
+
+        if (!searchQuery && !filterPlan) return result;
 
         const query = searchQuery.toLowerCase();
-        return users.filter(
+        return result.filter(
             (u) =>
                 u.email?.toLowerCase().includes(query) ||
                 u.stores.some(s =>

@@ -1,4 +1,5 @@
 import { useWarungStore } from "@/lib/store";
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Landmark, PiggyBank, FileText, Percent, Wallet, Download } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -10,7 +11,7 @@ import { exportToCSV } from "@/lib/csv-export";
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { CardGridSkeleton, FormSkeleton } from '@/components/ui/skeleton';
-export function FinanceDashboard() {
+export function FinanceDashboard({ isActive }: { isActive?: boolean }) {
   const { sales, initialBalance, setInitialBalance, purchases, isLoading } = useWarungStore(
     useShallow((state) => ({
       sales: state.sales,
@@ -81,6 +82,36 @@ export function FinanceDashboard() {
     ];
     exportToCSV(dataToExport, 'financial_summary_report');
   };
+
+  const financeTourSteps = [
+    {
+      element: '#tour-finance-summary',
+      popover: {
+        title: 'Ringkasan Keuangan',
+        description: 'Pantau HPP, laba bersih, dan margin keuntungan warung Anda secara real-time.',
+        side: 'bottom',
+        align: 'center'
+      }
+    },
+    {
+      element: '#tour-finance-balance',
+      popover: {
+        title: 'Saldo Awal',
+        description: 'Atur saldo awal kas untuk memulai perhitungan arus kas harian.',
+        side: 'top',
+        align: 'start'
+      }
+    },
+    {
+      element: '#tour-finance-export',
+      popover: {
+        title: 'Ekspor Laporan',
+        description: 'Unduh laporan keuangan lengkap untuk pembukuan bulanan.',
+        side: 'bottom',
+        align: 'end'
+      }
+    }
+  ];
   const kpiData = [
     { title: "Pendapatan Kotor", value: formatCurrency(grossRevenue), icon: PiggyBank },
     { title: "HPP", value: formatCurrency(cogs), icon: FileText },
@@ -105,16 +136,19 @@ export function FinanceDashboard() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
-        <div>
-          <h3 className="text-2xl font-display font-bold text-brand-black">Laporan Keuangan</h3>
-          <p className="font-mono text-sm text-muted-foreground">Ringkasan kesehatan finansial warung Anda.</p>
+        <div className="flex items-center gap-2">
+          <div>
+            <h3 className="text-2xl font-display font-bold text-brand-black">Laporan Keuangan</h3>
+            <p className="font-mono text-sm text-muted-foreground">Ringkasan kesehatan finansial warung Anda.</p>
+          </div>
+          <OnboardingTour tourId="finance-page-tour" steps={financeTourSteps} loading={isLoading} isActive={isActive} />
         </div>
-        <Button onClick={handleExport} variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
+        <Button id="tour-finance-export" onClick={handleExport} variant="outline" className="text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-11">
           <Download className="w-4 h-4 mr-2" />
           Ekspor Laporan
         </Button>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8" id="tour-finance-summary">
         {kpiData.map((kpi, index) => (
           <Card key={index} className="rounded-none border-2 border-brand-black shadow-hard">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2 p-3 md:p-6">
@@ -155,7 +189,7 @@ export function FinanceDashboard() {
             <CardTitle className="font-display text-xl font-bold">Atur Saldo Awal</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" id="tour-finance-balance">
               <Input
                 type="number"
                 placeholder="Masukkan saldo awal"

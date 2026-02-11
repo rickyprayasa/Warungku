@@ -216,9 +216,10 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedProducts.map((product) => (
+            {paginatedProducts.map((product, index) => (
               <TableRow
                 key={product.id}
+                id={`tour-product-row-${index}`}
                 className="border-b-2 border-brand-black last:border-b-0 cursor-pointer hover:bg-brand-orange/10 transition-colors"
                 onClick={(e) => {
                   // Only open detail if not clicking on buttons or switch

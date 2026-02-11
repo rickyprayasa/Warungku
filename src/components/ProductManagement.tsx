@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useWarungStore } from '@/lib/store';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import { ProductDataTable } from '@/components/ProductDataTable';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Package, AlertTriangle, XCircle, Layers, ArrowUpDown, Settings2 } from 'lucide-react';
@@ -25,7 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export type StockMethod = 'FIFO' | 'LIFO';
 
-export function ProductManagement() {
+export function ProductManagement({ isActive }: { isActive?: boolean }) {
   const { user } = useAuth();
   const products = useWarungStore((state) => state.products);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
@@ -67,8 +68,37 @@ export function ProductManagement() {
     </Card>
   );
 
+  const productTourSteps = useMemo(() => {
+    const steps = [
+      {
+        element: '#tour-new-product-btn',
+        popover: {
+          title: 'Tambah Produk',
+          description: 'Mulai dengan menambahkan produk baru ke inventaris Anda di sini.',
+          side: 'bottom',
+          align: 'end'
+        }
+      }
+    ];
+
+    if (products.length > 0) {
+      steps.push({
+        element: '#tour-product-row-0',
+        popover: {
+          title: 'Detail Produk',
+          description: 'Klik pada baris produk untuk melihat detail lengkap, riwayat stok, dan batch.',
+          side: 'top',
+          align: 'start'
+        }
+      });
+    }
+
+    return steps;
+  }, [products.length]);
+
   return (
     <div className="space-y-8">
+
 
 
       {/* Header Section */}
@@ -82,7 +112,8 @@ export function ProductManagement() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto">
+        <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto items-center">
+          <OnboardingTour tourId="product-page-tour" steps={productTourSteps} loading={isLoading} isActive={isActive} />
           <div className="flex items-center gap-2 bg-brand-black/5 p-1 pr-2 border-2 border-brand-black rounded-lg w-full sm:w-auto">
             <div className="bg-brand-black text-brand-white p-2 rounded-md">
               <Settings2 className="w-4 h-4" />
@@ -103,7 +134,7 @@ export function ProductManagement() {
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-lg font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-brand-black hover:text-brand-white hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-full min-h-[3.5rem] w-full sm:w-auto px-6">
+              <Button id="tour-new-product-btn" className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-lg font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-brand-black hover:text-brand-white hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-full min-h-[3.5rem] w-full sm:w-auto px-6">
                 <PlusCircle className="w-5 h-5 mr-2" />
                 Produk Baru
               </Button>

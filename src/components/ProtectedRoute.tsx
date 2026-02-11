@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSession } from '@/components/SessionProvider';
 import { Navigate, useLocation } from 'react-router-dom';
 
 interface ProtectedRouteProps {
@@ -9,6 +10,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, loading, store, refreshStore } = useAuth();
+  const { isModalOpen } = useSession(); // Access session expiration modal state
   const fetchInitialBalance = useWarungStore((state) => state.fetchInitialBalance);
   const fetchStoreProfile = useWarungStore((state) => state.fetchStoreProfile);
   const fetchOpnameMode = useWarungStore((state) => state.fetchOpnameMode);
@@ -38,13 +40,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-orange"></div>
+      <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-orange"></div>
+        <p className="mt-4 font-mono font-bold text-brand-black animate-pulse">Memuat data...</p>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
+  // If session expired (modal open), keep showing children (behind modal) instead of redirecting
+  if (!isAuthenticated && !isModalOpen) {
     return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   }
 

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ReconciliationTerpadu } from '@/components/ReconciliationTerpadu';
+import { OnboardingTour } from '@/components/OnboardingTour';
 import type { CashEntry, Product } from '@shared/types';
 import { CardGridSkeleton, FormSkeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 type OpnameMode = 'display' | 'retail' | 'terpadu';
 
-export function OpnamePage() {
+export function OpnamePage({ isActive }: { isActive?: boolean }) {
     const sales = useWarungStore((state) => state.sales);
     const purchases = useWarungStore((state) => state.purchases);
     const products = useWarungStore((state) => state.products);
@@ -24,16 +25,16 @@ export function OpnamePage() {
     const fetchSales = useWarungStore((state) => state.fetchSales);
     const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
     const fetchProducts = useWarungStore((state) => state.fetchProducts);
-    
+
     const [actualCash, setActualCash] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const opnameMode = useWarungStore((state) => state.opnameMode);
-    
+
     // Cash Entry state (for Display mode)
     const [dailyCashAmount, setDailyCashAmount] = useState<string>('');
     const [cashEntries, setCashEntries] = useState<CashEntry[]>([]);
     const [showHistory, setShowHistory] = useState(false);
-    
+
     // Stock Opname state (for Retail mode)
     const [stockCounts, setStockCounts] = useState<Record<string, number>>({});
     const [searchQuery, setSearchQuery] = useState('');
@@ -43,28 +44,28 @@ export function OpnamePage() {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [showOnlyUncounted, setShowOnlyUncounted] = useState(false);
     const inputRefs = useRef<Record<string, HTMLInputElement>>({});
-    
+
     useEffect(() => {
         fetchSales();
         fetchPurchases();
         fetchProducts();
         loadCashEntries();
     }, [fetchSales, fetchPurchases, fetchProducts]);
-    
+
     const loadCashEntries = () => {
         const stored = localStorage.getItem('cashEntries');
         if (stored) {
             setCashEntries(JSON.parse(stored));
         }
     };
-    
+
     const saveCashEntry = () => {
         const amount = parseFloat(dailyCashAmount);
         if (!amount || amount <= 0) {
             toast.error('Masukkan jumlah uang yang valid.');
             return;
         }
-        
+
         const today = new Date().toISOString().split('T')[0];
         const newEntry: CashEntry = {
             id: crypto.randomUUID(),
@@ -72,27 +73,27 @@ export function OpnamePage() {
             date: today,
             createdAt: Date.now(),
         };
-        
+
         const updated = [newEntry, ...cashEntries];
         setCashEntries(updated);
         localStorage.setItem('cashEntries', JSON.stringify(updated));
-        
+
         setDailyCashAmount('');
         toast.success(`Cash entry Rp ${amount.toLocaleString('id-ID')} tersimpan!`);
     };
-    
+
     // Calculate expected cash from transactions
     const expectedCash = initialBalance +
         sales.reduce((sum, sale) => sum + sale.total, 0) -
         purchases.reduce((sum, purchase) => sum + purchase.totalCost, 0);
-    
+
     const actualCashNum = parseFloat(actualCash) || 0;
     const difference = actualCashNum - expectedCash;
     const hasDifference = Math.abs(difference) > 0.01;
-    
+
     // Calculate total from cash entries
     const totalCashEntries = cashEntries.reduce((sum, entry) => sum + entry.amount, 0);
-    
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -100,17 +101,17 @@ export function OpnamePage() {
             minimumFractionDigits: 0,
         }).format(value);
     };
-    
+
     const formatDate = (timestamp: number) => {
         return new Date(timestamp).toLocaleDateString('id-ID', {
             day: '2-digit',
             month: 'short',
         });
     };
-    
+
     // Get unique categories
     const categories = ['all', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
-    
+
     // Stock opname helpers
     const filteredProducts = products.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,33 +120,33 @@ export function OpnamePage() {
         const matchesUncounted = !showOnlyUncounted || stockCounts[p.id] === undefined;
         return matchesSearch && matchesCategory && matchesUncounted;
     });
-    
+
     const getStockDifference = (product: Product) => {
         const counted = stockCounts[product.id];
         if (counted === undefined) return null;
         return counted - product.totalStock;
     };
-    
+
     const productsWithDifference = products.filter(p => {
         const diff = getStockDifference(p);
         return diff !== null && diff !== 0;
     });
-    
+
     const totalCounted = Object.keys(stockCounts).length;
-    
+
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
     const paginatedProducts = filteredProducts.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
-    
+
     const handleStockCountChange = (productId: string, value: string) => {
         const num = parseInt(value) || 0;
         setStockCounts(prev => ({
             ...prev,
             [productId]: num
         }));
-        
+
         // Auto-focus next input
         const productIndex = paginatedProducts.findIndex(p => p.id === productId);
         if (productIndex < paginatedProducts.length - 1) {
@@ -155,7 +156,7 @@ export function OpnamePage() {
             }
         }
     };
-    
+
     const handleKeyDown = (e: React.KeyboardEvent, productId: string) => {
         if (e.key === 'Enter') {
             const productIndex = paginatedProducts.findIndex(p => p.id === productId);
@@ -167,21 +168,21 @@ export function OpnamePage() {
             }
         }
     };
-    
+
     const handleCashReconciliation = async () => {
         if (!actualCash || actualCashNum <= 0) {
             toast.error('Masukkan jumlah uang yang valid.');
             return;
         }
-        
+
         if (!hasDifference) {
             toast.success('Uang sudah sesuai! Tidak perlu penyesuaian.');
             return;
         }
-        
+
         try {
             setIsSubmitting(true);
-            
+
             const adjustmentSale = {
                 items: [{
                     productId: 'ADJUSTMENT',
@@ -190,7 +191,7 @@ export function OpnamePage() {
                     price: difference,
                 }],
             };
-            
+
             await fetch('/api/sales', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -199,11 +200,11 @@ export function OpnamePage() {
                     saleType: 'adjustment'
                 }),
             });
-            
+
             toast.success('Rekonsiliasi kas berhasil!');
             setActualCash('');
             await fetchSales();
-            
+
         } catch (error) {
             console.error(error);
             toast.error('Gagal menyimpan rekonsiliasi.');
@@ -211,28 +212,28 @@ export function OpnamePage() {
             setIsSubmitting(false);
         }
     };
-    
+
     const handleStockReconciliation = async () => {
         if (productsWithDifference.length === 0) {
             toast.info('Tidak ada selisih stok yang perlu disesuaikan.');
             return;
         }
-        
+
         const confirmed = window.confirm(
             `KONFIRMASI PENYESUAIAN STOK\n\n` +
             `${productsWithDifference.length} produk akan disesuaikan.\n\n` +
             `Lanjutkan?`
         );
-        
+
         if (!confirmed) return;
-        
+
         try {
             setIsSubmitting(true);
-            
+
             for (const product of productsWithDifference) {
                 const newStock = stockCounts[product.id];
                 if (newStock === undefined) continue;
-                
+
                 // Adjust stock to counted value
                 await fetch(`/api/products/${product.id}/adjust-stock`, {
                     method: 'POST',
@@ -244,11 +245,11 @@ export function OpnamePage() {
                     }),
                 });
             }
-            
+
             toast.success(`${productsWithDifference.length} produk berhasil disesuaikan!`);
             setStockCounts({});
             await fetchProducts();
-            
+
         } catch (error) {
             console.error(error);
             toast.error('Gagal menyimpan penyesuaian stok.');
@@ -256,12 +257,12 @@ export function OpnamePage() {
             setIsSubmitting(false);
         }
     };
-    
+
     // Show Terpadu mode
     if (opnameMode === 'terpadu') {
         return <ReconciliationTerpadu />;
     }
-    
+
     if (isLoading) {
         return (
             <div className="space-y-4">
@@ -271,26 +272,69 @@ export function OpnamePage() {
             </div>
         );
     }
-    
+
+    const opnameTourSteps = opnameMode === 'display' ? [
+        {
+            element: '#tour-opname-tabs',
+            popover: {
+                title: 'Tab Rekonsiliasi',
+                description: 'Gunakan tab ini untuk beralih antara input uang, melihat data sistem, dan hasil selisih.',
+                side: 'bottom',
+                align: 'start'
+            }
+        },
+        {
+            element: '#tour-opname-cash-input',
+            popover: {
+                title: 'Input Uang',
+                description: 'Masukkan jumlah uang tunai yang ada di laci kasir saat ini.',
+                side: 'bottom',
+                align: 'center'
+            }
+        }
+    ] : [
+        {
+            element: '#tour-opname-search',
+            popover: {
+                title: 'Cari Produk',
+                description: 'Cari produk yang ingin dihitung stok fisiknya.',
+                side: 'bottom',
+                align: 'start'
+            }
+        },
+        {
+            element: '#tour-opname-system-toggle',
+            popover: {
+                title: 'Tampil/Sembunyi Sistem',
+                description: 'Sembunyikan stok sistem agar perhitungan fisik lebih objektif (blind count).',
+                side: 'bottom',
+                align: 'center'
+            }
+        }
+    ];
+
     return (
         <div className="space-y-4 pb-32 md:pb-4">
             {/* Header - Compact */}
             <div className="sticky top-0 bg-white z-10 pb-2 border-b-2 border-brand-black">
-                <h3 className="text-xl md:text-2xl font-display font-bold text-brand-black">
-                    {opnameMode === 'display' ? 'Rekonsiliasi Kas' : 'Hitung Stok Fisik'}
-                </h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xl md:text-2xl font-display font-bold text-brand-black">
+                        {opnameMode === 'display' ? 'Rekonsiliasi Kas' : 'Hitung Stok Fisik'}
+                    </h3>
+                    <OnboardingTour tourId={`opname-${opnameMode}-tour`} steps={opnameTourSteps} loading={isLoading} isActive={isActive} />
+                </div>
             </div>
-            
+
             {/* DISPLAY MODE - Cash Reconciliation */}
             {opnameMode === 'display' && (
                 <div className="space-y-4">
                     <Tabs defaultValue="input" className="w-full">
-                        <TabsList className="grid grid-cols-3 w-full h-10 mb-3">
+                        <TabsList className="grid grid-cols-3 w-full h-10 mb-3" id="tour-opname-tabs">
                             <TabsTrigger value="input" className="font-mono text-xs font-bold">Input Uang</TabsTrigger>
                             <TabsTrigger value="system" className="font-mono text-xs font-bold">Sistem</TabsTrigger>
                             <TabsTrigger value="result" className="font-mono text-xs font-bold">Hasil</TabsTrigger>
                         </TabsList>
-                        
+
                         <TabsContent value="input" className="space-y-3">
                             <Card className="border-2 border-brand-black bg-blue-50">
                                 <CardHeader className="pb-2 px-3 pt-3">
@@ -299,7 +343,7 @@ export function OpnamePage() {
                                         Input Uang Harian
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="px-3 pb-3 space-y-2">
+                                <CardContent className="px-3 pb-3 space-y-2" id="tour-opname-cash-input">
                                     <div className="flex gap-2">
                                         <Input
                                             type="number"
@@ -317,7 +361,7 @@ export function OpnamePage() {
                                             Simpan
                                         </Button>
                                     </div>
-                                    
+
                                     <div className="flex justify-between items-center py-2 bg-blue-100 px-3 border-2 border-brand-black">
                                         <span className="text-xs font-mono font-bold">Total: {formatCurrency(totalCashEntries)}</span>
                                         <Button
@@ -329,7 +373,7 @@ export function OpnamePage() {
                                             {showHistory ? 'Tutup' : 'Riwayat'}
                                         </Button>
                                     </div>
-                                    
+
                                     {showHistory && (
                                         <div className="max-h-32 overflow-y-auto border-2 border-brand-black bg-white">
                                             {cashEntries.map((entry) => (
@@ -345,7 +389,7 @@ export function OpnamePage() {
                                 </CardContent>
                             </Card>
                         </TabsContent>
-                        
+
                         <TabsContent value="system" className="space-y-3">
                             <Card className="border-2 border-brand-black">
                                 <CardHeader className="pb-2 px-3 pt-3">
@@ -386,7 +430,7 @@ export function OpnamePage() {
                                 </CardContent>
                             </Card>
                         </TabsContent>
-                        
+
                         <TabsContent value="result" className="space-y-3">
                             <Card className={cn(
                                 "border-2 border-brand-black",
@@ -406,7 +450,7 @@ export function OpnamePage() {
                                         placeholder="0"
                                         className="border-2 border-brand-black rounded-none font-mono text-base h-10"
                                     />
-                                    
+
                                     {actualCashNum > 0 && (
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="p-2 bg-white border-2 border-brand-black">
@@ -421,7 +465,7 @@ export function OpnamePage() {
                                             </div>
                                         </div>
                                     )}
-                                    
+
                                     {actualCashNum > 0 && hasDifference && (
                                         <div className={cn("p-3 border-2 border-brand-black text-center", hasDifference ? (difference > 0 ? "bg-green-100" : "bg-red-100") : "bg-gray-100")}>
                                             <p className="text-xs font-mono font-bold mb-1 uppercase">Selisih</p>
@@ -430,7 +474,7 @@ export function OpnamePage() {
                                             </p>
                                         </div>
                                     )}
-                                    
+
                                     {hasDifference && actualCashNum > 0 && (
                                         <Button
                                             onClick={handleCashReconciliation}
@@ -447,14 +491,14 @@ export function OpnamePage() {
                     </Tabs>
                 </div>
             )}
-            
+
             {/* RETAIL MODE - Stock Reconciliation */}
             {opnameMode === 'retail' && (
                 <div className="space-y-3">
                     {/* Quick Filters - Sticky */}
                     <div className="sticky top-[65px] md:top-[65px] bg-white z-10 space-y-2 pb-2 border-b-2 border-brand-black">
                         <div className="flex gap-2">
-                            <div className="flex-1 relative">
+                            <div className="flex-1 relative" id="tour-opname-search">
                                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                 <Input
                                     type="text"
@@ -476,10 +520,11 @@ export function OpnamePage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
                             <div className="flex gap-2">
                                 <Button
+                                    id="tour-opname-system-toggle"
                                     onClick={() => setShowSystemStock(!showSystemStock)}
                                     variant="ghost"
                                     className="h-7 px-2 text-xs font-mono"
@@ -496,7 +541,7 @@ export function OpnamePage() {
                                     {showOnlyUncounted ? 'Semua' : 'Belum'}
                                 </Button>
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
                                 <span className="text-xs font-mono">
                                     <span className="text-muted-foreground">{totalCounted}/{products.length}</span>
@@ -510,13 +555,13 @@ export function OpnamePage() {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Compact Product List */}
                     <div className="md:hidden space-y-1">
                         {paginatedProducts.map((product, index) => {
                             const diff = getStockDifference(product);
                             const hasDiff = diff !== null && diff !== 0;
-                            
+
                             return (
                                 <div
                                     key={product.id}
@@ -531,14 +576,14 @@ export function OpnamePage() {
                                         <p className="font-bold text-xs truncate">{product.name}</p>
                                         <p className="text-[10px] text-muted-foreground font-mono truncate">{product.category}</p>
                                     </div>
-                                    
+
                                     {showSystemStock && (
                                         <div className="text-center w-10">
                                             <p className="text-[10px] text-muted-foreground font-mono leading-tight">Sistem</p>
                                             <p className="font-mono font-bold text-xs">{product.totalStock}</p>
                                         </div>
                                     )}
-                                    
+
                                     <div className="w-20">
                                         <Input
                                             type="number"
@@ -556,7 +601,7 @@ export function OpnamePage() {
                                             )}
                                         />
                                     </div>
-                                    
+
                                     <div className="w-8 text-center">
                                         {diff !== null ? (
                                             <div className={cn("font-mono font-bold text-xs", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : "text-gray-500")}>
@@ -569,64 +614,70 @@ export function OpnamePage() {
                                 </div>
                             );
                         })}
-                        
+
                         {filteredProducts.length === 0 && (
                             <div className="text-center py-8 text-muted-foreground font-mono text-sm">
                                 Tidak ada produk ditemukan
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Desktop Table */}
                     <div className="hidden md:block border-2 border-brand-black bg-white rounded overflow-hidden">
-                        <table className="w-full">
+                        <table className="w-full table-fixed">
                             <thead className="bg-brand-orange/20">
                                 <tr>
-                                    <th className="text-left p-2 font-mono font-bold text-xs">Produk</th>
+                                    <th className="text-left p-3 font-mono font-bold text-xs uppercase w-[50%]">Produk</th>
                                     {showSystemStock && (
-                                        <th className="text-center p-2 font-mono font-bold text-xs">Sistem</th>
+                                        <th className="text-center p-3 font-mono font-bold text-xs uppercase w-[12%]">Sistem</th>
                                     )}
-                                    <th className="text-center p-2 font-mono font-bold text-xs">Fisik</th>
-                                    <th className="text-center p-2 font-mono font-bold text-xs">Selisih</th>
+                                    <th className="text-center p-3 font-mono font-bold text-xs uppercase w-[20%]">Fisik</th>
+                                    <th className="text-center p-3 font-mono font-bold text-xs uppercase w-[18%]">Selisih</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginatedProducts.map((product) => {
                                     const diff = getStockDifference(product);
                                     const hasDiff = diff !== null && diff !== 0;
-                                    
+
                                     return (
-                                        <tr key={product.id} className={cn("border-b border-brand-black/10", hasDiff ? (diff! > 0 ? "bg-green-50" : "bg-red-50") : "")}>
-                                            <td className="p-2">
+                                        <tr key={product.id} className={cn("border-b border-brand-black/10 hover:bg-brand-orange/5 transition-colors", hasDiff ? (diff! > 0 ? "bg-green-50" : "bg-red-50") : "")}>
+                                            <td className="p-3">
                                                 <p className="font-mono font-bold text-sm truncate">{product.name}</p>
                                                 <p className="text-xs text-muted-foreground font-mono">{product.category}</p>
                                             </td>
                                             {showSystemStock && (
-                                                <td className="p-2 text-center">
-                                                    <span className="font-mono font-bold text-sm">{product.totalStock}</span>
+                                                <td className="p-3 text-center">
+                                                    <span className="font-mono font-bold text-sm bg-gray-100 px-3 py-1 rounded border border-gray-300">{product.totalStock}</span>
                                                 </td>
                                             )}
-                                            <td className="p-2">
-                                                <Input
-                                                    type="number"
-                                                    ref={(el) => el ? inputRefs.current[product.id] = el : null}
-                                                    value={stockCounts[product.id] ?? ''}
-                                                    onChange={(e) => handleStockCountChange(product.id, e.target.value)}
-                                                    onKeyDown={(e) => handleKeyDown(e, product.id)}
-                                                    onWheel={(e) => e.currentTarget.blur()}
-                                                    placeholder="Fisik"
-                                                    className={cn(
-                                                        "border-2 rounded-none font-mono text-center h-8 text-sm w-20",
-                                                        hasDiff
-                                                            ? diff! > 0 ? "border-green-500" : "border-red-500"
-                                                            : "border-brand-black"
-                                                    )}
-                                                />
+                                            <td className="p-3">
+                                                <div className="flex justify-center">
+                                                    <Input
+                                                        type="number"
+                                                        ref={(el) => el ? inputRefs.current[product.id] = el : null}
+                                                        value={stockCounts[product.id] ?? ''}
+                                                        onChange={(e) => handleStockCountChange(product.id, e.target.value)}
+                                                        onKeyDown={(e) => handleKeyDown(e, product.id)}
+                                                        onWheel={(e) => e.currentTarget.blur()}
+                                                        placeholder="0"
+                                                        className={cn(
+                                                            "border-2 rounded-none font-mono text-center h-9 text-sm w-24",
+                                                            hasDiff
+                                                                ? diff! > 0 ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"
+                                                                : stockCounts[product.id] !== undefined ? "border-blue-500 bg-blue-50" : "border-brand-black"
+                                                        )}
+                                                    />
+                                                </div>
                                             </td>
-                                            <td className="p-2 text-center">
+                                            <td className="p-3 text-center">
                                                 {diff !== null ? (
-                                                    <div className={cn("font-mono font-bold text-sm", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : "text-gray-500")}>
-                                                        {diff === 0 ? <Check className="w-4 h-4 mx-auto" /> : diff}
+                                                    <div className={cn("font-mono font-bold text-sm inline-flex items-center gap-1", diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : "text-gray-500")}>
+                                                        {diff === 0 ? <Check className="w-4 h-4" /> : (
+                                                            <span className={cn("px-2 py-0.5 rounded", diff > 0 ? "bg-green-100" : "bg-red-100")}>
+                                                                {diff > 0 ? '+' : ''}{diff}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <span className="text-muted-foreground text-xs">-</span>
@@ -638,7 +689,7 @@ export function OpnamePage() {
                             </tbody>
                         </table>
                     </div>
-                    
+
                     {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="flex items-center justify-between py-2 border-t-2 border-brand-black">
@@ -682,7 +733,7 @@ export function OpnamePage() {
                     )}
                 </div>
             )}
-            
+
             {/* Sticky Bottom Action Bar - Mobile Only */}
             <div className="fixed bottom-16 left-0 right-0 bg-white border-t-2 border-brand-black p-3 md:hidden z-20 shadow-lg">
                 {opnameMode === 'retail' && productsWithDifference.length > 0 && (

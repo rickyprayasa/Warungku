@@ -91,6 +91,7 @@ const AdminDuitkuSettingsPage = lazy(() => import('@/pages/admin/AdminDuitkuSett
 const AdminSubscriptionPlansPage = lazy(() => import('@/pages/admin/AdminSubscriptionPlansPage').then(m => ({ default: m.AdminSubscriptionPlansPage })));
 const AdminAuditLogPage = lazy(() => import('@/pages/admin/AdminAuditLogPage').then(m => ({ default: m.AdminAuditLogPage })));
 const AdminTestimonialsPage = lazy(() => import('@/pages/admin/AdminTestimonialsPage').then(m => ({ default: m.AdminTestimonialsPage })));
+const AdminStoresPage = lazy(() => import('@/pages/admin/AdminStoresPage').then(m => ({ default: m.AdminStoresPage })));
 
 const UpgradePlanPage = lazy(() => import('@/pages/UpgradePlanPage').then(m => ({ default: m.UpgradePlanPage })));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
@@ -313,6 +314,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <AdminDashboardPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "stores",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <AdminStoresPage />
           </Suspense>
         ),
       },

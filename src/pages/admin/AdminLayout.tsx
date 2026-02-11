@@ -16,7 +16,8 @@ import {
     CreditCard,
     Package,
     FileText,
-    MessageCircle
+    MessageCircle,
+    TrendingUp
 } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -32,6 +33,7 @@ export function AdminLayout() {
 
     const navItems = [
         { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+        { to: '/admin/stores', icon: TrendingUp, label: 'Store Performance' },
         { to: '/admin/users', icon: Users, label: 'Users' },
         { to: '/admin/subscription-plans', icon: Package, label: 'Subscription Plans' },
         { to: '/admin/transactions', icon: Banknote, label: 'Transactions' },
