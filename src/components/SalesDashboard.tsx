@@ -64,6 +64,25 @@ export function SalesDashboard({ isActive }: { isActive?: boolean }) {
         side: 'bottom',
         align: 'end'
       }
+    },
+    {
+      element: '#tour-sales-list',
+      popover: {
+        title: 'Daftar Penjualan',
+        description: 'Lihat riwayat lengkap transaksi penjualan Anda di sini. Klik baris untuk melihat detail.',
+        side: 'top',
+        align: 'center'
+      },
+      onHighlightStarted: (element: Element) => {
+        if (element instanceof HTMLElement) {
+          element.style.pointerEvents = 'none';
+        }
+      },
+      onDeselected: (element: Element) => {
+        if (element instanceof HTMLElement) {
+          element.style.pointerEvents = 'auto';
+        }
+      }
     }
   ];
 
@@ -139,7 +158,9 @@ export function SalesDashboard({ isActive }: { isActive?: boolean }) {
           </div>
         </div>
       ) : (
-        <SalesDataTable sales={filteredSales} />
+        <div id="tour-sales-list">
+          <SalesDataTable sales={filteredSales} />
+        </div>
       )}
 
       <UpgradeDialog

@@ -1177,14 +1177,16 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                   Catat Pembelian
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
-                <DialogHeader>
+              <DialogContent className="sm:max-w-[95vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-none border-4 border-brand-black bg-brand-white flex flex-col">
+                <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
                   <DialogTitle className="font-display text-2xl font-bold">Catat Pembelian Baru</DialogTitle>
                 </DialogHeader>
-                <PurchaseForm onSuccess={() => {
-                  setPurchaseDialogOpen(false);
-                  fetchPurchases();
-                }} />
+                <div className="p-6 flex-1 overflow-y-auto">
+                  <PurchaseForm onSuccess={() => {
+                    setPurchaseDialogOpen(false);
+                    fetchPurchases();
+                  }} />
+                </div>
               </DialogContent>
             </Dialog>
 
@@ -1195,11 +1197,13 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                   Tambah Produk
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
-                <DialogHeader>
+              <DialogContent className="sm:max-w-[95vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-none border-4 border-brand-black bg-brand-white flex flex-col">
+                <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
                   <DialogTitle className="font-display text-2xl font-bold">Tambah Produk Baru</DialogTitle>
                 </DialogHeader>
-                <ProductForm onSuccess={() => setProductDialogOpen(false)} />
+                <div className="p-6 flex-1 overflow-y-auto">
+                  <ProductForm onSuccess={() => setProductDialogOpen(false)} />
+                </div>
               </DialogContent>
             </Dialog>
           </div>
