@@ -718,6 +718,19 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
             </CardHeader>
             <CardContent className="px-3 pb-3">
               {(() => {
+                /* Calculate 30-day velocity for fallback for all products */
+                const now = new Date();
+                const vStart = new Date();
+                vStart.setDate(now.getDate() - 30);
+                const vStartTs = vStart.getTime();
+
+                const validSales = Array.isArray(sales) ? sales : [];
+                const vSales = validSales.filter(s => s.createdAt >= vStartTs);
+                const vMap = new Map(); // productId -> totalQty
+                vSales.forEach(s => s.items.forEach(i => {
+                  vMap.set(i.productId, (vMap.get(i.productId) || 0) + (Number(i.quantity) || 0));
+                }));
+
                 const productMap = new Map();
 
                 metrics.topProducts.forEach((item, idx) => {
@@ -786,6 +799,20 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                       velocity: item.velocity || 0,
                       dsl: item.dsl || null
                     });
+                  }
+                });
+
+                // Fill missing velocity/DSL using 30-day fallback
+                productMap.forEach((val) => {
+                  if (!val.velocity || val.velocity === 0) {
+                    const pid = val.product.id;
+                    if (pid) {
+                      const qty30 = vMap.get(pid) || 0;
+                      if (qty30 > 0) {
+                        val.velocity = qty30 / 30;
+                        val.dsl = (val.product.totalStock || 0) / val.velocity;
+                      }
+                    }
                   }
                 });
 
@@ -894,7 +921,7 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                               <div>
                                 <p className="text-muted-foreground font-mono">Habis Dalam</p>
                                 <p className={`font-bold font-mono text-sm ${(item.product?.totalStock || 0) === 0 ? 'text-red-600' : (item.dsl !== null && item.dsl < 7) ? 'text-red-600' : ''}`}>
-                                  {(item.product?.totalStock || 0) === 0 ? 'HABIS' : (item.dsl !== null) ? `${item.dsl.toFixed(1)}h` : 'N/A'}
+                                  {(item.product?.totalStock || 0) === 0 ? 'HABIS' : (item.dsl !== null && item.dsl !== Infinity) ? `${item.dsl.toFixed(1)}h` : '-'}
                                 </p>
                               </div>
                               <div>
@@ -1019,7 +1046,7 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                                 <td className="p-2 text-center">
                                   <p className={`font-bold font-mono text-sm ${(item.product?.totalStock || 0) === 0 ? 'text-red-600' : (item.dsl !== null && item.dsl < 7) ? 'text-red-600' : ''
                                     }`}>
-                                    {(item.product?.totalStock || 0) === 0 ? 'HABIS' : (item.dsl !== null && item.dsl !== undefined) ? `${item.dsl.toFixed(1)} hari` : 'N/A'}
+                                    {(item.product?.totalStock || 0) === 0 ? 'HABIS' : (item.dsl !== null && item.dsl !== undefined && item.dsl !== Infinity) ? `${item.dsl.toFixed(1)} hari` : '-'}
                                   </p>
                                 </td>
                                 <td className="p-2 text-center">
@@ -1045,6 +1072,82 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
         </TabsContent>
 
         <TabsContent value="sales" className="space-y-4">
+          {/* Sales Analytics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Card 1: Penjualan Hari Ini */}
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-brand-orange/10">
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="text-xs font-mono font-bold flex items-center justify-between uppercase tracking-wider">
+                  Penjualan Hari Ini
+                  <Banknote className="h-4 w-4 text-brand-black" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                <div className="text-xl md:text-2xl font-bold font-mono text-brand-black">
+                  {formatCurrency(metrics.todayRevenue)}
+                </div>
+                <p className="text-[10px] text-muted-foreground font-mono mt-1">
+                  {metrics.todaySalesCount} transaksi berhasil
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Card 2: Produk Terlaris Hari Ini */}
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-blue-50">
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="text-xs font-mono font-bold flex items-center justify-between uppercase tracking-wider">
+                  Terlaris Hari Ini
+                  <Crown className="h-4 w-4 text-blue-600" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                {metrics.todayBestSeller ? (
+                  <>
+                    <div className="text-sm md:text-base font-bold font-display leading-tight line-clamp-1" title={metrics.todayBestSeller.name}>
+                      {metrics.todayBestSeller.name}
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {metrics.todayBestSeller.quantity} terjual
+                      </p>
+                      <p className="text-[10px] font-bold font-mono">
+                        {formatCurrency(metrics.todayBestSeller.revenue)}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-sm text-muted-foreground font-mono italic py-1">
+                    Belum ada penjualan
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Card 3: Performa Penjualan */}
+            <Card className="border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="text-xs font-mono font-bold flex items-center justify-between uppercase tracking-wider">
+                  Performa vs Kemarin
+                  {metrics.salesGrowthDay >= 0 ? (
+                    <TrendingUp className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-600" />
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                <div className={`text-xl md:text-2xl font-bold font-mono ${metrics.salesGrowthDay >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {metrics.salesGrowthDay >= 0 ? '+' : ''}{metrics.salesGrowthDay.toFixed(1)}%
+                </div>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-[10px] text-muted-foreground font-mono">
+                    Kemarin: {formatCurrency(metrics.yesterdayRevenue)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Quick Action Buttons */}
           <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2">
             <Dialog open={isSaleDialogOpen} onOpenChange={setSaleDialogOpen}>
