@@ -7,6 +7,7 @@ import { PlusCircle, Package, AlertTriangle, XCircle, Layers, ArrowUpDown, Setti
 import {
   Dialog,
   DialogContent,
+
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -37,9 +38,8 @@ export function ProductManagement({ isActive }: { isActive?: boolean }) {
     return (localStorage.getItem('stockMethod') as StockMethod) || 'FIFO';
   });
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  // Products are preloaded by DashboardPage.preloadDashboardData
+
 
   const handleStockMethodChange = (value: StockMethod) => {
     setStockMethod(value);
@@ -139,11 +139,13 @@ export function ProductManagement({ isActive }: { isActive?: boolean }) {
                 Produk Baru
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto rounded-lg border-2 border-brand-black bg-brand-white">
-              <DialogHeader>
+            <DialogContent className="sm:max-w-[95vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-lg border-2 border-brand-black bg-brand-white flex flex-col">
+              <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
                 <DialogTitle className="font-display text-2xl font-bold">Tambah Produk Baru</DialogTitle>
               </DialogHeader>
-              <ProductForm onSuccess={() => setCreateDialogOpen(false)} />
+              <div className="p-6 flex-1 overflow-y-auto">
+                <ProductForm onSuccess={() => setCreateDialogOpen(false)} />
+              </div>
             </DialogContent>
           </Dialog>
         </div>

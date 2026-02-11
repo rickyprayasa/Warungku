@@ -469,42 +469,9 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       fetchProducts: async () => {
         const storeId = get().currentStoreId;
-        console.log('[FETCH PRODUCTS] Called with storeId:', storeId);
         if (!storeId) {
-          console.log('[FETCH PRODUCTS] No storeId, skipping fetch (keeping existing data)');
-          // CRITICAL FIX: Don't clear products when storeId is null
-          // This prevents data from disappearing during store transitions
+          // Don't clear products when storeId is null
           return;
-        }
-
-        // Check if we are in public store mode FIRST (no async needed)
-        // Public store URLs are anything that's NOT in internalRoutes
-        const pathname = window.location.pathname;
-        const internalRoutes = ['/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
-        const isInternalRoute = pathname === '/' || internalRoutes.some(route => pathname.startsWith(route)) || pathname.startsWith('/admin');
-        const isPublicStore = !isInternalRoute;
-
-        console.log('[FETCH PRODUCTS] Route check:', { pathname, isInternalRoute, isPublicStore });
-
-        // SECURITY: Only check membership for internal (dashboard) routes
-        // For public store, RLS already protects modification, reading is allowed
-        if (!isPublicStore) {
-          // Lazy auth check - only when needed for internal routes
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { data: member } = await supabase
-              .from('store_members')
-              .select('id')
-              .eq('store_id', storeId)
-              .eq('user_id', user.id)
-              .maybeSingle();
-
-            if (!member) {
-              console.error('[SECURITY ALERT] User attempted to fetch products from a store they are not a member of!', { userId: user.id, storeId });
-              set({ products: [] });
-              return;
-            }
-          }
         }
 
         try {
@@ -526,11 +493,6 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
           const mappedProducts = (data || []).map(toProduct);
 
-          // Debug: Log products with their stock
-          const debugProducts = mappedProducts.filter(p => p.name.toLowerCase().includes('good day'));
-          if (debugProducts.length > 0) {
-            console.log('[FETCH PRODUCTS] Good Day products:', debugProducts.map(p => ({ name: p.name, totalStock: p.totalStock })));
-          }
 
           // Sort: In-stock first (newest to oldest), then Out-of-stock (newest to oldest)
           mappedProducts.sort((a, b) => {
@@ -544,7 +506,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             return b.createdAt - a.createdAt;
           });
 
-          console.log('[FETCH PRODUCTS] Loaded', mappedProducts.length, 'products');
+
           set({ products: mappedProducts });
         } catch (error) {
           console.error('[FETCH PRODUCTS ERROR]', error);
@@ -2213,11 +2175,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
     })),
     {
-      name: 'warung-storage-v4',
+      name: 'warung-storage-v5',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         products: state.products,
+        sales: state.sales,
+        suppliers: state.suppliers,
         storeProfile: state.storeProfile,
         opnameMode: state.opnameMode,
         currentStoreId: state.currentStoreId,
@@ -2228,6 +2192,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
 // Clear old localStorage data on load to prevent stale state
 if (typeof window !== 'undefined') {
+  localStorage.removeItem('warung-storage-v4');
   localStorage.removeItem('warung-storage-v3');
   localStorage.removeItem('warung-storage-v2');
   localStorage.removeItem('warung-storage');

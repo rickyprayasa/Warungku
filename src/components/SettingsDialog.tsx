@@ -279,11 +279,20 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
 
     const handleClearCache = () => {
         try {
+            // Preserve tour history
+            const tourKeys = Object.keys(localStorage).filter(key => key.startsWith('has-seen-'));
+            const tourData = tourKeys.map(key => ({ key, value: localStorage.getItem(key) }));
+
             // Clear localStorage
             localStorage.clear();
 
             // Clear sessionStorage
             sessionStorage.clear();
+
+            // Restore tour history
+            tourData.forEach(({ key, value }) => {
+                if (value) localStorage.setItem(key, value);
+            });
 
             toast.success('✅ Cache berhasil dibersihkan!');
 

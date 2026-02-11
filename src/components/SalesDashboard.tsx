@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { OnboardingTour } from '@/components/OnboardingTour';
 import { Button } from '@/components/ui/button';
@@ -25,9 +25,8 @@ export function SalesDashboard({ isActive }: { isActive?: boolean }) {
   });
 
   const { limits } = usePlan();
-  useEffect(() => {
-    fetchSales();
-  }, [fetchSales]);
+  // Sales are preloaded by DashboardPage.preloadDashboardData
+
   const filteredSales = useMemo(() => {
     if (!dateRange?.from) return sales;
     const from = dateRange.from;

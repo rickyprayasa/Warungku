@@ -45,7 +45,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const updateProduct = useWarungStore((state) => state.updateProduct);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const adjustStock = useWarungStore((state) => state.adjustStock);
-  
+
   const { canAddProduct, productLimitReached, limits } = usePlan();
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
 
@@ -55,9 +55,9 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const [promoPrice, setPromoPrice] = useState(product?.promoPrice || 0);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [isImageCaptureOpen, setIsImageCaptureOpen] = useState(false);
-  
+
   const isEditing = !!product;
-  
+
   // Check if can add new product (editing is always allowed)
   const canSubmit = isEditing || canAddProduct;
 
@@ -97,7 +97,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
       setUpgradeDialogOpen(true);
       return;
     }
-    
+
     try {
       const productData = {
         ...values,
@@ -172,63 +172,101 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Nama Produk</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Contoh: Kopi Susu Gula Aren" {...field} className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* LEFT COLUMN - MAIN INFO (7/12) */}
+          <div className="md:col-span-7 space-y-6">
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Card: Basic Info */}
+            <div className="p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-brand-black"></div>
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg bg-brand-orange border-2 border-brand-black flex items-center justify-center text-sm">01</span>
+                Informasi Produk
+              </h3>
+
               <FormField
                 control={form.control}
-                name="category"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Kategori</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold">
-                          <SelectValue placeholder="Pilih kategori" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="rounded-lg border-2 border-brand-black font-bold">
-                        {CATEGORIES.map((category) => (
-                          <SelectItem key={category} value={category}>{category}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Nama Produk</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contoh: Kopi Susu Gula Aren" {...field} className="h-12 rounded-lg border-2 border-brand-black shadow-sm focus:shadow-hard transition-all font-bold text-lg" />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Kategori</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-11 rounded-lg border-2 border-brand-black shadow-sm focus:shadow-hard transition-all font-bold">
+                            <SelectValue placeholder="Pilih kategori" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="rounded-lg border-2 border-brand-black font-bold">
+                          {CATEGORIES.map((category) => (
+                            <SelectItem key={category} value={category}>{category}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="minStockLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Min. Stok</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) => field.onChange(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="h-11 rounded-lg border-2 border-brand-black shadow-sm focus:shadow-hard transition-all font-bold font-mono text-center"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Card: Inventory & Pricing */}
+            <div className="p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-brand-black"></div>
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg bg-green-400 border-2 border-brand-black flex items-center justify-center text-sm">02</span>
+                Harga & Stok
+              </h3>
+
+              {/* Selling Price */}
               <FormField
                 control={form.control}
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga Jual</FormLabel>
+                    <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga Jual (Customer)</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Rp</span>
+                      <div className="relative group">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground group-focus-within:text-brand-orange transition-colors">Rp</span>
                         <Input
                           type="number"
                           placeholder="0"
                           {...field}
                           onChange={e => field.onChange(Number(e.target.value))}
-                          className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
+                          className="h-14 pl-10 rounded-lg border-2 border-brand-black shadow-sm focus:shadow-hard transition-all font-bold font-mono text-2xl text-brand-orange"
                         />
                       </div>
                     </FormControl>
@@ -236,197 +274,134 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                   </FormItem>
                 )}
               />
-            </div>
 
-            <FormField
-              control={form.control}
-              name="minStockLevel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Minimum Stok Alert</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Math.max(0, parseInt(e.target.value) || 0))}
-                      className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs font-mono">
-                    Alert jika stok turun dibawah angka ini (default: 10)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Stock & Cost Fields (Available for both New and Edit) */}
-            <div className="p-5 bg-muted/50 rounded-lg border-2 border-dashed border-brand-black/20 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <FormLabel className="font-bold font-mono uppercase text-sm text-brand-black">
-                    {isEditing ? "Atur Stok & Harga" : "Stok Awal (Opsional)"}
+              {/* Stock & Cost logic */}
+              <div className="p-4 bg-gray-50 border-2 border-dashed border-brand-black/30 rounded-lg space-y-4">
+                <div className="flex items-center justify-between">
+                  <FormLabel className="font-bold font-mono uppercase text-xs text-brand-black">
+                    {isEditing ? "Update Stok & Modal" : "Stok Awal & Modal"}
                   </FormLabel>
-                  <FormDescription className="text-xs font-mono mt-1">
-                    {isEditing ? "Update stok dan harga beli" : "Input stok yang sudah ada di gudang"}
-                  </FormDescription>
+                  <div className="text-[10px] font-mono font-bold bg-white border border-brand-black px-2 py-0.5 rounded-full">
+                    {costInputMode === 'perUnit' ? 'Mode: Per Unit' : 'Mode: Per Paket'}
+                  </div>
                 </div>
-              </div>
 
-              <FormItem>
-                <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Jumlah Stok</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={initialStock || ''}
-                    onChange={(e) => setInitialStock(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
-                  />
-                </FormControl>
-                <FormDescription className="text-xs font-mono">Kosongkan jika 0</FormDescription>
-              </FormItem>
-
-              {/* Cost Input Mode Toggle */}
-              <div className="space-y-3">
-                <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Cara Input Harga Beli</FormLabel>
-                <div className="flex items-center border-2 border-brand-black bg-brand-white rounded-lg overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setCostInputMode('perUnit')}
-                    className={`flex-1 px-4 py-2.5 font-bold font-mono text-sm transition-all ${costInputMode === 'perUnit'
-                      ? 'bg-brand-orange text-brand-black'
-                      : 'bg-white text-muted-foreground hover:bg-brand-orange/10'
-                      }`}
-                  >
-                    Per Unit
-                  </button>
-                  <div className="w-0.5 h-8 bg-brand-black/20" />
-                  <button
-                    type="button"
-                    onClick={() => setCostInputMode('perPackage')}
-                    className={`flex-1 px-4 py-2.5 font-bold font-mono text-sm transition-all ${costInputMode === 'perPackage'
-                      ? 'bg-brand-orange text-brand-black'
-                      : 'bg-white text-muted-foreground hover:bg-brand-orange/10'
-                      }`}
-                  >
-                    Per Paket/Dus
-                  </button>
-                </div>
-              </div>
-
-              {/* Conditional Fields Based on Mode */}
-              {costInputMode === 'perUnit' ? (
-                <FormItem>
-                  <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga Beli (Per Unit)</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Rp</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormItem>
+                    <FormLabel className="font-bold font-mono uppercase text-[10px] text-muted-foreground">Jml Stok</FormLabel>
+                    <FormControl>
                       <Input
                         type="number"
                         min="0"
                         placeholder="0"
-                        value={initialCost || ''}
-                        onChange={(e) => setInitialCost(Math.max(0, parseInt(e.target.value) || 0))}
-                        className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
+                        value={initialStock || ''}
+                        onChange={(e) => setInitialStock(Math.max(0, parseInt(e.target.value) || 0))}
+                        className="h-10 rounded-lg border-2 border-brand-black bg-white focus:shadow-hard transition-all font-bold font-mono"
                       />
-                    </div>
-                  </FormControl>
-                  <FormDescription className="text-xs font-mono">Untuk hitung profit</FormDescription>
-                </FormItem>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
+                    </FormControl>
+                  </FormItem>
+
+                  {costInputMode === 'perUnit' ? (
                     <FormItem>
-                      <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga 1 Paket</FormLabel>
+                      <FormLabel className="font-bold font-mono uppercase text-[10px] text-muted-foreground">Harga Beli / Unit</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Rp</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">Rp</span>
                           <Input
                             type="number"
                             min="0"
-                            placeholder="72000"
-                            value={packagePrice || ''}
-                            onChange={(e) => setPackagePrice(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="pl-9 rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
+                            placeholder="0"
+                            value={initialCost || ''}
+                            onChange={(e) => setInitialCost(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="h-10 pl-8 rounded-lg border-2 border-brand-black bg-white focus:shadow-hard transition-all font-bold font-mono"
                           />
                         </div>
                       </FormControl>
                     </FormItem>
-
+                  ) : (
                     <FormItem>
-                      <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Isi Paket</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="24"
-                          value={packageQuantity || ''}
-                          onChange={(e) => setPackageQuantity(Math.max(1, parseInt(e.target.value) || 0))}
-                          className="rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold font-mono"
-                        />
-                      </FormControl>
+                      <FormLabel className="invisible block font-bold font-mono uppercase text-[10px] text-muted-foreground">Action</FormLabel>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="w-full h-10 border-2 border-dashed border-brand-black/30 text-muted-foreground hover:text-brand-black hover:border-brand-black hover:bg-brand-black/5 font-bold font-mono text-[10px] rounded-lg transition-all"
+                        onClick={() => setCostInputMode('perUnit')}
+                      >
+                        Gunakan Per Unit
+                      </Button>
                     </FormItem>
-                  </div>
-
-                  {/* Auto-calculated Unit Cost Display */}
-                  {packageQuantity > 0 && packagePrice > 0 && (
-                    <div className="bg-brand-orange/20 border-2 border-brand-orange rounded-lg p-3">
-                      <p className="text-xs font-mono font-bold text-muted-foreground mb-1">Harga Per Unit (Otomatis)</p>
-                      <p className="text-2xl font-mono font-black text-brand-black">
-                        Rp {calculatedUnitCost.toLocaleString('id-ID')}
-                      </p>
-                      <p className="text-xs font-mono text-muted-foreground mt-1">
-                        = Rp {packagePrice.toLocaleString('id-ID')} ÷ {packageQuantity} pcs
-                      </p>
-                    </div>
                   )}
                 </div>
-              )}
+
+                {/* Mode Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setCostInputMode(costInputMode === 'perUnit' ? 'perPackage' : 'perUnit')}
+                  className="w-full py-1 text-xs font-mono font-bold text-blue-600 hover:underline text-center"
+                >
+                  {costInputMode === 'perUnit' ? 'Beli stok dalam satuan Paket/Dus?' : 'Kembali ke input per unit'}
+                </button>
+
+                {costInputMode === 'perPackage' && (
+                  <div className="bg-white border-2 border-brand-black p-3 rounded-lg space-y-3 animate-in slide-in-from-top-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold font-mono uppercase">Harga Paket</label>
+                        <Input
+                          type="number"
+                          value={packagePrice || ''}
+                          onChange={(e) => setPackagePrice(Number(e.target.value))}
+                          className="h-9 px-2 text-sm border-2 border-brand-black"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold font-mono uppercase">Isi Paket</label>
+                        <Input
+                          type="number"
+                          value={packageQuantity || ''}
+                          onChange={(e) => setPackageQuantity(Number(e.target.value))}
+                          className="h-9 px-2 text-sm border-2 border-brand-black"
+                        />
+                      </div>
+                    </div>
+                    {packageQuantity > 0 && (
+                      <div className="text-center bg-blue-50 py-1 rounded border border-blue-200">
+                        <p className="text-[10px] font-mono text-muted-foreground">Jatuhnya per unit:</p>
+                        <p className="font-bold text-brand-black font-mono">Rp {calculatedUnitCost.toLocaleString('id-ID')}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
+          {/* RIGHT COLUMN - VISUALS & EXTRAS (5/12) */}
+          <div className="md:col-span-5 space-y-6">
+            {/* Card: Media */}
+            <div className="p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-brand-black"></div>
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg bg-yellow-400 border-2 border-brand-black flex items-center justify-center text-sm">03</span>
+                Foto Produk
+              </h3>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Deskripsi</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Deskripsi singkat produk..."
-                      className="resize-none min-h-[120px] rounded-lg border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all font-bold"
-                      value={description}
-                      onChange={(e) => {
-                        setDescription(e.target.value);
-                        field.onChange(e.target.value);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Image Capture - Moved here from below */}
-            <div className="space-y-2">
-              <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Foto Produk</FormLabel>
-              <div className="border-2 border-dashed border-brand-black/20 rounded-lg bg-brand-black/5 p-4 text-center hover:bg-brand-black/10 transition-colors cursor-pointer" onClick={() => setIsImageCaptureOpen(true)}>
+              <div className="border-2 border-dashed border-brand-black/30 rounded-xl bg-gray-50 p-4 text-center hover:bg-gray-100 transition-colors cursor-pointer group" onClick={() => setIsImageCaptureOpen(true)}>
                 {imagePreview ? (
-                  <div className="relative w-full aspect-video bg-white border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group overflow-hidden">
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <p className="text-white font-bold font-mono uppercase tracking-widest">Ganti Foto</p>
+                  <div className="relative w-full aspect-square bg-white border-2 border-brand-black rounded-lg shadow-sm group-hover:shadow-hard transition-all overflow-hidden">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                      <div className="bg-white px-3 py-1 rounded-full text-xs font-bold border border-brand-black shadow-hard transform translate-y-2 group-hover:translate-y-0 transition-transform">
+                        GANTI FOTO
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="py-8 flex flex-col items-center justify-center text-muted-foreground">
-                    <Camera className="w-12 h-12 mb-2 opacity-50" />
-                    <p className="font-bold font-mono text-sm">Klik untuk ambil foto</p>
+                  <div className="w-full aspect-square flex flex-col items-center justify-center text-muted-foreground border-2 border-transparent">
+                    <div className="w-16 h-16 rounded-full bg-brand-orange/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <Camera className="w-8 h-8 text-brand-orange" />
+                    </div>
+                    <p className="font-bold font-mono text-sm uppercase">Ambil / Upload</p>
                   </div>
                 )}
               </div>
@@ -441,14 +416,38 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
               />
             </div>
 
-            {/* Promo Section */}
-            <div className="border-2 border-brand-black rounded-lg p-4 bg-brand-orange/10 space-y-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <div className="flex items-center justify-between">
+            {/* Card: Description */}
+            <div className="p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-brand-black"></div>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Deskripsi (Opsional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Jelaskan detail produk..."
+                        className="min-h-[100px] rounded-lg border-2 border-brand-black shadow-sm focus:shadow-hard transition-all font-medium resize-none"
+                        value={description}
+                        onChange={(e) => {
+                          setDescription(e.target.value);
+                          field.onChange(e.target.value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Toggles */}
+            <div className="p-4 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-4">
+              {/* Promo Toggle */}
+              <div className="flex items-center justify-between pb-3 border-b border-dashed border-gray-200">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-base font-bold font-display uppercase">Status Promo</FormLabel>
-                  <FormDescription className="font-mono text-xs">
-                    Aktifkan harga coret
-                  </FormDescription>
+                  <FormLabel className="text-sm font-bold font-display uppercase">Status Promo</FormLabel>
                 </div>
                 <Switch
                   checked={isPromo}
@@ -456,89 +455,77 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                   className="data-[state=checked]:bg-brand-orange border-2 border-brand-black"
                 />
               </div>
-
               {isPromo && (
-                <div className="space-y-2">
-                  <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Harga Promo</FormLabel>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Rp</span>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={promoPrice}
-                      onChange={(e) => setPromoPrice(Number(e.target.value))}
-                      className="pl-9 rounded-lg border-2 border-brand-black bg-white font-bold font-mono"
-                    />
-                  </div>
-                  <p className="text-xs font-mono text-brand-orange font-bold">
-                    Harga asli akan dicoret di menu
-                  </p>
+                <div className="animate-in slide-in-from-top-2">
+                  <Input
+                    type="number"
+                    placeholder="Harga Coret (Rp)"
+                    value={promoPrice}
+                    onChange={(e) => setPromoPrice(Number(e.target.value))}
+                    className="h-10 rounded-lg border-2 border-brand-black bg-yellow-50 font-bold font-mono"
+                  />
                 </div>
               )}
-            </div>
 
-            {/* Package/Bundle Section */}
-            <div className="border-2 border-brand-black rounded-lg p-4 bg-blue-50 space-y-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base font-bold font-display uppercase">Paket / Bundle</FormLabel>
-                <FormDescription className="font-mono text-xs">
-                  Jumlah stok yang dikurangi per 1 unit terjual
-                </FormDescription>
-              </div>
-
-              <div className="space-y-2">
-                <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Qty per Unit</FormLabel>
+              {/* Bundle Toggle Logic - Inline */}
+              <div className="space-y-2 pt-1">
+                <div className="flex justify-between items-center">
+                  <FormLabel className="text-sm font-bold font-display uppercase">Qty Per Unit</FormLabel>
+                  <span className="text-xs font-mono font-bold bg-blue-100 px-2 py-0.5 rounded text-blue-800">{qtyPerUnit} PCS</span>
+                </div>
                 <Input
                   type="number"
                   min="1"
-                  placeholder="1"
                   value={qtyPerUnit}
                   onChange={(e) => setQtyPerUnit(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="rounded-lg border-2 border-brand-black bg-white font-bold font-mono"
+                  className="h-10 rounded-lg border-2 border-brand-black font-bold font-mono"
                 />
-                {qtyPerUnit > 1 && (
-                  <p className="text-xs font-mono text-blue-600 font-bold">
-                    1 unit terjual = {qtyPerUnit} pcs dikurangi dari stok
-                  </p>
-                )}
-                {qtyPerUnit === 1 && (
-                  <p className="text-xs font-mono text-muted-foreground">
-                    Default: 1 unit = 1 pcs (produk satuan)
-                  </p>
-                )}
+                <p className="text-[10px] text-muted-foreground">
+                  *Set {'>'} 1 untuk produk bundle (1 Unit mengurangi {qtyPerUnit} stok)
+                </p>
               </div>
             </div>
+
           </div>
         </div>
 
         {/* Product limit warning */}
         {!isEditing && productLimitReached && (
-          <div className="p-4 bg-amber-50 border-2 border-amber-400 rounded-lg">
-            <div className="flex items-center gap-2 text-amber-800">
-              <Lock className="w-5 h-5" />
-              <span className="font-mono text-sm font-bold">
-                Batas {limits.maxProducts} produk tercapai
-              </span>
+          <div className="p-4 bg-amber-50 border-2 border-amber-400 rounded-lg animate-pulse">
+            <div className="flex items-center gap-3">
+              <div className="bg-amber-100 p-2 rounded-full border border-amber-400">
+                <Lock className="w-5 h-5 text-amber-700" />
+              </div>
+              <div>
+                <span className="font-display font-bold text-amber-900 block">
+                  Kuota Habis!
+                </span>
+                <span className="font-mono text-xs text-amber-700">
+                  Upgrade plan untuk menambah produk.
+                </span>
+              </div>
             </div>
-            <p className="text-xs font-mono text-amber-700 mt-1">
-              Upgrade paket untuk menambah lebih banyak produk.
-            </p>
           </div>
         )}
 
-        <Button 
-          type="submit" 
-          className="w-full bg-brand-black text-brand-white hover:bg-brand-black/90 border-2 border-brand-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all h-12 font-bold text-lg uppercase tracking-widest" 
+        <Button
+          type="submit"
+          className="w-full bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-brand-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all h-12 font-bold text-lg uppercase tracking-widest mt-6"
           disabled={isSubmitting || (!isEditing && productLimitReached)}
         >
-          {isSubmitting ? "Menyimpan..." : isEditing ? "Simpan Perubahan" : "Tambah Produk Baru"}
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <div className="w-5 h-5 border-4 border-current border-t-transparent rounded-full animate-spin" />
+              Processing...
+            </span>
+          ) : isEditing ? "Simpan Perubahan" : "Tambah Produk Sekarang"}
         </Button>
       </form>
-      
-      <UpgradeDialog 
-        open={upgradeDialogOpen} 
-        onOpenChange={setUpgradeDialogOpen} 
-        trigger="product_limit" 
+
+      <UpgradeDialog
+        open={upgradeDialogOpen}
+        onOpenChange={setUpgradeDialogOpen}
+        trigger="product_limit"
       />
     </Form >
   );

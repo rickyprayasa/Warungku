@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { OnboardingTour } from '@/components/OnboardingTour';
 import { Button } from '@/components/ui/button';
@@ -20,9 +20,8 @@ export function PurchasesDashboard({ isActive }: { isActive?: boolean }) {
     from: subDays(new Date(), 29),
     to: new Date(),
   });
-  useEffect(() => {
-    fetchPurchases();
-  }, [fetchPurchases]);
+  // Purchases are preloaded by DashboardPage.preloadDashboardData
+
   const filteredPurchases = useMemo(() => {
     if (!dateRange?.from) return purchases;
     const from = dateRange.from;
@@ -92,14 +91,16 @@ export function PurchasesDashboard({ isActive }: { isActive?: boolean }) {
                 Catat Pembelian
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] rounded-none border-4 border-brand-black bg-brand-white max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
+            <DialogContent className="sm:max-w-[95vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-none border-4 border-brand-black bg-brand-white flex flex-col">
+              <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
                 <DialogTitle className="font-display text-2xl font-bold">Catat Pembelian Baru</DialogTitle>
               </DialogHeader>
-              <PurchaseForm onSuccess={() => {
-                setCreateDialogOpen(false);
-                fetchPurchases();
-              }} />
+              <div className="p-6 flex-1 overflow-y-auto">
+                <PurchaseForm onSuccess={() => {
+                  setCreateDialogOpen(false);
+                  fetchPurchases();
+                }} />
+              </div>
             </DialogContent>
           </Dialog>
         </div>

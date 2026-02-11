@@ -26,6 +26,7 @@ import { ProductForm } from './ProductForm';
 import {
   Dialog,
   DialogContent,
+
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -399,11 +400,13 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[95vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-none border-4 border-brand-black bg-brand-white flex flex-col">
+          <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
             <DialogTitle className="font-display text-2xl font-bold">Edit Produk</DialogTitle>
           </DialogHeader>
-          <ProductForm product={selectedProduct} onSuccess={() => setEditDialogOpen(false)} />
+          <div className="p-6 flex-1 overflow-y-auto">
+            <ProductForm product={selectedProduct} onSuccess={() => setEditDialogOpen(false)} />
+          </div>
         </DialogContent>
       </Dialog>
 

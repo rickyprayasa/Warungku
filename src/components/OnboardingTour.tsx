@@ -13,6 +13,29 @@ interface OnboardingTourProps {
     isActive?: boolean;
 }
 
+// Get all known tour IDs to skip them all at once
+const ALL_TOUR_IDS = [
+    'onboarding-tour',
+    'product-page-tour',
+    'sales-page-tour',
+    'purchases-page-tour',
+    'suppliers-page-tour',
+    'cashflow-page-tour',
+    'finance-page-tour',
+    'requests-page-tour',
+    'price-ref-tour',
+    'opname-retail-tour',
+    'opname-display-tour',
+    'opname-terpadu-tour',
+];
+
+/** Mark all known tours as seen */
+function skipAllTours() {
+    ALL_TOUR_IDS.forEach(id => {
+        localStorage.setItem(`has-seen-${id}`, 'true');
+    });
+}
+
 const defaultSteps = [
     {
         element: '#tour-store-profile',
@@ -95,6 +118,23 @@ export function OnboardingTour({ tourId = 'onboarding-tour', steps, runOnce = tr
             prevBtnText: 'Kembali',
             progressText: '{{current}} dari {{total}}',
             steps: tourSteps,
+            popoverClass: 'tour-with-skip',
+            onPopoverRender: (popover: any) => {
+                // Inject a "Skip Semua" button into the popover footer
+                const footerBtns = popover.footerButtons;
+                if (footerBtns) {
+                    const skipBtn = document.createElement('button');
+                    skipBtn.textContent = 'Skip Semua';
+                    skipBtn.className = 'tour-skip-all-btn';
+                    skipBtn.style.cssText = 'background: none; border: 1px solid #999; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; color: #666; margin-right: auto; order: -1;';
+                    skipBtn.addEventListener('click', () => {
+                        skipAllTours();
+                        driverObj.destroy();
+                    });
+                    // Insert as the first button (left side)
+                    footerBtns.insertBefore(skipBtn, footerBtns.firstChild);
+                }
+            },
             onDestroyStarted: () => {
                 localStorage.setItem(storageKey, 'true');
                 driverObj.destroy();

@@ -807,9 +807,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(null);
       setStore(null);
 
-      // Clear ALL storage to prevent data leakage
+      // Clear ALL storage to prevent data leakage, BUT preserve tour history
+      const tourKeys = Object.keys(localStorage).filter(key => key.startsWith('has-seen-'));
+      const tourData = tourKeys.map(key => ({ key, value: localStorage.getItem(key) }));
+
       localStorage.clear();
       sessionStorage.clear();
+
+      // Restore tour history
+      tourData.forEach(({ key, value }) => {
+        if (value) localStorage.setItem(key, value);
+      });
 
       // Clear specific keys just in case
       const keysToRemove = [

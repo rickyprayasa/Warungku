@@ -296,9 +296,47 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
     const startOfMonth = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1)).getTime();
 
     const todaySales = validSales.filter(s => s.createdAt >= startOfToday && s.createdAt <= endOfToday);
+    const yesterdayStart = startOfDay(subDays(now, 1)).getTime();
+    const yesterdayEnd = endOfDay(subDays(now, 1)).getTime();
+    const yesterdaySales = validSales.filter(s => s.createdAt >= yesterdayStart && s.createdAt <= yesterdayEnd);
+
     const monthSales = validSales.filter(s => s.createdAt >= startOfMonth && s.createdAt <= endOfToday);
 
     const todayProfit = todaySales.reduce((sum, s) => sum + (Number(s.profit) || 0), 0);
+    const todayRevenue = todaySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+    const yesterdayRevenue = yesterdaySales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
+
+    // Calculate daily growth (Today vs Yesterday)
+    const salesGrowthDay = yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100 : (todayRevenue > 0 ? 100 : 0);
+
+    // Calculate Today's Best Seller
+    const todayProductMap = new Map<string, { name: string; quantity: number; revenue: number }>();
+    todaySales.forEach((sale) => {
+      if (sale.items && Array.isArray(sale.items)) {
+        sale.items.forEach((item) => {
+          const existing = todayProductMap.get(item.productId);
+          const itemQuantity = Number(item.quantity) || 0;
+          const itemPrice = Number(item.price) || 0;
+
+          if (existing) {
+            existing.quantity += itemQuantity;
+            existing.revenue += (itemPrice * itemQuantity);
+          } else {
+            // Find product name safely
+            const product = validProducts.find((p) => p.id === item.productId);
+            todayProductMap.set(item.productId, {
+              name: product?.name || 'Unknown Product',
+              quantity: itemQuantity,
+              revenue: (itemPrice * itemQuantity)
+            });
+          }
+        });
+      }
+    });
+
+    const todayBestSeller = Array.from(todayProductMap.values())
+      .sort((a, b) => b.quantity - a.quantity)[0] || null;
+
     const thisMonthProfit = monthSales.reduce((sum, s) => sum + (Number(s.profit) || 0), 0);
     const thisMonthRevenue = monthSales.reduce((sum, s) => sum + (Number(s.total) || 0), 0);
     const todaySalesCount = todaySales.length;
@@ -322,6 +360,10 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
       lowStockProducts,
       outOfStockProducts,
       todayProfit,
+      todayRevenue,
+      yesterdayRevenue,
+      salesGrowthDay,
+      todayBestSeller,
       thisMonthProfit,
       thisMonthRevenue,
       todaySalesCount,
@@ -1032,7 +1074,7 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                   Catat Pembelian
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
+              <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
                 <DialogHeader>
                   <DialogTitle className="font-display text-2xl font-bold">Catat Pembelian Baru</DialogTitle>
                 </DialogHeader>
@@ -1050,7 +1092,7 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                   Tambah Produk
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
+              <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-none border-4 border-brand-black bg-brand-white">
                 <DialogHeader>
                   <DialogTitle className="font-display text-2xl font-bold">Tambah Produk Baru</DialogTitle>
                 </DialogHeader>

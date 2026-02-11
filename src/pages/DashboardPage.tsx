@@ -27,14 +27,20 @@ export function DashboardPage() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(true);
   const preloadDashboardData = useWarungStore((state) => state.preloadDashboardData);
+  const currentStoreId = useWarungStore((state) => state.currentStoreId);
 
   const tabContentVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeInOut" } },
   };
 
-  // Preload all dashboard data when the component mounts
+  // Preload all dashboard data when storeId is available
   useEffect(() => {
+    if (!currentStoreId) {
+      // StoreId not ready yet — keep loading state, don't fetch
+      return;
+    }
+
     const loadAllData = async () => {
       try {
         setIsLoading(true);
@@ -47,7 +53,7 @@ export function DashboardPage() {
     };
 
     loadAllData();
-  }, [preloadDashboardData]);
+  }, [preloadDashboardData, currentStoreId]);
 
   // Sync state with URL param
   useEffect(() => {

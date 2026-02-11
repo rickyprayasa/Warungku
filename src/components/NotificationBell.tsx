@@ -27,14 +27,12 @@ export function NotificationBell() {
     const [saleDetailOpen, setSaleDetailOpen] = useState(false);
 
     useEffect(() => {
-        fetchRequests();
-        fetchSales();
         // Load dismissed notifications from localStorage
         const stored = localStorage.getItem('dismissedNotifications');
         if (stored) {
             setDismissedNotifications(new Set(JSON.parse(stored)));
         }
-    }, [fetchRequests, fetchSales]);
+    }, []);
 
     // Realtime subscription for new orders
     useEffect(() => {
@@ -96,14 +94,6 @@ export function NotificationBell() {
         s.status?.toLowerCase() === 'pending' &&
         !dismissedNotifications.has(`order-${s.id}`)
     ).sort((a, b) => new Date(b.saleDate).getTime() - new Date(a.saleDate).getTime());
-
-    // Debug log
-    console.log('[NotificationBell] Sales data:', {
-        totalSales: sales.length,
-        pendingOrders: pendingOrders.length,
-        pendingOrdersData: pendingOrders,
-        allSalesStatus: sales.map(s => ({ id: s.id, status: s.status }))
-    });
 
     const totalNotifications = activeLowStock.length + activeOutOfStock.length + activeLowDSL.length + pendingRequests.length + pendingOrders.length;
 
