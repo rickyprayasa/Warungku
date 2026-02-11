@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collap
 import { LogOut, Menu, X, Share2, Download, MessageCircle, Facebook, Twitter } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { SettingsDialog } from './SettingsDialog';
+import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState } from 'react';
@@ -52,25 +53,34 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-20">
               {/* Logo (Left) */}
-              <Link to="/" className="flex items-center gap-3 relative z-10">
-                {isPublicMode ? (
-                  // In public mode, only show icon on mobile when store name is displayed
-                  storeName ? (
-                    <AnimatedLogo textColor="text-brand-white" hideTextOnMobile />
+              {isAuthenticated && !isPublicMode ? (
+                <StoreProfileDialog trigger={
+                  <div id="mobile-tour-store-profile" className="flex items-center gap-3 relative z-10 cursor-pointer">
+                    {logoUrl ? (
+                      <div className="flex items-center gap-2">
+                        <img src={logoUrl} alt={storeName || 'Store'} className="h-14 w-auto object-contain" />
+                        {storeName && <span className="font-display font-bold text-xl text-brand-black hidden sm:inline">{storeName}</span>}
+                      </div>
+                    ) : storeName ? (
+                      <span className="font-display font-bold text-xl text-brand-black">{storeName}</span>
+                    ) : (
+                      <AnimatedLogo textColor="text-brand-white" />
+                    )}
+                  </div>
+                } />
+              ) : (
+                <Link to="/" id="mobile-tour-store-profile" className="flex items-center gap-3 relative z-10">
+                  {isPublicMode ? (
+                    storeName ? (
+                      <AnimatedLogo textColor="text-brand-white" hideTextOnMobile />
+                    ) : (
+                      <AnimatedLogo textColor="text-brand-white" />
+                    )
                   ) : (
                     <AnimatedLogo textColor="text-brand-white" />
-                  )
-                ) : logoUrl ? (
-                  <div className="flex items-center gap-2">
-                    <img src={logoUrl} alt={storeName || 'Store'} className="h-14 w-auto object-contain" />
-                    {storeName && <span className="font-display font-bold text-xl text-brand-black hidden sm:inline">{storeName}</span>}
-                  </div>
-                ) : storeName ? (
-                  <span className="font-display font-bold text-xl text-brand-black">{storeName}</span>
-                ) : (
-                  <AnimatedLogo textColor="text-brand-white" />
-                )}
-              </Link>
+                  )}
+                </Link>
+              )}
 
               {/* Centered Store Name (Public Mode Only) */}
               {isPublicMode && storeName && (

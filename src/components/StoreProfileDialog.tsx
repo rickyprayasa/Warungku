@@ -20,7 +20,7 @@ const STORE_CATEGORIES = [
     { id: 'Lainnya', label: 'Lainnya', icon: '📦' },
 ];
 
-export function StoreProfileDialog({ iconOnly = false, compact = false }: { iconOnly?: boolean; compact?: boolean }) {
+export function StoreProfileDialog({ iconOnly = false, compact = false, trigger }: { iconOnly?: boolean; compact?: boolean; trigger?: React.ReactNode }) {
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const { updateStoreSlug, storeId, refreshStore } = useAuth();
@@ -171,19 +171,21 @@ export function StoreProfileDialog({ iconOnly = false, compact = false }: { icon
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button
-                    variant="ghost"
-                    size={iconOnly || compact ? "sm" : "default"}
-                    className={iconOnly
-                        ? "hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                        : compact
-                            ? "flex-1 justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                            : "w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                    }
-                >
-                    <Store className="w-4 h-4" style={(iconOnly || compact) ? {} : { marginRight: '0.5rem' }} />
-                    {!iconOnly && !compact && "Profil Toko"}
-                </Button>
+                {trigger || (
+                    <Button
+                        variant="ghost"
+                        size={iconOnly || compact ? "sm" : "default"}
+                        className={iconOnly
+                            ? "hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                            : compact
+                                ? "flex-1 justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                                : "w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                        }
+                    >
+                        <Store className="w-4 h-4" style={(iconOnly || compact) ? {} : { marginRight: '0.5rem' }} />
+                        {!iconOnly && !compact && "Profil Toko"}
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-4xl w-full rounded-none border-4 border-brand-black bg-brand-white p-0 overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="bg-brand-orange p-4 border-b-4 border-brand-black shrink-0">

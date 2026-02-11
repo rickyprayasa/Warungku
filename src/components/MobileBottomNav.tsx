@@ -180,6 +180,7 @@ export function MobileBottomNav() {
                                 return (
                                     <button
                                         key={tab.value}
+                                        id={tab.value === 'analytics' ? 'mobile-tour-dashboard' : `mobile-tour-${tab.value}`}
                                         onClick={() => handleNavigation(tab)}
                                         className="flex flex-col items-center gap-2 p-3 rounded-none border-2 border-brand-black hover:bg-brand-orange active:translate-x-0.5 active:translate-y-0.5 transition-all"
                                     >
@@ -238,6 +239,7 @@ export function MobileBottomNav() {
                         return (
                             <button
                                 key={tab.value}
+                                id={tab.value === 'analytics' ? 'mobile-tour-dashboard' : `mobile-tour-${tab.value}`}
                                 onClick={() => handleTabClick(tab)}
                                 onDoubleClick={() => handleTabDoubleClick(tab.value)}
                                 className={cn(

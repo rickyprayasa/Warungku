@@ -380,12 +380,19 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-brand-black uppercase tracking-wider">Analytics & Report</h1>
-          <p className="text-sm font-mono text-muted-foreground">Analisis performa dengan filter periode</p>
+        <div className="flex flex-row justify-between items-start w-full md:w-auto">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-brand-black uppercase tracking-wider">Analytics & Report</h1>
+            <p className="text-sm font-mono text-muted-foreground">Analisis performa dengan filter periode</p>
+          </div>
+          <div className="md:hidden">
+            <OnboardingTour isActive={isActive} />
+          </div>
         </div>
         <div className="flex flex-row items-center gap-2">
-          <OnboardingTour isActive={isActive} />
+          <div className="hidden md:block">
+            <OnboardingTour isActive={isActive} />
+          </div>
           <div className="flex-1 min-w-0">
             <DateRangePicker date={dateRange} onDateChange={setDateRange} />
           </div>

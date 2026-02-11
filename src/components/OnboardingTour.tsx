@@ -36,78 +36,81 @@ function skipAllTours() {
     });
 }
 
-const defaultSteps = [
-    {
-        element: '#tour-store-profile',
-        popover: {
-            title: 'Profil Toko',
-            description: 'Atur nama, alamat, logo, dan informasi toko Anda di sini.',
-            side: 'right',
-            align: 'start'
+const getDefaultSteps = () => {
+    const isMobile = window.innerWidth < 768;
+    return [
+        {
+            element: isMobile ? '#mobile-tour-store-profile' : '#tour-store-profile',
+            popover: {
+                title: 'Profil Toko',
+                description: 'Atur nama, alamat, logo, dan informasi toko Anda di sini.',
+                side: 'right',
+                align: 'start'
+            }
+        },
+        {
+            element: isMobile ? '#mobile-tour-products' : '#tour-products',
+            popover: {
+                title: 'Manajemen Produk',
+                description: 'Tambahkan dan kelola produk yang Anda jual di sini menu ini.',
+                side: 'right',
+                align: 'start'
+            }
+        },
+        {
+            element: isMobile ? '#mobile-tour-pos' : '#tour-pos',
+            popover: {
+                title: 'Kasir (POS)',
+                description: 'Mulai berjualan dengan fitur kasir digital yang mudah digunakan.',
+                side: 'right',
+                align: 'start'
+            }
+        },
+        {
+            element: isMobile ? '#mobile-tour-dashboard' : '#tour-dashboard',
+            popover: {
+                title: 'Dashboard Utama',
+                description: 'Pantau ringkasan penjualan, keuntungan, dan performa toko Anda.',
+                side: 'right',
+                align: 'start'
+            }
+        },
+        {
+            element: '#tour-add-sale',
+            popover: {
+                title: 'Catat Penjualan',
+                description: 'Cara cepat untuk mencatat transaksi penjualan manual tanpa masuk ke menu POS.',
+                side: 'bottom',
+                align: 'start'
+            }
+        },
+        {
+            element: '#tour-add-purchase',
+            popover: {
+                title: 'Catat Pembelian',
+                description: 'Catat stok masuk atau pembelian barang dari supplier untuk memperbarui inventaris.',
+                side: 'bottom',
+                align: 'start'
+            }
+        },
+        {
+            element: '#tour-add-product',
+            popover: {
+                title: 'Tambah Produk Cepat',
+                description: 'Jalan pintas untuk menambahkan produk baru ke katalog toko Anda.',
+                side: 'bottom',
+                align: 'start'
+            }
         }
-    },
-    {
-        element: '#tour-products',
-        popover: {
-            title: 'Manajemen Produk',
-            description: 'Tambahkan dan kelola produk yang Anda jual di sini menu ini.',
-            side: 'right',
-            align: 'start'
-        }
-    },
-    {
-        element: '#tour-pos',
-        popover: {
-            title: 'Kasir (POS)',
-            description: 'Mulai berjualan dengan fitur kasir digital yang mudah digunakan.',
-            side: 'right',
-            align: 'start'
-        }
-    },
-    {
-        element: '#tour-dashboard',
-        popover: {
-            title: 'Dashboard Utama',
-            description: 'Pantau ringkasan penjualan, keuntungan, dan performa toko Anda.',
-            side: 'right',
-            align: 'start'
-        }
-    },
-    {
-        element: '#tour-add-sale',
-        popover: {
-            title: 'Catat Penjualan',
-            description: 'Cara cepat untuk mencatat transaksi penjualan manual tanpa masuk ke menu POS.',
-            side: 'bottom',
-            align: 'start'
-        }
-    },
-    {
-        element: '#tour-add-purchase',
-        popover: {
-            title: 'Catat Pembelian',
-            description: 'Catat stok masuk atau pembelian barang dari supplier untuk memperbarui inventaris.',
-            side: 'bottom',
-            align: 'start'
-        }
-    },
-    {
-        element: '#tour-add-product',
-        popover: {
-            title: 'Tambah Produk Cepat',
-            description: 'Jalan pintas untuk menambahkan produk baru ke katalog toko Anda.',
-            side: 'bottom',
-            align: 'start'
-        }
-    }
-];
+    ];
+};
 
 export function OnboardingTour({ tourId = 'onboarding-tour', steps, runOnce = true, loading = false, isActive = true }: OnboardingTourProps) {
     const driverRef = useRef<any>(null);
 
     const createDriver = useCallback(() => {
         const storageKey = `has-seen-${tourId}`;
-        const tourSteps = steps || defaultSteps;
+        const tourSteps = steps || getDefaultSteps();
 
         const driverObj = driver({
             showProgress: true,
