@@ -228,27 +228,41 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
                                     onClick={() => addToCart(product)}
                                     disabled={!product.totalStock}
                                     className={cn(
-                                        "hidden md:flex flex-col text-left bg-white border-2 border-brand-black rounded-lg overflow-hidden transition-all hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-hard group",
-                                        !product.totalStock && "opacity-50 cursor-not-allowed hover:translate-x-0 hover:translate-y-0 hover:shadow-none"
+                                        "hidden md:flex flex-col text-left bg-white border-2 border-brand-black rounded-lg overflow-hidden transition-all duration-200 group relative",
+                                        // Hover State: Lift up + Hard Shadow
+                                        "hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[4px_4px_0_0_#1a1a1a]",
+                                        // Active State: Press down + No Shadow + Scale
+                                        "active:translate-x-0 active:translate-y-0 active:shadow-none active:scale-[0.98]",
+                                        !product.totalStock && "opacity-50 cursor-not-allowed hover:translate-x-0 hover:translate-y-0 hover:shadow-none active:scale-100"
                                     )}
                                 >
                                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                                         {product.imageUrl ? (
-                                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-300">
                                                 <Package className="w-8 h-8" />
                                             </div>
                                         )}
+
+                                        {/* Hover Overlay with Add Icon */}
+                                        {product.totalStock > 0 && (
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center backdrop-blur-[2px]">
+                                                <div className="bg-brand-orange text-brand-black w-10 h-10 rounded-full flex items-center justify-center border-2 border-brand-black shadow-hard transform scale-50 group-hover:scale-100 transition-transform duration-200">
+                                                    <Plus className="w-6 h-6 stroke-[3]" />
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="absolute top-2 right-2">
-                                            <Badge variant={product.totalStock ? "default" : "destructive"} className="text-[10px] font-bold shadow-sm">
-                                                {product.totalStock ? product.totalStock : 'Habis'}
+                                            <Badge variant={product.totalStock ? "default" : "destructive"} className="text-[10px] font-bold shadow-sm border border-brand-black font-mono">
+                                                {product.totalStock ? `Stok: ${product.totalStock}` : 'Habis'}
                                             </Badge>
                                         </div>
                                     </div>
                                     <div className="p-3 flex flex-col flex-1 gap-1">
-                                        <h4 className="font-bold text-xs sm:text-sm line-clamp-2 leading-tight">{product.name}</h4>
-                                        <p className="text-brand-orange font-mono font-bold text-xs sm:text-sm mt-auto">
+                                        <h4 className="font-bold text-xs sm:text-sm line-clamp-2 leading-tight group-hover:text-brand-orange transition-colors">{product.name}</h4>
+                                        <p className="text-brand-black font-mono font-bold text-xs sm:text-sm mt-auto">
                                             {formatCurrency(product.price)}
                                         </p>
                                     </div>
@@ -281,43 +295,68 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
                             {fields.map((field, index) => {
                                 const item = form.watch(`items.${index}`);
                                 return (
-                                    <div key={field.id} className="flex flex-col bg-gray-50 border-2 border-brand-black p-3 rounded-lg relative group transition-all hover:bg-white hover:shadow-hard-sm">
-                                        <button
-                                            type="button"
-                                            onClick={() => remove(index)}
-                                            className="absolute top-2 right-2 text-muted-foreground/50 hover:text-red-500 transition-colors p-1"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-
-                                        <div className="pr-8 mb-3">
-                                            <span className="font-bold line-clamp-2 text-sm leading-tight text-brand-black">{item.productName}</span>
-                                            <span className="text-[10px] text-muted-foreground font-mono block mt-1">@{formatCurrency(item.price || 0)}</span>
+                                    <div key={field.id} className="group flex gap-3 p-3 bg-white border-2 border-brand-black rounded-lg relative shadow-[2px_2px_0_0_rgba(26,26,26,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0_0_rgba(26,26,26,1)] transition-all animate-in slide-in-from-right-4 duration-300">
+                                        {/* Product Image (Small) */}
+                                        <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden border border-brand-black/20">
+                                            {(() => {
+                                                const product = products.find(p => p.id === item.productId);
+                                                return product?.imageUrl ? (
+                                                    <img src={product.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                        <Package className="w-6 h-6" />
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
 
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <div className="flex items-center border-2 border-brand-black bg-white rounded-md overflow-hidden h-8 shadow-sm">
-                                                <button
-                                                    type="button"
-                                                    className="w-8 h-full flex items-center justify-center hover:bg-brand-orange hover:text-brand-black active:bg-brand-orange/80 transition-colors border-r-2 border-brand-black text-brand-black disabled:opacity-50"
-                                                    onClick={() => updateQuantity(index, -1)}
-                                                >
-                                                    <Minus className="w-3 h-3 stroke-[3]" />
-                                                </button>
-                                                <div className="w-10 h-full flex items-center justify-center font-mono font-bold text-sm bg-white text-brand-black">
-                                                    {item.quantity}
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                            <div className="flex justify-between items-start gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <span className="font-bold text-sm leading-tight text-brand-black line-clamp-1" title={item.productName}>
+                                                        {item.productName}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted-foreground font-mono block">
+                                                        @{formatCurrency(item.price || 0)}
+                                                    </span>
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    className="w-8 h-full flex items-center justify-center hover:bg-brand-orange hover:text-brand-black active:bg-brand-orange/80 transition-colors border-l-2 border-brand-black text-brand-black"
-                                                    onClick={() => updateQuantity(index, 1)}
+                                                    onClick={() => remove(index)}
+                                                    className="text-gray-400 hover:text-red-500 transition-colors p-0.5"
                                                 >
-                                                    <Plus className="w-3 h-3 stroke-[3]" />
+                                                    <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
-                                            <span className="font-bold font-mono text-base text-brand-orange">
-                                                {formatCurrency((item.price || 0) * (item.quantity || 0))}
-                                            </span>
+
+                                            <div className="flex items-center justify-between mt-1">
+                                                {/* Qty Controls */}
+                                                <div className="flex items-center bg-gray-50 border border-brand-black/30 rounded-md overflow-hidden h-6 shadow-sm">
+                                                    <button
+                                                        type="button"
+                                                        className="w-6 h-full flex items-center justify-center hover:bg-brand-orange hover:text-brand-black active:bg-brand-orange/80 transition-colors border-r border-brand-black/30 text-brand-black disabled:opacity-50"
+                                                        onClick={() => updateQuantity(index, -1)}
+                                                    >
+                                                        <Minus className="w-2.5 h-2.5 stroke-[3]" />
+                                                    </button>
+                                                    <div className="w-8 h-full flex items-center justify-center font-mono font-bold text-xs bg-white text-brand-black">
+                                                        {item.quantity}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        className="w-6 h-full flex items-center justify-center hover:bg-brand-orange hover:text-brand-black active:bg-brand-orange/80 transition-colors border-l border-brand-black/30 text-brand-black"
+                                                        onClick={() => updateQuantity(index, 1)}
+                                                    >
+                                                        <Plus className="w-2.5 h-2.5 stroke-[3]" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Subtotal */}
+                                                <span className="font-bold font-mono text-sm text-brand-orange">
+                                                    {formatCurrency((item.price || 0) * (item.quantity || 0))}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 );

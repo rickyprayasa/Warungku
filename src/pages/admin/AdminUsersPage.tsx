@@ -374,8 +374,11 @@ export function AdminUsersPage() {
     };
 
     const filteredUsers = useMemo(() => {
-        // Filter out super admin
-        let result = users.filter(u => u.email !== 'admin@rsquareidea.my.id');
+        // Filter out super admin AND users without stores (effectively deleted users)
+        let result = users.filter(u =>
+            u.email !== 'admin@rsquareidea.my.id' &&
+            u.stores.length > 0
+        );
 
         if (!searchQuery && !filterPlan) return result;
 
