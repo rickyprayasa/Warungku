@@ -99,6 +99,7 @@ const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage').then(m =>
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
 const UpdatePasswordPage = lazy(() => import('@/pages/UpdatePasswordPage').then(m => ({ default: m.UpdatePasswordPage })));
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const StoreLoginPage = lazy(() => import('@/pages/StoreLoginPage').then(m => ({ default: m.StoreLoginPage })));
 
 // Loading animation
 const PageLoader = () => {
@@ -291,6 +292,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<PageLoader />}>
             <CheckoutPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: "login",
+        element: (
+          <Suspense fallback={<PageLoader />}>
+            <StoreLoginPage />
           </Suspense>
         ),
       },

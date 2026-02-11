@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ReceiptTemplate, handleWhatsAppShare, handlePrintReceipt } from './ReceiptTemplate';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { Sale } from '@shared/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SaleFormProps {
   onSuccess: () => void;
@@ -33,6 +34,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
     }))
   );
   const sortedProducts = [...products].sort((a, b) => a.name.localeCompare(b.name));
+  const { user } = useAuth();
 
   const [isDisplaySale, setIsDisplaySale] = useState(false);
   const [printAfterSave, setPrintAfterSave] = useState(false);
@@ -335,6 +337,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
                 storeAddress={storeProfile.address}
                 storePhone={storeProfile.phone}
                 storeLogo={storeProfile.logoUrl}
+                cashierName={user?.user_metadata?.full_name || user?.email}
               />
               <div className="flex gap-2">
                 <Button onClick={() => handlePrintReceipt()} className="flex-1">

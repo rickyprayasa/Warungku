@@ -58,6 +58,8 @@ export interface Sale {
   customerAddress?: string;
   paymentProofUrl?: string;
   status?: 'pending' | 'completed' | 'cancelled';
+  userId?: string; // ID of the user who made the sale
+  cashierName?: string; // Name of the user who made the sale (joined)
 }
 export const saleItemSchema = z.object({
   productId: z.string(),

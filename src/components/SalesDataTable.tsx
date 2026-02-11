@@ -41,7 +41,7 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
   const sortedSales = useMemo(() => {
     // Deduplicate by ID first
     const uniqueSales = Array.from(new Map(sales.map(s => [s.id, s])).values());
-    
+
     return uniqueSales.sort((a, b) => {
       if (a.status === 'pending' && b.status !== 'pending') return -1;
       if (a.status !== 'pending' && b.status === 'pending') return 1;
@@ -215,6 +215,7 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                       storeAddress={storeProfile.address}
                       storePhone={storeProfile.phone}
                       storeLogo={storeProfile.logoUrl}
+                      cashierName={selectedSale.cashierName}
                     />
                   </div>
                 )}

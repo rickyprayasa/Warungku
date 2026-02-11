@@ -18,6 +18,7 @@ import { ReceiptTemplate, handleWhatsAppShare, handlePrintReceipt } from './Rece
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { Sale } from '@shared/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface POSSaleFormProps {
     onSuccess: () => void;
@@ -41,6 +42,7 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
     const [notes, setNotes] = useState('');
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const opnameMode = useWarungStore((state) => state.opnameMode);
+    const { user } = useAuth();
 
     useEffect(() => {
         if (opnameMode === 'retail') {
@@ -416,6 +418,7 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
                                 storeAddress={storeProfile.address}
                                 storePhone={storeProfile.phone}
                                 storeLogo={storeProfile.logoUrl}
+                                cashierName={user?.user_metadata?.full_name || user?.email}
                             />
                             <div className="flex gap-2">
                                 <Button onClick={() => handlePrintReceipt()} className="flex-1" variant="outline">

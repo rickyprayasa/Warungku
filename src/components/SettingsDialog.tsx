@@ -30,6 +30,7 @@ interface StoreMember {
     email: string;
     role: string;
     joined_at: string;
+    name?: string;
 }
 export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -46,9 +47,19 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isLoadingMembers, setIsLoadingMembers] = useState(false);
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteName, setInviteName] = useState('');
+    const [invitePassword, setInvitePassword] = useState('');
     const [inviteRole, setInviteRole] = useState('staff');
     const [isInviting, setIsInviting] = useState(false);
     const [isDeletingMember, setIsDeletingMember] = useState<string | null>(null);
+
+    // Edit Member State
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [editingMember, setEditingMember] = useState<StoreMember | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editRole, setEditRole] = useState('');
+    const [editPassword, setEditPassword] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
 
     const isProOrEnterprise = store?.plan === 'pro' || store?.plan === 'enterprise';
 
@@ -83,9 +94,17 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const fetchMembers = async () => {
         setIsLoadingMembers(true);
         try {
-            const { data, error } = await supabase.rpc('get_store_members');
+            const { data, error } = await (supabase.rpc as any)('get_store_members');
             if (error) throw error;
-            setMembers(data || []);
+            // Map out_ prefixed columns from RPC to frontend property names
+            const mapped = (data || []).map((m: any) => ({
+                user_id: m.out_user_id || m.user_id,
+                email: m.out_email || m.email,
+                role: m.out_role || m.role,
+                name: m.out_name || m.name,
+                joined_at: m.out_joined_at || m.joined_at,
+            }));
+            setMembers(mapped);
         } catch (error) {
             console.error('Error fetching members:', error);
             if (user?.email) {
@@ -129,43 +148,13 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
         }
     };
 
-    const handleInviteMember = async () => {
-        if (!inviteEmail) {
-            toast.error('Email wajib diisi');
-            return;
-        }
-
-        setIsInviting(true);
-        try {
-            const { data, error } = await supabase.rpc('add_store_member_by_email', {
-                p_email: inviteEmail,
-                p_role: inviteRole
-            });
-
-            if (error) throw error;
-
-            if (data && !data.success) {
-                toast.error(data.message);
-            } else {
-                toast.success('Member berhasil ditambahkan');
-                setIsInviteDialogOpen(false);
-                setInviteEmail('');
-                fetchMembers();
-            }
-        } catch (error: any) {
-            console.error('Error inviting member:', error);
-            toast.error('Gagal menambahkan member: ' + (error.message || 'RPC Error'));
-        } finally {
-            setIsInviting(false);
-        }
-    };
 
     const handleRemoveMember = async (userId: string) => {
         if (!confirm('Apakah Anda yakin ingin menghapus member ini?')) return;
 
         setIsDeletingMember(userId);
         try {
-            const { data, error } = await supabase.rpc('remove_store_member', {
+            const { data, error } = await (supabase.rpc as any)('remove_store_member', {
                 p_user_id: userId
             });
 
@@ -182,6 +171,50 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
             toast.error('Gagal menghapus member');
         } finally {
             setIsDeletingMember(null);
+        }
+    };
+
+    const handleInviteMember = async () => {
+        if (!inviteEmail.trim()) {
+            toast.error('Masukkan email member');
+            return;
+        }
+        if (!invitePassword || invitePassword.length < 6) {
+            toast.error('Password minimal 6 karakter');
+            return;
+        }
+
+        setIsInviting(true);
+        try {
+            const { data, error } = await (supabase.rpc as any)('create_team_member', {
+                p_email: inviteEmail.trim().toLowerCase(),
+                p_password: invitePassword,
+                p_role: inviteRole,
+                p_name: inviteName.trim() || null,
+            });
+
+            if (error) throw error;
+
+            if (data && !data.success) {
+                toast.error(data.message || 'Gagal menambahkan member');
+            } else {
+                toast.success(data.message || `Member ${inviteEmail} berhasil ditambahkan`);
+                setInviteEmail('');
+                setInviteName('');
+                setInvitePassword('');
+                setInviteRole('cashier');
+                setIsInviteDialogOpen(false);
+                fetchMembers();
+            }
+        } catch (error: any) {
+            console.error('Error adding member:', error);
+            if (error.message?.includes('not found') || error.code === '42883') {
+                toast.error('Fitur ini belum tersedia. Pastikan RPC create_team_member sudah dibuat.');
+            } else {
+                toast.error(error.message || 'Gagal menambahkan member');
+            }
+        } finally {
+            setIsInviting(false);
         }
     };
 
@@ -678,67 +711,132 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <div className="flex justify-end">
-                                    <Button
-                                        onClick={() => setIsInviteDialogOpen(true)}
-                                        className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400 rounded-none"
-                                    >
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Tambah Member
-                                    </Button>
-                                </div>
+                                {/* Store Login URL Info */}
+                                {store?.slug && (
+                                    <div className="bg-blue-50 border-2 border-blue-200 p-3">
+                                        <div className="flex items-start gap-2">
+                                            <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="font-mono text-xs text-blue-800 font-bold">Link Login Tim</p>
+                                                <p className="font-mono text-xs text-blue-700 mt-1 break-all">
+                                                    {window.location.origin}/{store.slug}/login
+                                                </p>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="mt-1 h-6 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-100"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(`${window.location.origin}/${store.slug}/login`);
+                                                        toast.success('Link login disalin!');
+                                                    }}
+                                                >
+                                                    📋 Salin Link
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
+                                {/* Invite Dialog */}
+
+
+                                {/* Add Button */}
+                                {!isInviteDialogOpen && (
+                                    <div className="flex justify-end">
+                                        <Button
+                                            onClick={() => setIsInviteDialogOpen(true)}
+                                            className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400 rounded-none"
+                                        >
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            Tambah Member
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {/* Members List */}
                                 <div className="border-2 border-brand-black divide-y-2 divide-brand-black">
                                     {isLoadingMembers ? (
                                         <div className="p-8 text-center">
-                                            <Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-orange" />
-                                            <p className="mt-2 font-mono text-sm text-muted-foreground">Memuat data member...</p>
-                                        </div>
-                                    ) : members.length === 0 ? (
-                                        <div className="p-8 text-center text-muted-foreground font-mono">
-                                            Belum ada member lain.
+                                            <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground mb-2" />
+                                            <p className="font-mono text-sm text-muted-foreground">Memuat data member...</p>
                                         </div>
                                     ) : (
-                                        members.map((member) => (
-                                            <div key={member.user_id} className="p-4 flex items-center justify-between hover:bg-gray-50">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-brand-black text-white flex items-center justify-center font-bold font-mono">
-                                                        {member.email.substring(0, 2).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold font-mono">{member.email}</p>
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge variant="outline" className="rounded-none border-brand-black text-xs uppercase">
-                                                                {member.role}
-                                                            </Badge>
-                                                            <span className="text-xs text-muted-foreground font-mono">
-                                                                Joined: {new Date(member.joined_at).toLocaleDateString()}
-                                                            </span>
+                                        <>
+                                            {members.length === 0 ? (
+                                                <div className="p-8 text-center text-muted-foreground bg-gray-50">
+                                                    <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                                    <p className="font-mono text-sm">Belum ada member team.</p>
+                                                    <p className="text-xs mt-1">Undang staff untuk membantu mengelola toko.</p>
+                                                </div>
+                                            ) : (
+                                                members.map((member) => (
+                                                    <div key={member.user_id} className="flex items-center justify-between p-3 bg-white hover:bg-gray-50 transition-colors">
+                                                        <div className="flex items-center gap-3 overflow-hidden">
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 ${member.role === 'owner' ? 'bg-brand-orange' :
+                                                                member.role === 'admin' ? 'bg-blue-600' :
+                                                                    'bg-gray-600'
+                                                                }`}>
+                                                                {member.name ? member.name.substring(0, 2).toUpperCase() : member.email.substring(0, 2).toUpperCase()}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="font-bold font-mono text-sm truncate">{member.name || member.email}</p>
+                                                                {member.name && <p className="text-xs text-muted-foreground font-mono truncate">{member.email}</p>}
+                                                                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                                                    <Badge variant="outline" className={`rounded-none text-[10px] uppercase ${member.role === 'owner' ? 'border-brand-orange bg-orange-50 text-orange-800' :
+                                                                        member.role === 'admin' ? 'border-blue-400 bg-blue-50 text-blue-800' :
+                                                                            'border-gray-400 bg-gray-50 text-gray-700'
+                                                                        }`}>
+                                                                        {member.role}
+                                                                    </Badge>
+                                                                    <span className="text-[10px] text-muted-foreground font-mono">
+                                                                        Joined: {new Date(member.joined_at).toLocaleDateString()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-1">
+                                                            {member.user_id !== user?.id && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => {
+                                                                        setEditingMember(member);
+                                                                        setEditName(member.name || '');
+                                                                        setEditRole(member.role);
+                                                                        setIsEditDialogOpen(true);
+                                                                    }}
+                                                                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 shrink-0"
+                                                                >
+                                                                    <Settings className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+
+                                                            {member.user_id !== user?.id && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleRemoveMember(member.user_id)}
+                                                                    disabled={isDeletingMember === member.user_id}
+                                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                                                                >
+                                                                    {isDeletingMember === member.user_id ? (
+                                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    ) : (
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    )}
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                </div>
-
-                                                {member.user_id !== user?.id && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleRemoveMember(member.user_id)}
-                                                        disabled={isDeletingMember === member.user_id}
-                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                    >
-                                                        {isDeletingMember === member.user_id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="w-4 h-4" />
-                                                        )}
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        ))
+                                                ))
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
                         )}
+
                     </TabsContent>
 
                     <TabsContent value="domain" className="space-y-4 py-2">
@@ -830,6 +928,16 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
 
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
+                                <Label htmlFor="invite-name">Nama / Username</Label>
+                                <Input
+                                    id="invite-name"
+                                    placeholder="Nama staff (Opsional)"
+                                    value={inviteName}
+                                    onChange={(e) => setInviteName(e.target.value)}
+                                    className="rounded-none border-2 border-brand-black"
+                                />
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="email">Email User</Label>
                                 <Input
                                     id="email"
@@ -838,6 +946,18 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                     value={inviteEmail}
                                     onChange={(e) => setInviteEmail(e.target.value)}
                                     className="rounded-none border-2 border-brand-black"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input
+                                    id="password"
+                                    type="text"
+                                    placeholder="Password sementara (min 6 karakter)"
+                                    value={invitePassword}
+                                    onChange={(e) => setInvitePassword(e.target.value)}
+                                    className="rounded-none border-2 border-brand-black font-mono"
                                 />
                             </div>
 
@@ -875,6 +995,115 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                     </>
                                 ) : (
                                     'Tambah Member'
+                                )}
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Edit Member Dialog */}
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="border-4 border-brand-black rounded-none max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="font-display text-xl">Edit Member</DialogTitle>
+                            <DialogDescription className="font-mono">
+                                Ubah detail member atau hak akses.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">Nama / Username</Label>
+                                <Input
+                                    id="edit-name"
+                                    placeholder="Nama staff"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="rounded-none border-2 border-brand-black"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-password">Password Baru (opsional)</Label>
+                                <Input
+                                    id="edit-password"
+                                    type="password"
+                                    placeholder="Kosongkan jika tidak ingin mengubah"
+                                    value={editPassword}
+                                    onChange={(e) => setEditPassword(e.target.value)}
+                                    className="rounded-none border-2 border-brand-black"
+                                />
+                                <p className="text-xs text-muted-foreground">Min. 6 karakter. Kosongkan jika tidak ingin mengubah password.</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-role">Role</Label>
+                                <Select value={editRole} onValueChange={setEditRole}>
+                                    <SelectTrigger className="rounded-none border-2 border-brand-black">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="staff">Staff (Kasir & Produk)</SelectItem>
+                                        <SelectItem value="admin">Admin (Akses Penuh)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsEditDialogOpen(false)}
+                                className="rounded-none border-2 border-brand-black"
+                            >
+                                Batal
+                            </Button>
+                            <Button
+                                onClick={async () => {
+                                    if (!editingMember) return;
+                                    setIsEditing(true);
+                                    try {
+                                        // Validate password if provided
+                                        if (editPassword && editPassword.length < 6) {
+                                            toast.error('Password minimal 6 karakter');
+                                            setIsEditing(false);
+                                            return;
+                                        }
+
+                                        const { data, error } = await (supabase.rpc as any)('update_store_member', {
+                                            p_user_id: editingMember.user_id,
+                                            p_role: editRole,
+                                            p_name: editName.trim() || null,
+                                            p_password: editPassword || null
+                                        });
+
+                                        if (error) throw error;
+
+                                        if (data && !data.success) {
+                                            toast.error(data.message);
+                                        } else {
+                                            toast.success(editPassword ? 'Member & password berhasil diupdate' : 'Member berhasil diupdate');
+                                            setEditPassword('');
+                                            setIsEditDialogOpen(false);
+                                            fetchMembers();
+                                        }
+                                    } catch (error: any) {
+                                        console.error('Error updating member:', error);
+                                        toast.error(error.message || 'Gagal update member');
+                                    } finally {
+                                        setIsEditing(false);
+                                    }
+                                }}
+                                disabled={isEditing}
+                                className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400 rounded-none"
+                            >
+                                {isEditing ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Menyimpan...
+                                    </>
+                                ) : (
+                                    'Simpan Perubahan'
                                 )}
                             </Button>
                         </div>

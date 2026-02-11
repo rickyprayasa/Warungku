@@ -18,8 +18,9 @@ export function PublicStorePage() {
   const hasFetchedRef = useRef(false);
   const lastSlugRef = useRef<string | null>(null);
 
-  // Check if we're on the checkout route
+  // Check if we're on the checkout or login route
   const isCheckoutRoute = location.pathname.endsWith('/checkout');
+  const isLoginRoute = location.pathname.endsWith('/login');
 
   const { refreshStore } = useAuth();
   const { user } = useAuth();
@@ -32,8 +33,11 @@ export function PublicStorePage() {
     setIsPublicMode,
   } = useStore();
 
-  // Load store by slug
+  // Load store by slug (skip for login route — StoreLoginPage handles its own fetching)
   useEffect(() => {
+    // Skip all store initialization for the login route
+    if (isLoginRoute) return;
+
     let isMounted = true;
 
     // Set public mode immediately
@@ -105,9 +109,20 @@ export function PublicStorePage() {
       // Refresh user store to ensure dashboard works correctly when returning
       refreshStore();
     };
-  }, [slug, loadStoreBySlug, clearPublicStore, setIsPublicMode, refreshStore]);
+  }, [slug, isLoginRoute, loadStoreBySlug, clearPublicStore, setIsPublicMode, refreshStore]);
 
   // Removed the second useEffect as it's now integrated into the first one to ensure sequential execution
+
+  // If on login route, bypass all public store loading and render StoreLoginPage directly
+  // StoreLoginPage handles its own store fetching independently
+  if (isLoginRoute) {
+    return (
+      <>
+        <Outlet />
+        <Toaster richColors closeButton theme="light" />
+      </>
+    );
+  }
 
   // Loading state
   if (publicStoreLoading) {

@@ -12,6 +12,7 @@ interface ReceiptTemplateProps {
   storeAddress?: string;
   storePhone?: string;
   storeLogo?: string;
+  cashierName?: string;
   onClose?: () => void;
 }
 
@@ -275,6 +276,7 @@ const ReceiptContent = ({
   storeAddress,
   storePhone,
   storeLogo,
+  cashierName,
   id,
   className
 }: ReceiptTemplateProps & { id?: string; className?: string }) => {
@@ -309,6 +311,20 @@ const ReceiptContent = ({
           <span>No. Transaksi:</span>
           <span>#{sale.id.slice(-6).toUpperCase()}</span>
         </div>
+
+        {/* Cashier Name */}
+        {storeLogo && cashierName && (
+          <div className="flex justify-between">
+            <span>Kasir:</span>
+            <span className="truncate max-w-[150px] text-right">{cashierName}</span>
+          </div>
+        )}
+        {!storeLogo && cashierName && (
+          <div className="flex justify-between">
+            <span>Kasir:</span>
+            <span>{cashierName}</span>
+          </div>
+        )}
       </div>
 
       {/* Separator */}
