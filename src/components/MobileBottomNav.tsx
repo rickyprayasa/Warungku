@@ -21,16 +21,47 @@ export function MobileBottomNav() {
     const navigate = useNavigate();
     const location = useLocation();
     const opnameMode = useWarungStore((state) => state.opnameMode);
+    const currentUser = useWarungStore((state) => state.currentUser);
     const { store } = useAuth();
     const [showMore, setShowMore] = useState(false);
     const [activeTab, setActiveTab] = useState("pos");
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
 
-    // Generate dynamic moreTabs with store link
+    const isOwnerOrAdmin = !currentUser || currentUser.role === 'owner' || currentUser.role === 'admin';
+
+    // Helper to check if user has permission
+    const hasPermission = (perm: string) => {
+        // If owner or admin, always true
+        if (isOwnerOrAdmin) return true;
+
+        // If user has specific permissions array set, use it
+        // CRITICAL FIX: null/undefined check only. Empty array [] is valid "no access".
+        if (currentUser?.permissions) {
+            return currentUser.permissions.includes(perm);
+        }
+
+        // Fallback to role-based defaults for staff ONLY if permissions is undefined
+        // Staff default: pos, products, sales
+        if (perm === 'pos' || perm === 'products' || perm === 'sales') return true;
+
+        return false;
+    };
+
+    // Generate dynamic moreTabs with permission-based filtering
     const moreTabs = [
-        ...staticMoreTabs,
-        // Add store link only if store has slug
-        ...(store?.slug ? [{
+        ...staticMoreTabs.filter(tab => {
+            // Check permission for each tab
+            // Mapping value to permission key if different
+            const permKey = tab.value === 'price-reference' ? 'products' : // Ref harga part of products/inventory
+                tab.value === 'cashflow' ? 'finance' : // Cashflow part of finance
+                    tab.value === 'analytics' ? 'settings' : // Analytics usually for owner/admin
+                        tab.value === 'qris' ? 'settings' : // QRIS part of settings
+                            tab.value; // others map 1:1
+
+            return hasPermission(permKey);
+        }),
+        // Add store link only if store has slug and user is owner/admin
+        ...(isOwnerOrAdmin && store?.slug ? [{
             value: "store",
             label: "Lihat Toko",
             icon: ExternalLink,
@@ -44,50 +75,63 @@ export function MobileBottomNav() {
         return opnameMode === 'display' ? 'Rekon Kas' : opnameMode === 'terpadu' ? 'Rekonsiliasi' : 'Rekon Stok';
     };
 
-    // Generate tabs with current mode
-    const getTabs = () => [
-        {
-            value: "pos",
-            label: "Kasir",
-            icon: Store,
-            path: "/pos",
-            submenu: [
-                { label: "Buka Kasir", action: "open-pos", path: "/pos" },
-                { label: "Lihat Riwayat", action: "view-sales-history", path: "/dashboard?tab=sales" },
-            ]
-        },
-        {
-            value: "products",
-            label: "Produk",
-            icon: Package,
-            path: "/dashboard?tab=products",
-            submenu: [
-                { label: "Tambah Produk", action: "add-product", path: "/dashboard?tab=products" },
-                { label: "Lihat Semua", action: "view-all-products", path: "/dashboard?tab=products" },
-                { label: "Pembelian", action: "purchases", path: "/dashboard?tab=purchases" },
-            ]
-        },
-        {
-            value: "opname",
-            label: getRekonLabel(),
-            icon: ClipboardCheck,
-            path: "/dashboard?tab=opname",
-            submenu: [
-                { label: `Buka ${getRekonLabel()}`, action: "open-opname", path: "/dashboard?tab=opname" },
-                { label: "Riwayat Kas", action: "cashflow", path: "/dashboard?tab=cashflow" },
-            ]
-        },
-        {
-            value: "sales",
-            label: "Jual",
-            icon: DollarSign,
-            path: "/dashboard?tab=sales",
-            submenu: [
-                { label: "Lihat Penjualan", action: "view-sales", path: "/dashboard?tab=sales" },
-                { label: "Laporan", action: "report", path: "/dashboard?tab=finance" },
-            ]
-        },
-    ];
+    // Generate tabs with current mode and permissions
+    const getTabs = () => {
+        const allTabs = [
+            {
+                value: "pos",
+                label: "Kasir",
+                icon: Store,
+                path: "/pos",
+                submenu: [
+                    { label: "Buka Kasir", action: "open-pos", path: "/pos" },
+                    { label: "Lihat Riwayat", action: "view-sales-history", path: "/dashboard?tab=sales" },
+                ],
+                isVisible: hasPermission('pos'),
+            },
+            {
+                value: "products",
+                label: "Produk",
+                icon: Package,
+                path: "/dashboard?tab=products",
+                submenu: isOwnerOrAdmin ? [
+                    { label: "Tambah Produk", action: "add-product", path: "/dashboard?tab=products" },
+                    { label: "Lihat Semua", action: "view-all-products", path: "/dashboard?tab=products" },
+                    { label: "Pembelian", action: "purchases", path: "/dashboard?tab=purchases" },
+                ] : [
+                    { label: "Lihat Produk", action: "view-all-products", path: "/dashboard?tab=products" },
+                ],
+                isVisible: hasPermission('products'),
+            },
+            {
+                value: "opname",
+                label: getRekonLabel(),
+                icon: ClipboardCheck,
+                path: "/dashboard?tab=opname",
+                submenu: [
+                    { label: `Buka ${getRekonLabel()}`, action: "open-opname", path: "/dashboard?tab=opname" },
+                    { label: "Riwayat Kas", action: "cashflow", path: "/dashboard?tab=cashflow" },
+                ],
+                isVisible: isOwnerOrAdmin, // Opname usually owner/admin only unless specific perm added (not in list yet)
+            },
+            {
+                value: "sales",
+                label: "Jual",
+                icon: DollarSign,
+                path: "/dashboard?tab=sales",
+                submenu: isOwnerOrAdmin ? [
+                    { label: "Lihat Penjualan", action: "view-sales", path: "/dashboard?tab=sales" },
+                    { label: "Laporan", action: "report", path: "/dashboard?tab=finance" },
+                ] : [
+                    { label: "Lihat Penjualan", action: "view-sales", path: "/dashboard?tab=sales" },
+                ],
+                isVisible: hasPermission('sales'),
+            },
+        ];
+
+        // Filter tabs based on visibility
+        return allTabs.filter(tab => tab.isVisible);
+    };
 
     const [tabs, setTabs] = useState(getTabs());
 
@@ -232,7 +276,7 @@ export function MobileBottomNav() {
 
             {/* Bottom Navigation */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 bg-brand-white border-t-4 border-brand-black z-30 pb-[env(safe-area-inset-bottom,0px)]">
-                <div className="grid grid-cols-5 h-16">
+                <div className={`grid h-16 ${tabs.length + 1 <= 4 ? 'grid-cols-4' : 'grid-cols-5'}`}>
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.value;

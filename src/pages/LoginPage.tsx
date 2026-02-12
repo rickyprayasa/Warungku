@@ -3,12 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { KeyRound, Loader2, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { KeyRound, Loader2, UserPlus, Eye, EyeOff, ShieldAlert, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWarungStore } from '@/lib/store';
 
 import { useAdmin } from '@/contexts/AdminContext';
+import { supabase } from '@/lib/supabase';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -20,6 +22,11 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Staff warning modal state
+  const [showStaffWarning, setShowStaffWarning] = useState(false);
+  const [staffStoreName, setStaffStoreName] = useState('');
+  const [staffStoreSlug, setStaffStoreSlug] = useState('');
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -40,12 +47,58 @@ export function LoginPage() {
             return;
           }
 
-          // Redirect to dashboard for all authenticated users
-          // If they don't have a store, the dashboard should handle the "Create Store" flow
-          console.log('[LoginPage] Redirecting to /dashboard');
+          // Redirect logic based on role
+          console.log('[LoginPage] Redirecting logic...');
+
+          // 1. If Owner (has store in auth context), go to dashboard
           if (store) {
+            console.log('[LoginPage] Owner logged in, redirecting to dashboard');
             setCurrentStoreId(store.id);
+            navigate('/dashboard');
+            return;
           }
+
+          // 2. If not Owner, check if Member
+          const { data: { user } } = await supabase.auth.getUser();
+
+          if (user) {
+            const { data: membership } = await supabase
+              .from('store_members')
+              .select('store_id, role, stores(slug, name)')
+              .eq('user_id', user.id)
+              .limit(1)
+              .maybeSingle();
+
+            // Check if they are actually the OWNER
+            const isOwner = membership?.role === 'owner';
+
+            if (isOwner && membership) {
+              console.log('[LoginPage] User is owner (direct check), allowing access');
+              setCurrentStoreId(membership.store_id);
+              navigate('/dashboard');
+              return;
+            }
+
+            if (membership) {
+              console.log('[LoginPage] User is staff, blocking access to main login');
+              // Is Staff. Block access.
+              await supabase.auth.signOut();
+
+              // @ts-ignore
+              const storeName = membership.stores?.name || 'Toko Anda';
+              // @ts-ignore
+              const storeSlug = membership.stores?.slug || '';
+
+              // Show modal dialog instead of error text
+              setStaffStoreName(storeName);
+              setStaffStoreSlug(storeSlug);
+              setShowStaffWarning(true);
+              return;
+            }
+          }
+
+          // 3. New User (No store, no membership) -> Dashboard (Onboarding)
+          console.log('[LoginPage] New user/No store, redirecting to dashboard');
           navigate('/dashboard');
         } catch (e) {
           console.error('[LoginPage] Error checking admin access:', e);
@@ -98,8 +151,56 @@ export function LoginPage() {
     }
   };
 
+  const staffLoginUrl = staffStoreSlug ? `${window.location.origin}/${staffStoreSlug}/login` : '';
+
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-80px)] bg-muted/40 py-12 px-4">
+      {/* Staff Warning Modal Dialog */}
+      <Dialog open={showStaffWarning} onOpenChange={setShowStaffWarning}>
+        <DialogContent className="sm:max-w-md border-4 border-brand-black bg-brand-white rounded-none shadow-hard p-0 overflow-hidden">
+          <div className="bg-amber-500 p-4 border-b-4 border-brand-black">
+            <DialogHeader>
+              <DialogTitle className="font-display font-black text-xl text-brand-black uppercase tracking-wider flex items-center gap-2">
+                <ShieldAlert className="w-6 h-6" />
+                Akses Ditolak
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="font-mono text-sm text-brand-black">
+              Akun ini terdaftar sebagai <strong className="text-red-600">Staff / Kasir</strong> di toko <strong className="text-brand-orange">{staffStoreName}</strong>.
+            </p>
+            <p className="font-mono text-sm text-muted-foreground">
+              Halaman ini khusus untuk <strong>Pemilik Toko</strong>. Silakan login melalui link khusus toko Anda:
+            </p>
+            {staffStoreSlug && (
+              <div className="bg-gray-100 border-2 border-brand-black p-3">
+                <p className="font-mono text-xs text-muted-foreground mb-1">Link Login Toko:</p>
+                <p className="font-mono text-sm font-bold text-brand-black break-all">{staffLoginUrl}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="p-4 pt-0 flex flex-col gap-2 sm:flex-col">
+            {staffStoreSlug && (
+              <Button
+                onClick={() => navigate(`/${staffStoreSlug}/login`)}
+                className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-mono font-bold uppercase hover:bg-brand-black hover:text-brand-white transition-all h-11"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Login ke {staffStoreName}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setShowStaffWarning(false)}
+              className="w-full border-2 border-brand-black rounded-none font-mono font-bold uppercase hover:bg-gray-100 transition-all h-11"
+            >
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="w-full max-w-sm mx-auto p-8 bg-brand-white border-4 border-brand-black shadow-hard">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-orange border-2 border-brand-black mb-4">

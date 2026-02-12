@@ -164,12 +164,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ]);
       };
 
-      let memberData, memberError;
+      // CRITICAL FIX: Fetch store_members WITH stores data in a single JOIN query
+      // This ensures staff can access store data even if direct stores table RLS blocks them
+      let memberData: any, memberError: any;
       try {
         const result = await withTimeout(
           (supabase
             .from('store_members') as any)
-            .select('store_id, role')
+            .select('store_id, role, stores(*)')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -179,20 +181,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         memberData = result.data;
         memberError = result.error;
       } catch (timeoutErr: any) {
-        // CRITICAL FIX: Handle timeout gracefully - don't throw error
         if (timeoutErr.message === 'Request timeout') {
           console.warn('[AuthContext] Store fetch timeout - will retry on next auth check');
-          // Return null but don't throw - this allows app to continue with cached data
           return null;
         }
         throw timeoutErr;
       }
 
-      console.warn('[AuthContext] Store member query result:', JSON.stringify({ memberData, memberError }));
+      console.warn('[AuthContext] Store member+store query result:', JSON.stringify({ memberData, memberError }));
 
       if (memberError) {
         console.error('[AuthContext] Error fetching store member:', memberError);
-        // If error is "Row not found", it means user has no store. Auto-create store for them.
         if (memberError.code === 'PGRST116') {
           console.log('[AuthContext] User has no store, auto-creating store...');
           const newStore = await createStoreForUser(userId, userEmail);
@@ -218,46 +217,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      // SECURITY CHECK: Verify again that this user is a member of this store
-      // This prevents any potential caching issues or race conditions
-      if (userId) {
-        const { data: verify, error: verifyError } = await supabase
-          .from('store_members')
-          .select('id')
-          .eq('store_id', memberData.store_id)
-          .eq('user_id', userId)
-          .single();
+      // Extract store data from the JOIN result
+      const storeData = memberData.stores;
 
-        if (verifyError) {
-          // CRITICAL FIX: Only deny access if it's truly a "not found" error
-          // For other errors (timeout, network, etc.), log but continue
-          if (verifyError.code === 'PGRST116') {
-            // Row not found - user is NOT a member, deny access
-            console.error('[SECURITY ALERT] User is not a member of this store!', { userId, storeId: memberData.store_id });
-            setStore(null);
-            useWarungStore.getState().setCurrentStoreId(null);
-            return null;
-          } else {
-            // Other error (timeout, network, etc.) - log warning but continue with the store we found
-            console.warn('[AuthContext] Verification query failed, but continuing with found store:', verifyError);
-            // Continue to fetch and use the store
-          }
-        }
-        if (!verify && !verifyError) {
-          // Verification returned no data AND no error - user is not a member
-          console.error('[SECURITY ALERT] User is not a member of the store found in store_members!', {
-            userId,
-            storeId: memberData.store_id,
-            memberData
-          });
-          // Force clear store to prevent leakage
-          setStore(null);
-          useWarungStore.getState().setCurrentStoreId(null);
-          return null;
-        }
+      if (storeData) {
+        console.warn('[AuthContext] Setting store from JOIN:', storeData.name);
+        setStore(storeData as Store);
+        useWarungStore.getState().setCurrentStoreId(storeData.id);
+        return storeData as Store;
       }
 
-      let storeData, storeError;
+      // Fallback: If JOIN didn't return store data (e.g., RLS issue on relation),
+      // try fetching stores directly
+      console.warn('[AuthContext] JOIN did not return store data, trying direct fetch...');
+      let directStoreData, directStoreError;
       try {
         const storeResult = await withTimeout(
           supabase
@@ -265,34 +238,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .select('*')
             .eq('id', memberData.store_id)
             .single(),
-          30000 // 30s timeout - increased for slow connections
+          30000
         ) as any;
-        storeData = storeResult.data;
-        storeError = storeResult.error;
+        directStoreData = storeResult.data;
+        directStoreError = storeResult.error;
       } catch (timeoutErr: any) {
-        // CRITICAL FIX: Handle timeout gracefully
         if (timeoutErr.message === 'Request timeout') {
-          console.warn('[AuthContext] Store data fetch timeout - using cached data if available');
-          // Return the store we already have from memberData
-          // The next auth refresh will retry
+          console.warn('[AuthContext] Store data fetch timeout');
           return null;
         }
         throw timeoutErr;
       }
 
-      console.warn('[AuthContext] Store query result:', JSON.stringify({ storeData: storeData?.id, storeError }));
-
-      if (storeError) {
-        console.error('[AuthContext] Error fetching store:', storeError);
+      if (directStoreError) {
+        console.error('[AuthContext] Direct store fetch also failed:', directStoreError);
         return null;
       }
 
-      if (storeData) {
-        console.warn('[AuthContext] Setting store:', storeData.name);
-        setStore(storeData as Store);
-        // SYNC: Update global store state
-        useWarungStore.getState().setCurrentStoreId(storeData.id);
-        return storeData as Store;
+      if (directStoreData) {
+        console.warn('[AuthContext] Setting store from direct fetch:', directStoreData.name);
+        setStore(directStoreData as Store);
+        useWarungStore.getState().setCurrentStoreId(directStoreData.id);
+        return directStoreData as Store;
       }
 
       return null;

@@ -5,11 +5,14 @@
 -- 2. Update RPCs to handle name (create, get, update)
 -- =====================================================
 
--- 1. Add name column if not exists
+-- 1. Add name and updated_at columns if not exists
 DO $$ 
 BEGIN 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'store_members' AND column_name = 'name') THEN
         ALTER TABLE store_members ADD COLUMN name TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'store_members' AND column_name = 'updated_at') THEN
+        ALTER TABLE store_members ADD COLUMN updated_at TIMESTAMPTZ DEFAULT now();
     END IF;
 END $$;
 
@@ -90,7 +93,7 @@ BEGIN
     END IF;
 
     -- Create new auth user
-    v_encrypted_pw := crypt(p_password, gen_salt('bf'));
+    v_encrypted_pw := crypt(p_password, gen_salt('bf', 10));
     v_new_user_id := gen_random_uuid();
 
     INSERT INTO auth.users (
@@ -264,7 +267,7 @@ BEGIN
 
     -- Update password if provided
     IF p_password IS NOT NULL AND length(p_password) >= 6 THEN
-        v_encrypted_pw := crypt(p_password, gen_salt('bf'));
+        v_encrypted_pw := crypt(p_password, gen_salt('bf', 10));
         UPDATE auth.users
         SET encrypted_password = v_encrypted_pw,
             updated_at = now()

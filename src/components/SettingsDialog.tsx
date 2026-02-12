@@ -31,7 +31,26 @@ interface StoreMember {
     role: string;
     joined_at: string;
     name?: string;
+    permissions?: string[];
 }
+
+const AVAILABLE_PERMISSIONS = [
+    { id: 'pos', label: 'Kasir (POS)' },
+    { id: 'products', label: 'Kelola Produk' },
+    { id: 'sales', label: 'Lihat Penjualan' },
+    { id: 'purchases', label: 'Pembelian' },
+    { id: 'suppliers', label: 'Pemasok' },
+    { id: 'requests', label: 'Request Jajanan' },
+    { id: 'finance', label: 'Keuangan' },
+    { id: 'settings', label: 'Pengaturan' },
+];
+
+// Helper to get default permissions based on role
+const getDefaultPermissions = (role: string) => {
+    if (role === 'admin' || role === 'owner') return AVAILABLE_PERMISSIONS.map(p => p.id);
+    // Staff defaults: POS, Products (read), Sales (read)
+    return ['pos', 'products', 'sales'];
+};
 export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('system');
@@ -59,11 +78,13 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [editName, setEditName] = useState('');
     const [editRole, setEditRole] = useState('');
     const [editPassword, setEditPassword] = useState('');
+    const [editPermissions, setEditPermissions] = useState<string[]>([]);
     const [isEditing, setIsEditing] = useState(false);
 
     const isProOrEnterprise = store?.plan === 'pro' || store?.plan === 'enterprise';
 
     const storeProfile = useWarungStore((state) => state.storeProfile);
+    const currentUser = useWarungStore((state) => state.currentUser);
     const opnameMode = useWarungStore((state) => state.opnameMode);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const updateOpnameMode = useWarungStore((state) => state.updateOpnameMode);
@@ -96,14 +117,28 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
         try {
             const { data, error } = await (supabase.rpc as any)('get_store_members');
             if (error) throw error;
+
+            // Fetch permissions explicitly from table as RPC might not return new column yet
+            const { data: permData } = await supabase
+                .from('store_members')
+                .select('user_id, permissions')
+                .eq('store_id', store?.id);
+
             // Map out_ prefixed columns from RPC to frontend property names
-            const mapped = (data || []).map((m: any) => ({
-                user_id: m.out_user_id || m.user_id,
-                email: m.out_email || m.email,
-                role: m.out_role || m.role,
-                name: m.out_name || m.name,
-                joined_at: m.out_joined_at || m.joined_at,
-            }));
+            const mapped = (data || []).map((m: any) => {
+                const userId = m.out_user_id || m.user_id;
+                // Find matching permissions
+                const userPerms = permData?.find(p => p.user_id === userId)?.permissions;
+
+                return {
+                    user_id: userId,
+                    email: m.out_email || m.email,
+                    role: m.out_role || m.role,
+                    name: m.out_name || m.name,
+                    joined_at: m.out_joined_at || m.joined_at,
+                    permissions: userPerms
+                };
+            });
             setMembers(mapped);
         } catch (error) {
             console.error('Error fetching members:', error);
@@ -444,69 +479,73 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         >
                             Team
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="domain"
-                            className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase"
-                        >
-                            Domain
-                        </TabsTrigger>
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                            <TabsTrigger
+                                value="domain"
+                                className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase"
+                            >
+                                Domain
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     <TabsContent value="system" className="space-y-4 py-2">
                         {/* Opname Configuration Section - Move to top for clarity */}
-                        <div className="border-2 border-brand-black p-4 space-y-3 bg-blue-50">
-                            <h3 className="font-mono font-bold flex items-center gap-2">
-                                <Package className="w-4 h-4" />
-                                Mode Penjualan
-                            </h3>
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                            <div className="border-2 border-brand-black p-4 space-y-3 bg-blue-50">
+                                <h3 className="font-mono font-bold flex items-center gap-2">
+                                    <Package className="w-4 h-4" />
+                                    Mode Penjualan
+                                </h3>
 
-                            <div>
-                                <label className="text-sm font-mono font-bold mb-2 block">
-                                    Pilih Mode Penjualan
-                                </label>
-                                <select
-                                    value={opnameMode}
-                                    onChange={(e) => handleModeChange(e.target.value)}
-                                    className="w-full border-2 border-brand-black p-2 font-mono rounded-none"
-                                >
-                                    <option value="retail">Retail - Stok dikurangi saat penjualan → Rekon Stok</option>
-                                    <option value="display">Display - Stok dikurangi di awal → Rekon Kas</option>
-                                    <option value="terpadu">Terpadu - Self-service → Rekon Kas + Stok sekaligus</option>
-                                </select>
+                                <div>
+                                    <label className="text-sm font-mono font-bold mb-2 block">
+                                        Pilih Mode Penjualan
+                                    </label>
+                                    <select
+                                        value={opnameMode}
+                                        onChange={(e) => handleModeChange(e.target.value)}
+                                        className="w-full border-2 border-brand-black p-2 font-mono rounded-none"
+                                    >
+                                        <option value="retail">Retail - Stok dikurangi saat penjualan → Rekon Stok</option>
+                                        <option value="display">Display - Stok dikurangi di awal → Rekon Kas</option>
+                                        <option value="terpadu">Terpadu - Self-service → Rekon Kas + Stok sekaligus</option>
+                                    </select>
+                                </div>
+
+                                {opnameMode === 'display' && (
+                                    <Alert className="border-2 border-purple-500 bg-purple-50">
+                                        <AlertDescription className="text-xs font-mono text-purple-800">
+                                            <strong>Mode Display Aktif:</strong> Stok sudah dikurangi saat dipajang.
+                                            Profit dihitung dari rekonsiliasi kas harian.
+                                            Fitur keranjang TIDAK tersedia di mode ini.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
+                                {opnameMode === 'retail' && (
+                                    <Alert className="border-2 border-blue-500 bg-blue-100">
+                                        <AlertDescription className="text-xs font-mono text-blue-800">
+                                            <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan.
+                                            Cocok untuk warung dengan kasir atau self-checkout via QRIS.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
+                                {opnameMode === 'terpadu' && (
+                                    <Alert className="border-2 border-green-500 bg-green-50">
+                                        <AlertDescription className="text-xs font-mono text-green-800">
+                                            <strong>Mode Terpadu Aktif:</strong> Cocok untuk warung self-service.
+                                            Rekonsiliasi kas dan stok dilakukan sekaligus. Selisih stok otomatis
+                                            di-generate sebagai penjualan cash.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
                             </div>
-
-                            {opnameMode === 'display' && (
-                                <Alert className="border-2 border-purple-500 bg-purple-50">
-                                    <AlertDescription className="text-xs font-mono text-purple-800">
-                                        <strong>Mode Display Aktif:</strong> Stok sudah dikurangi saat dipajang.
-                                        Profit dihitung dari rekonsiliasi kas harian.
-                                        Fitur keranjang TIDAK tersedia di mode ini.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-
-                            {opnameMode === 'retail' && (
-                                <Alert className="border-2 border-blue-500 bg-blue-100">
-                                    <AlertDescription className="text-xs font-mono text-blue-800">
-                                        <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan.
-                                        Cocok untuk warung dengan kasir atau self-checkout via QRIS.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-
-                            {opnameMode === 'terpadu' && (
-                                <Alert className="border-2 border-green-500 bg-green-50">
-                                    <AlertDescription className="text-xs font-mono text-green-800">
-                                        <strong>Mode Terpadu Aktif:</strong> Cocok untuk warung self-service.
-                                        Rekonsiliasi kas dan stok dilakukan sekaligus. Selisih stok otomatis
-                                        di-generate sebagai penjualan cash.
-                                    </AlertDescription>
-                                </Alert>
-                            )}
-                        </div>
+                        )}
 
                         {/* Cart & QRIS Settings - Only show if NOT in display mode */}
-                        {opnameMode !== 'display' && (
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && opnameMode !== 'display' && (
                             <div className="border-2 border-brand-black p-4 space-y-3 bg-green-50">
                                 <h3 className="font-mono font-bold flex items-center gap-2">
                                     <ShoppingCart className="w-4 h-4" />
@@ -557,7 +596,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         )}
 
                         {/* Display mode cart disabled notice */}
-                        {opnameMode === 'display' && (
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && opnameMode === 'display' && (
                             <div className="border-2 border-gray-300 p-4 space-y-3 bg-gray-50">
                                 <h3 className="font-mono font-bold flex items-center gap-2 text-gray-500">
                                     <ShoppingCart className="w-4 h-4" />
@@ -571,49 +610,51 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         )}
 
                         {/* Data Management Section */}
-                        <div className="border-2 border-brand-black p-4 space-y-3">
-                            <h3 className="font-mono font-bold flex items-center gap-2">
-                                <Database className="w-4 h-4" />
-                                Manajemen Data
-                            </h3>
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                            <div className="border-2 border-brand-black p-4 space-y-3">
+                                <h3 className="font-mono font-bold flex items-center gap-2">
+                                    <Database className="w-4 h-4" />
+                                    Manajemen Data
+                                </h3>
 
-                            <div className="space-y-2">
-                                <Button
-                                    onClick={handleExportData}
-                                    variant="outline"
-                                    className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
-                                >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Export Data (Backup)
-                                </Button>
+                                <div className="space-y-2">
+                                    <Button
+                                        onClick={handleExportData}
+                                        variant="outline"
+                                        className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                    >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Export Data (Backup)
+                                    </Button>
 
-                                <Button
-                                    onClick={handleClearCache}
-                                    variant="outline"
-                                    className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
-                                >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Clear Cache
-                                </Button>
+                                    <Button
+                                        onClick={handleClearCache}
+                                        variant="outline"
+                                        className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                    >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Clear Cache
+                                    </Button>
 
-                                <Button
-                                    onClick={handleResetData}
-                                    disabled={isResetting}
-                                    variant="destructive"
-                                    className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
-                                >
-                                    <AlertTriangle className="w-4 h-4 mr-2" />
-                                    {isResetting ? 'Mereset...' : 'Reset Semua Data'}
-                                </Button>
+                                    <Button
+                                        onClick={handleResetData}
+                                        disabled={isResetting}
+                                        variant="destructive"
+                                        className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                    >
+                                        <AlertTriangle className="w-4 h-4 mr-2" />
+                                        {isResetting ? 'Mereset...' : 'Reset Semua Data'}
+                                    </Button>
+                                </div>
+
+                                <Alert className="border-2 border-yellow-500 bg-yellow-50">
+                                    <AlertDescription className="text-xs font-mono text-yellow-800">
+                                        ⚠️ Reset data akan menghapus semua data secara permanen.
+                                        Export data terlebih dahulu untuk backup!
+                                    </AlertDescription>
+                                </Alert>
                             </div>
-
-                            <Alert className="border-2 border-yellow-500 bg-yellow-50">
-                                <AlertDescription className="text-xs font-mono text-yellow-800">
-                                    ⚠️ Reset data akan menghapus semua data secara permanen.
-                                    Export data terlebih dahulu untuk backup!
-                                </AlertDescription>
-                            </Alert>
-                        </div>
+                        )}
 
                         {/* App Info Section */}
                         <div className="border-2 border-brand-black p-4 space-y-3">
@@ -741,7 +782,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
 
 
                                 {/* Add Button */}
-                                {!isInviteDialogOpen && (
+                                {!isInviteDialogOpen && (currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
                                     <div className="flex justify-end">
                                         <Button
                                             onClick={() => setIsInviteDialogOpen(true)}
@@ -796,37 +837,50 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                                         </div>
 
                                                         <div className="flex items-center gap-1">
+                                                            {/* Edit Button */}
                                                             {member.user_id !== user?.id && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => {
-                                                                        setEditingMember(member);
-                                                                        setEditName(member.name || '');
-                                                                        setEditRole(member.role);
-                                                                        setIsEditDialogOpen(true);
-                                                                    }}
-                                                                    className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 shrink-0"
-                                                                >
-                                                                    <Settings className="w-4 h-4" />
-                                                                </Button>
-                                                            )}
+                                                                (currentUser?.role === 'owner') ||
+                                                                (currentUser?.role === 'admin' && (member.role === 'staff' || member.role === 'cashier'))
+                                                            ) && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            setEditingMember(member);
+                                                                            setEditName(member.name || '');
+                                                                            setEditRole(member.role);
+                                                                            // Initialize permissions: use existing or defaults based on role
+                                                                            const existingPerms = member.permissions && member.permissions.length > 0
+                                                                                ? member.permissions
+                                                                                : getDefaultPermissions(member.role);
+                                                                            setEditPermissions(existingPerms);
+                                                                            setIsEditDialogOpen(true);
+                                                                        }}
+                                                                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 shrink-0"
+                                                                    >
+                                                                        <Settings className="w-4 h-4" />
+                                                                    </Button>
+                                                                )}
 
+                                                            {/* Delete Button */}
                                                             {member.user_id !== user?.id && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => handleRemoveMember(member.user_id)}
-                                                                    disabled={isDeletingMember === member.user_id}
-                                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
-                                                                >
-                                                                    {isDeletingMember === member.user_id ? (
-                                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                                    ) : (
-                                                                        <Trash2 className="w-4 h-4" />
-                                                                    )}
-                                                                </Button>
-                                                            )}
+                                                                (currentUser?.role === 'owner') ||
+                                                                (currentUser?.role === 'admin' && (member.role === 'staff' || member.role === 'cashier'))
+                                                            ) && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => handleRemoveMember(member.user_id)}
+                                                                        disabled={isDeletingMember === member.user_id}
+                                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                                                                    >
+                                                                        {isDeletingMember === member.user_id ? (
+                                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                                        ) : (
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        )}
+                                                                    </Button>
+                                                                )}
                                                         </div>
                                                     </div>
                                                 ))
@@ -840,78 +894,81 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                     </TabsContent>
 
                     <TabsContent value="domain" className="space-y-4 py-2">
-                        {!isProOrEnterprise ? (
-                            <div className="text-center py-8 border-2 border-brand-black bg-gray-50">
-                                <Shield className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                                <h3 className="font-display font-bold text-lg mb-2">Upgrade ke Pro</h3>
-                                <p className="font-mono text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                                    Fitur Custom Domain hanya tersedia untuk paket Pro dan Enterprise.
-                                    Tingkatkan kredibilitas toko Anda dengan domain sendiri.
-                                </p>
-                                <UpgradePlanDialog
-                                    trigger={
-                                        <Button
-                                            className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
-                                        >
-                                            Upgrade Sekarang
-                                        </Button>
-                                    }
-                                />
-                            </div>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="domain" className="font-mono font-bold">Nama Domain</Label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            id="domain"
-                                            placeholder="contoh: tokoanda.com"
-                                            value={customDomain}
-                                            onChange={(e) => setCustomDomain(e.target.value)}
-                                            className="rounded-none border-2 border-brand-black font-mono"
-                                        />
-                                        <Button
-                                            onClick={handleSaveDomain}
-                                            disabled={isSavingDomain}
-                                            className="bg-brand-black text-white hover:bg-gray-800 rounded-none border-2 border-brand-black font-bold"
-                                        >
-                                            {isSavingDomain ? (
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                            ) : (
-                                                <Save className="w-4 h-4 mr-2" />
-                                            )}
-                                            Simpan
-                                        </Button>
-                                    </div>
-                                    <p className="text-xs font-mono text-muted-foreground">
-                                        Masukkan domain tanpa http:// atau https://
+                        {/* Only rendered if trigger is visible, but good to be safe */}
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                            !isProOrEnterprise ? (
+                                <div className="text-center py-8 border-2 border-brand-black bg-gray-50">
+                                    <Shield className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                                    <h3 className="font-display font-bold text-lg mb-2">Upgrade ke Pro</h3>
+                                    <p className="font-mono text-sm text-muted-foreground mb-4 max-w-md mx-auto">
+                                        Fitur Custom Domain hanya tersedia untuk paket Pro dan Enterprise.
+                                        Tingkatkan kredibilitas toko Anda dengan domain sendiri.
                                     </p>
+                                    <UpgradePlanDialog
+                                        trigger={
+                                            <Button
+                                                className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
+                                            >
+                                                Upgrade Sekarang
+                                            </Button>
+                                        }
+                                    />
                                 </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="domain" className="font-mono font-bold">Nama Domain</Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                id="domain"
+                                                placeholder="contoh: tokoanda.com"
+                                                value={customDomain}
+                                                onChange={(e) => setCustomDomain(e.target.value)}
+                                                className="rounded-none border-2 border-brand-black font-mono"
+                                            />
+                                            <Button
+                                                onClick={handleSaveDomain}
+                                                disabled={isSavingDomain}
+                                                className="bg-brand-black text-white hover:bg-gray-800 rounded-none border-2 border-brand-black font-bold"
+                                            >
+                                                {isSavingDomain ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Save className="w-4 h-4 mr-2" />
+                                                )}
+                                                Simpan
+                                            </Button>
+                                        </div>
+                                        <p className="text-xs font-mono text-muted-foreground">
+                                            Masukkan domain tanpa http:// atau https://
+                                        </p>
+                                    </div>
 
-                                <div className="bg-blue-50 border-2 border-blue-200 p-4">
-                                    <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
-                                        <AlertCircle className="w-4 h-4" />
-                                        Instruksi DNS
-                                    </h4>
-                                    <p className="text-sm text-blue-700 mb-3 font-mono">
-                                        Untuk menghubungkan domain, tambahkan record berikut di penyedia domain Anda:
-                                    </p>
-                                    <div className="bg-white border border-blue-200 p-3 font-mono text-xs space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Type:</span>
-                                            <span className="font-bold">CNAME</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Name:</span>
-                                            <span className="font-bold">@ (atau www)</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Value:</span>
-                                            <span className="font-bold">domains.omzetin.com</span>
+                                    <div className="bg-blue-50 border-2 border-blue-200 p-4">
+                                        <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                                            <AlertCircle className="w-4 h-4" />
+                                            Instruksi DNS
+                                        </h4>
+                                        <p className="text-sm text-blue-700 mb-3 font-mono">
+                                            Untuk menghubungkan domain, tambahkan record berikut di penyedia domain Anda:
+                                        </p>
+                                        <div className="bg-white border border-blue-200 p-3 font-mono text-xs space-y-2">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Type:</span>
+                                                <span className="font-bold">CNAME</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Name:</span>
+                                                <span className="font-bold">@ (atau www)</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-500">Value:</span>
+                                                <span className="font-bold">domains.omzetin.com</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            )
                         )}
                     </TabsContent>
                 </Tabs>
@@ -1050,6 +1107,37 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                             </div>
                         </div>
 
+                        {/* Permissions Toggles */}
+                        <div className="space-y-3">
+                            <Label>Hak Akses Menu</Label>
+                            <div className="grid grid-cols-2 gap-2 border-2 border-brand-black p-3 bg-gray-50">
+                                {AVAILABLE_PERMISSIONS.map((perm) => (
+                                    <div key={perm.id} className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id={`perm-${perm.id}`}
+                                            checked={editPermissions.includes(perm.id)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setEditPermissions([...editPermissions, perm.id]);
+                                                } else {
+                                                    setEditPermissions(editPermissions.filter(p => p !== perm.id));
+                                                }
+                                            }}
+                                            className="w-4 h-4 rounded-none border-brand-black accent-brand-orange"
+                                        />
+                                        <Label htmlFor={`perm-${perm.id}`} className="font-mono text-sm cursor-pointer">
+                                            {perm.label}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground font-mono">
+                                Pilih menu yang dapat diakses oleh member ini.
+                            </p>
+                        </div>
+
+
                         <div className="flex justify-end gap-2">
                             <Button
                                 variant="outline"
@@ -1082,7 +1170,21 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                         if (data && !data.success) {
                                             toast.error(data.message);
                                         } else {
-                                            toast.success(editPassword ? 'Member & password berhasil diupdate' : 'Member berhasil diupdate');
+                                            // RPC doesn't support permissions yet, so update it directly
+                                            // This works because owner/admin has RLS update rights on store_members
+                                            const { error: permError } = await supabase
+                                                .from('store_members')
+                                                .update({ permissions: editPermissions })
+                                                .eq('user_id', editingMember.user_id)
+                                                .eq('store_id', store?.id);
+
+                                            if (permError) {
+                                                console.error('Error updating permissions:', permError);
+                                                toast.warning('Member diupdate, tapi gagal menyimpan permissions');
+                                            } else {
+                                                toast.success(editPassword ? 'Member, password & permissions diupdate' : 'Member & permissions diupdate');
+                                            }
+
                                             setEditPassword('');
                                             setIsEditDialogOpen(false);
                                             fetchMembers();
@@ -1109,7 +1211,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         </div>
                     </DialogContent>
                 </Dialog>
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     );
 }

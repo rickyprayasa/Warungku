@@ -21,17 +21,34 @@ const STORE_CATEGORIES = [
 ];
 
 export function StoreProfileDialog({ iconOnly = false, compact = false, trigger }: { iconOnly?: boolean; compact?: boolean; trigger?: React.ReactNode }) {
+    const currentUser = useWarungStore((state) => state.currentUser);
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const { updateStoreSlug, storeId, refreshStore } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
-    const [formData, setFormData] = useState(storeProfile);
     const [isSaving, setIsSaving] = useState(false);
 
+    const [formData, setFormData] = useState({
+        name: '',
+        category: '',
+        address: '',
+        phone: '',
+        logoUrl: '',
+        slug: '',
+        color_scheme: 'orange' // default color
+    });
     // Sync formData when storeProfile changes (e.g., after fetch from server)
     useEffect(() => {
-        setFormData(storeProfile);
+        if (storeProfile) {
+            setFormData(prev => ({ ...prev, ...storeProfile }));
+        }
     }, [storeProfile]);
+
+    // Security Check: If not owner/admin, do not render
+    // IMPORTANT: This must be AFTER all hooks to avoid "Rendered fewer hooks" error
+    if (currentUser && currentUser.role !== 'owner' && currentUser.role !== 'admin') {
+        return null;
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

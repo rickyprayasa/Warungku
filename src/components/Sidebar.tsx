@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/tooltip";
 
 export function Sidebar() {
-    const { isAuthenticated, signOut, store } = useAuth();
+    const { isAuthenticated, signOut, store, user: authUser } = useAuth();
     const { isAdmin } = useAdmin();
     const { isFreePlan, isTrialActive, daysRemainingInTrial, plan, effectivePlan } = usePlan();
     const storeProfile = useWarungStore((state) => state.storeProfile);
@@ -37,6 +37,27 @@ export function Sidebar() {
         }, 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // Fetch current user details when store changes
+    const currentStoreId = useWarungStore((state) => state.currentStoreId);
+    const fetchCurrentUser = useWarungStore((state) => state.fetchCurrentUser);
+    const currentUser = useWarungStore((state) => state.currentUser);
+
+    useEffect(() => {
+        if (currentStoreId) {
+            fetchCurrentUser(authUser);
+
+            // Failsafe: If no user after 2 seconds, retry
+            const retryTimer = setTimeout(() => {
+                const current = useWarungStore.getState().currentUser;
+                if (!current) {
+                    console.warn('[Sidebar] User still null after 2s, retrying fetch...');
+                    fetchCurrentUser(authUser);
+                }
+            }, 2000);
+            return () => clearTimeout(retryTimer);
+        }
+    }, [currentStoreId, fetchCurrentUser]);
 
 
 
@@ -149,20 +170,32 @@ export function Sidebar() {
                             </div>
                         )}
 
-                        {/* Plan Badge */}
-                        {!isTrialActive && (
-                            <div className={`mt-2 border-2 rounded px-2 py-1 ${plan === 'free'
-                                ? 'bg-gray-100 border-gray-400'
-                                : 'bg-brand-orange/10 border-brand-orange'
-                                }`}>
-                                <div className="text-center">
-                                    <span className={`font-mono text-[10px] font-bold uppercase ${plan === 'free' ? 'text-gray-600' : 'text-brand-orange'
-                                        }`}>
-                                        Plan {plan === 'free' ? 'Free' : plan === 'pro' ? 'Pro' : 'Enterprise'}
-                                    </span>
+                        {/* User Profile Badge */}
+                        <div className="mt-2 bg-brand-orange/10 border-2 border-brand-orange rounded px-2 py-1.5">
+                            <div className="flex items-center gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-mono text-xs font-bold text-brand-black truncate">
+                                        {currentUser ? (
+                                            currentUser.name || currentUser.email?.split('@')[0]
+                                        ) : (
+                                            <span className="opacity-50">Loading...</span>
+                                        )}
+                                    </p>
+                                    <p className="font-mono text-[10px] text-muted-foreground uppercase truncate">
+                                        {currentUser ? (
+                                            currentUser.role === 'owner' ? '👑 Pemilik Toko' : currentUser.role === 'admin' ? '🛡️ Admin' : '👤 Staff'
+                                        ) : (
+                                            <span className="opacity-0">...</span>
+                                        )}
+                                    </p>
+                                    {currentUser?.email && (
+                                        <p className="font-mono text-[9px] text-muted-foreground truncate mt-0.5" title={currentUser.email}>
+                                            {currentUser.email}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </>
                 ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -196,54 +229,109 @@ export function Sidebar() {
             {/* Navigation */}
             <nav className="flex-1 py-3 overflow-y-auto">
 
-                {/* UTAMA */}
-                {!sidebarCollapsed && (
-                    <div className="pt-2 pb-1 px-4">
-                        <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Utama</p>
-                    </div>
-                )}
-                <NavItem id="tour-pos" to="/pos" icon={Store} label="Kasir (POS)" collapsed={sidebarCollapsed} />
-                <NavItem id="tour-dashboard" to="/dashboard" tab="analytics" icon={BarChart3} label="Dasbor" collapsed={sidebarCollapsed} />
+                {/* Helper: is this user an owner or admin? */}
+                {/* Helper: is this user an owner or admin? */}
+                {(() => {
+                    const isOwnerOrAdmin = !currentUser || currentUser.role === 'owner' || currentUser.role === 'admin';
 
-                {/* Link to Public Store */}
-                {store?.slug && (
-                    <ExternalNavItem
-                        href={`/${store.slug}`}
-                        icon={ExternalLink}
-                        label="Lihat Toko"
-                        collapsed={sidebarCollapsed}
-                    />
-                )}
+                    // Helper to check if user has permission
+                    const hasPermission = (perm: string) => {
+                        // If owner or admin, always true
+                        if (isOwnerOrAdmin) return true;
 
-                {/* INVENTARIS */}
-                {!sidebarCollapsed && (
-                    <div className="pt-3 pb-1 px-4">
-                        <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Inventaris</p>
-                    </div>
-                )}
-                <NavItem id="tour-products" to="/dashboard" tab="products" icon={Package} label="Produk" collapsed={sidebarCollapsed} />
-                <NavItem to="/dashboard" tab="suppliers" icon={Truck} label="Pemasok" collapsed={sidebarCollapsed} />
-                <NavItem to="/dashboard" tab="price-reference" icon={Tag} label="Ref. Harga" collapsed={sidebarCollapsed} />
+                        // If user has specific permissions array set, use it
+                        // CRITICAL FIX: null/undefined check only. Empty array [] is valid "no access".
+                        if (currentUser?.permissions) {
+                            return currentUser.permissions.includes(perm);
+                        }
 
-                {/* TRANSAKSI */}
-                {!sidebarCollapsed && (
-                    <div className="pt-3 pb-1 px-4">
-                        <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Transaksi</p>
-                    </div>
-                )}
-                <NavItemWithBadge to="/dashboard" tab="sales" icon={DollarSign} label="Penjualan" collapsed={sidebarCollapsed} />
-                <NavItem to="/dashboard" tab="purchases" icon={ShoppingCart} label="Pembelian" collapsed={sidebarCollapsed} />
-                <NavItem to="/dashboard" tab="requests" icon={Inbox} label="Request" collapsed={sidebarCollapsed} />
+                        // Fallback to role-based defaults for staff ONLY if permissions is undefined
+                        // Staff default: pos, products, sales
+                        if (perm === 'pos' || perm === 'products' || perm === 'sales') return true;
 
-                {/* KEUANGAN & REKON */}
-                {!sidebarCollapsed && (
-                    <div className="pt-3 pb-1 px-4">
-                        <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Keuangan</p>
-                    </div>
-                )}
-                <NavItem to="/dashboard" tab="cashflow" icon={ArrowRightLeft} label="Arus Kas" collapsed={sidebarCollapsed} />
-                <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" collapsed={sidebarCollapsed} />
-                <RekonNavItem collapsed={sidebarCollapsed} />
+                        return false;
+                    };
+
+                    return (
+                        <>
+                            {/* UTAMA */}
+                            {!sidebarCollapsed && (
+                                <div className="pt-2 pb-1 px-4">
+                                    <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Utama</p>
+                                </div>
+                            )}
+                            {hasPermission('pos') && (
+                                <NavItem id="tour-pos" to="/pos" icon={Store} label="Kasir (POS)" collapsed={sidebarCollapsed} />
+                            )}
+                            {(isOwnerOrAdmin || hasPermission('settings')) && (
+                                <NavItem
+                                    id="tour-dashboard"
+                                    to="/dashboard"
+                                    tab="analytics"
+                                    icon={BarChart3}
+                                    label="Dasbor"
+                                    collapsed={sidebarCollapsed}
+                                />
+                            )}
+
+                            {/* Link to Public Store - owner/admin only */}
+                            {isOwnerOrAdmin && store?.slug && (
+                                <ExternalNavItem
+                                    href={`/${store.slug}`}
+                                    icon={ExternalLink}
+                                    label="Lihat Toko"
+                                    collapsed={sidebarCollapsed}
+                                />
+                            )}
+
+                            {/* INVENTARIS */}
+                            {!sidebarCollapsed && (hasPermission('products') || hasPermission('suppliers')) && (
+                                <div className="pt-3 pb-1 px-4">
+                                    <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Inventaris</p>
+                                </div>
+                            )}
+                            {hasPermission('products') && (
+                                <NavItem id="tour-products" to="/dashboard" tab="products" icon={Package} label="Produk" collapsed={sidebarCollapsed} />
+                            )}
+                            {hasPermission('suppliers') && (
+                                <NavItem to="/dashboard" tab="suppliers" icon={Truck} label="Pemasok" collapsed={sidebarCollapsed} />
+                            )}
+                            {isOwnerOrAdmin && (
+                                <NavItem to="/dashboard" tab="price-reference" icon={Tag} label="Ref. Harga" collapsed={sidebarCollapsed} />
+                            )}
+
+                            {/* TRANSAKSI */}
+                            {!sidebarCollapsed && (hasPermission('sales') || hasPermission('purchases') || hasPermission('requests')) && (
+                                <div className="pt-3 pb-1 px-4">
+                                    <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Transaksi</p>
+                                </div>
+                            )}
+                            {hasPermission('sales') && (
+                                <NavItemWithBadge to="/dashboard" tab="sales" icon={DollarSign} label="Penjualan" collapsed={sidebarCollapsed} />
+                            )}
+                            {hasPermission('purchases') && (
+                                <NavItem to="/dashboard" tab="purchases" icon={ShoppingCart} label="Pembelian" collapsed={sidebarCollapsed} />
+                            )}
+                            {hasPermission('requests') && (
+                                <NavItem to="/dashboard" tab="requests" icon={Inbox} label="Request" collapsed={sidebarCollapsed} />
+                            )}
+
+                            {/* KEUANGAN & REKON - owner/admin only or specific finance permission */}
+                            {(isOwnerOrAdmin || hasPermission('finance')) && (
+                                <>
+                                    {!sidebarCollapsed && (
+                                        <div className="pt-3 pb-1 px-4">
+                                            <p className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Keuangan</p>
+                                        </div>
+                                    )}
+                                    <NavItem to="/dashboard" tab="cashflow" icon={ArrowRightLeft} label="Arus Kas" collapsed={sidebarCollapsed} />
+                                    <NavItem to="/dashboard" tab="finance" icon={Banknote} label="Keuangan" collapsed={sidebarCollapsed} />
+                                    {isOwnerOrAdmin && <RekonNavItem collapsed={sidebarCollapsed} />}
+                                </>
+                            )}
+                        </>
+                    );
+                })()}
 
                 {/* ADMIN CMS LINK */}
                 {isAdmin && (
@@ -271,42 +359,48 @@ export function Sidebar() {
                     <>
                         <TooltipProvider delayDuration={500}>
                             <div className="flex gap-1">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex-1" id="tour-store-profile">
-                                            <StoreProfileDialog compact />
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="font-mono">Profil Toko</TooltipContent>
-                                </Tooltip>
+                                {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                                    <>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="flex-1" id="tour-store-profile">
+                                                    <StoreProfileDialog compact />
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="font-mono">Profil Toko</TooltipContent>
+                                        </Tooltip>
 
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex-1">
-                                            <QRISSetupDialog compact />
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="font-mono">Setup QRIS</TooltipContent>
-                                </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="flex-1">
+                                                    <QRISSetupDialog compact />
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="font-mono">Setup QRIS</TooltipContent>
+                                        </Tooltip>
+                                    </>
+                                )}
 
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex-1">
-                                            <SettingsDialog
-                                                trigger={
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                                                    >
-                                                        <Settings className="w-4 h-4" />
-                                                    </Button>
-                                                }
-                                            />
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="font-mono">Pengaturan</TooltipContent>
-                                </Tooltip>
+                                {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="flex-1">
+                                                <SettingsDialog
+                                                    trigger={
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="w-full justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                                                        >
+                                                            <Settings className="w-4 h-4" />
+                                                        </Button>
+                                                    }
+                                                />
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="font-mono">Pengaturan</TooltipContent>
+                                    </Tooltip>
+                                )}
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -349,31 +443,35 @@ export function Sidebar() {
                                 <TooltipContent side="right">Refresh Data</TooltipContent>
                             </Tooltip>
 
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div className="w-full flex justify-center">
-                                        <StoreProfileDialog iconOnly />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Profil Toko</TooltipContent>
-                            </Tooltip>
+                            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                                <>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="w-full flex justify-center">
+                                                <StoreProfileDialog iconOnly />
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right">Profil Toko</TooltipContent>
+                                    </Tooltip>
 
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <QRISSetupDialog
-                                        trigger={
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                                            >
-                                                <QrCode className="w-4 h-4" />
-                                            </Button>
-                                        }
-                                    />
-                                </TooltipTrigger>
-                                <TooltipContent side="right">Setup QRIS</TooltipContent>
-                            </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <QRISSetupDialog
+                                                trigger={
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                                                    >
+                                                        <QrCode className="w-4 h-4" />
+                                                    </Button>
+                                                }
+                                            />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right">Setup QRIS</TooltipContent>
+                                    </Tooltip>
+                                </>
+                            )}
 
                             <Tooltip>
                                 <TooltipTrigger asChild>

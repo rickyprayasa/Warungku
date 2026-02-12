@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { QrCode } from 'lucide-react';
 import { QRISSetupContent } from './QRISSetupContent';
+import { useWarungStore } from '@/lib/store';
 
 interface QRISSetupDialogProps {
   trigger?: React.ReactNode;
@@ -12,6 +13,12 @@ interface QRISSetupDialogProps {
 
 export function QRISSetupDialog({ trigger, compact = false }: QRISSetupDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const currentUser = useWarungStore((state) => state.currentUser);
+
+  // Security Check: If not owner/admin, do not render
+  if (currentUser && currentUser.role !== 'owner' && currentUser.role !== 'admin') {
+    return null;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

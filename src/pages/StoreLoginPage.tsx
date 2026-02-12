@@ -2,7 +2,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { KeyRound, Loader2, Eye, EyeOff, Store, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -46,7 +53,7 @@ export function StoreLoginPage() {
             try {
                 const { data, error: fetchError } = await supabase
                     .from('stores')
-                    .select('id, name, slug, plan')
+                    .select('id, name, slug, plan, logo_url')
                     .eq('slug', slug)
                     .single();
 
@@ -55,7 +62,7 @@ export function StoreLoginPage() {
                 } else {
                     setStoreInfo(data as StoreInfo);
 
-                    // Also try to fetch logo from settings
+                    // Also try to fetch logo from settings as fallback
                     const { data: settingsData } = await supabase
                         .from('settings')
                         .select('value')
@@ -68,8 +75,12 @@ export function StoreLoginPage() {
                             const profile = typeof settingsData.value === 'string'
                                 ? JSON.parse(settingsData.value)
                                 : settingsData.value;
-                            if (profile.logoUrl) {
-                                setStoreInfo(prev => prev ? { ...prev, logo_url: profile.logoUrl } : null);
+
+                            // Check for both camelCase and snake_case properties
+                            const logoUrl = profile.logoUrl || profile.logo_url;
+
+                            if (logoUrl) {
+                                setStoreInfo(prev => prev ? { ...prev, logo_url: logoUrl } : null);
                             }
                         } catch { /* ignore parse errors */ }
                     }
@@ -133,7 +144,7 @@ export function StoreLoginPage() {
         try {
             const result = await signIn(email, password);
             if (result.error) {
-                setError(result.error);
+                setError('Email atau kata sandi salah. Silakan coba lagi.');
                 setIsLoading(false);
                 return;
             }
@@ -146,7 +157,7 @@ export function StoreLoginPage() {
                 return;
             }
 
-            // Verify membership in THIS specific store
+            // Verify membership in this specific store
             const { data: membership, error: memberError } = await supabase
                 .from('store_members')
                 .select('store_id, role')
@@ -214,8 +225,12 @@ export function StoreLoginPage() {
                 {/* Store branding header */}
                 <div className="text-center mb-6">
                     {storeInfo?.logo_url ? (
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full border-4 border-brand-black bg-white overflow-hidden mb-3 shadow-hard">
-                            <img src={storeInfo.logo_url} alt={storeInfo.name} className="w-full h-full object-cover" />
+                        <div className="flex justify-center mb-4">
+                            <img
+                                src={storeInfo.logo_url}
+                                alt={storeInfo.name}
+                                className="h-24 w-auto object-contain"
+                            />
                         </div>
                     ) : (
                         <div className="inline-flex items-center justify-center w-20 h-20 bg-brand-orange border-4 border-brand-black mb-3 shadow-hard">
@@ -236,13 +251,30 @@ export function StoreLoginPage() {
                         <p className="font-mono text-xs text-muted-foreground">Masukkan kredensial untuk mengelola toko.</p>
                     </div>
 
-                    {error && (
-                        <Alert className="mb-6 border-2 border-red-500 bg-red-50">
-                            <AlertDescription className="text-sm font-mono text-red-800">
-                                {error}
-                            </AlertDescription>
-                        </Alert>
-                    )}
+                    {/* Dialog for Error */}
+                    <Dialog open={!!error} onOpenChange={(open) => !open && setError('')}>
+                        <DialogContent className="sm:max-w-md border-2 border-red-500">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2 text-red-600">
+                                    <ShieldAlert className="w-5 h-5" />
+                                    Gagal Masuk
+                                </DialogTitle>
+                                <DialogDescription className="font-mono text-brand-black pt-2">
+                                    {error}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter className="sm:justify-end">
+                                <Button
+                                    type="button"
+                                    onClick={() => setError('')}
+                                    className="bg-red-600 text-white hover:bg-red-700 border-2 border-brand-black rounded-none font-bold"
+                                >
+                                    Tutup
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
 
                     {verifyingMembership ? (
                         <div className="text-center py-8">
@@ -266,17 +298,7 @@ export function StoreLoginPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="store-password" className="font-mono font-bold text-sm">Kata Sandi</Label>
-                                    <Button
-                                        variant="link"
-                                        className="p-0 h-auto font-mono text-xs text-brand-orange hover:text-brand-black"
-                                        onClick={() => navigate('/forgot-password')}
-                                        type="button"
-                                    >
-                                        Lupa Password?
-                                    </Button>
-                                </div>
+                                <Label htmlFor="store-password" className="font-mono font-bold text-sm">Kata Sandi</Label>
                                 <div className="relative">
                                     <Input
                                         id="store-password"

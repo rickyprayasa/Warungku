@@ -9,11 +9,12 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, store, refreshStore } = useAuth();
+  const { isAuthenticated, loading, store, refreshStore, user } = useAuth();
   const { isModalOpen } = useSession(); // Access session expiration modal state
   const fetchInitialBalance = useWarungStore((state) => state.fetchInitialBalance);
   const fetchStoreProfile = useWarungStore((state) => state.fetchStoreProfile);
   const fetchOpnameMode = useWarungStore((state) => state.fetchOpnameMode);
+  const fetchCurrentUser = useWarungStore((state) => state.fetchCurrentUser);
   const setCurrentStoreId = useWarungStore((state) => state.setCurrentStoreId);
   const location = useLocation();
   const hasFetched = useRef(false);
@@ -37,6 +38,20 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       }
     }
   }, [isAuthenticated, store, refreshStore, setCurrentStoreId, fetchInitialBalance, fetchStoreProfile, fetchOpnameMode]);
+
+  // Always fetch current user when authenticated with a store
+  // This runs independently to avoid race conditions with setCurrentStoreId
+  useEffect(() => {
+    if (isAuthenticated && store) {
+      console.log('[ProtectedRoute] Fetching current user for store:', store.id);
+      // Ensure storeId is set in zustand first
+      const currentId = useWarungStore.getState().currentStoreId;
+      if (!currentId) {
+        useWarungStore.getState().setCurrentStoreId(store.id);
+      }
+      fetchCurrentUser(user);
+    }
+  }, [isAuthenticated, store, fetchCurrentUser, user]);
 
   if (loading) {
     return (

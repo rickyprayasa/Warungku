@@ -49,6 +49,17 @@ interface WarungState {
   currentStoreId: string | null;
   setCurrentStoreId: (storeId: string | null) => void;
 
+  // Current User Context
+  currentUser: {
+    id: string;
+    email: string;
+    role: string;
+    name?: string;
+    permissions?: string[];
+  } | null;
+
+  isAuthenticated: boolean; // Added missing property
+
   // UI State
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
@@ -65,6 +76,7 @@ interface WarungActions {
   fetchStockDetails: (productId: string) => Promise<void>;
   fetchInitialBalance: () => Promise<void>;
   fetchStoreProfile: () => Promise<void>;
+  fetchCurrentUser: (user?: any) => Promise<void>;
   fetchOpnameMode: () => Promise<void>;
   preloadDashboardData: () => Promise<void>;
   setInitialBalance: (balance: number) => Promise<void>;
@@ -157,7 +169,7 @@ function toPurchase(row: any): Purchase {
   };
 }
 
-function toSale(row: any, items: any[]): Sale {
+function toSale(row: any, items: any[], cashierMap?: Map<string, string>): Sale {
   return {
     id: row.id,
     total: Number(row.total),
@@ -170,6 +182,8 @@ function toSale(row: any, items: any[]): Sale {
     paymentProofUrl: row.payment_proof_url || undefined,
     status: row.status || 'completed',
     createdAt: new Date(row.created_at).getTime(),
+    userId: row.user_id || undefined,
+    cashierName: (row.user_id && cashierMap) ? cashierMap.get(row.user_id) : undefined,
     items: items.map(item => ({
       productId: item.product_id,
       productName: item.product_name,
@@ -381,6 +395,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       isLoading: false,
       error: null,
       currentStoreId: null,
+      currentUser: null,
+      isAuthenticated: false,
       sidebarCollapsed: false,
 
       setSidebarCollapsed: (collapsed) => {
@@ -388,8 +404,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
 
       setCurrentStoreId: (storeId) => {
-        console.log('[STORE] Setting current store ID to:', storeId, 'previous:', get().currentStoreId);
-        // Reset store profile when switching stores to avoid cross-store data leakage
+        const previousStoreId = get().currentStoreId;
+        console.log('[STORE] Setting current store ID to:', storeId, 'previous:', previousStoreId);
+
+        // Check if we are switching stores
+        const isSwitchingStore = storeId !== previousStoreId;
+
+        // Reset store data when switching to a different store or clearing
+        // But preserve currentUser if we're just re-setting the same store ID
+        // (This prevents race conditions with fetchCurrentUser)
         set({
           currentStoreId: storeId,
           storeProfile: {
@@ -413,6 +436,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           jajananRequests: [],
           stockDetails: [],
           reconciliations: [],
+          // Only reset currentUser if identifying a NEW store context
+          currentUser: isSwitchingStore ? null : get().currentUser,
         });
         // Note: Data fetching is handled by components that listen to currentStoreId changes
         // This prevents multiple parallel fetches and race conditions
@@ -464,6 +489,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           isLoading: false,
           error: null,
           currentStoreId: null,
+          currentUser: null, // CRITICAL FIX: explicit null to prevent stale user state
         });
       },
 
@@ -522,6 +548,14 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         }
 
         try {
+          // Fetch members for cashier names
+          const { data: members } = await supabase
+            .from('store_members')
+            .select('user_id, name')
+            .eq('store_id', storeId);
+
+          const cashierMap = new Map((members || []).map((m: any) => [m.user_id, m.name]));
+
           // Fetch sales with timeout
           const { data: salesData, error: salesError } = await withTimeout(
             supabase
@@ -554,7 +588,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           }
 
           const sales = (salesData || []).map((sale: any) =>
-            toSale(sale, itemsData.filter(item => item.sale_id === sale.id))
+            toSale(sale, itemsData.filter(item => item.sale_id === sale.id), cashierMap)
           );
 
           set({ sales });
@@ -655,8 +689,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .single() as any;
 
           if (error) {
-            // Ignore 406 errors
-            if (error.code === '406' || error.message?.includes('406')) {
+            // Ignore 406 errors and other common errors
+            if (error.code === '406' || error.message?.includes('406') || (error as any).status === 406) {
               set({ initialBalance: 0 });
               return;
             }
@@ -727,6 +761,120 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         } catch (error) {
           console.error('Failed to fetch store profile:', error);
         }
+      },
+
+      fetchCurrentUser: async (passedUser?: any) => {
+        const storeId = get().currentStoreId;
+        console.warn('[fetchCurrentUser] START - storeId:', storeId);
+        if (!storeId) {
+          console.warn('[fetchCurrentUser] No storeId, skipping');
+          return;
+        }
+
+        let user = passedUser;
+        let authUser = passedUser;
+
+        if (!user) {
+          try {
+            const { data } = await supabase.auth.getUser();
+            user = data.user;
+            authUser = user;
+          } catch (e) {
+            console.warn('[fetchCurrentUser] Failed to get user from auth:', e);
+          }
+        }
+
+        console.warn('[fetchCurrentUser] Auth user:', user?.id, user?.email);
+
+        if (!user) {
+          set({ currentUser: null });
+          return;
+        }
+
+        // Priority 0: Try using RPC (most robust, bypasses RLS)
+        try {
+          console.warn('[fetchCurrentUser] Calling RPC get_my_role...');
+          const rpcResult = await (supabase.rpc as any)('get_my_role', {
+            p_store_id: storeId
+          });
+          const { data: role, error: rpcError } = rpcResult || {};
+          console.warn('[fetchCurrentUser] RPC result:', { role, error: rpcError?.message });
+
+          if (!rpcError && role) {
+            console.warn('[fetchCurrentUser] RPC SUCCESS - role:', role);
+
+            // FETCH PERMISSIONS MANUALLY since RPC doesn't return them
+            let permissions: string[] = [];
+            try {
+              const { data: permData } = await supabase
+                .from('store_members')
+                .select('permissions')
+                .eq('store_id', storeId)
+                .eq('user_id', user.id)
+                .maybeSingle();
+              if (permData?.permissions) permissions = permData.permissions;
+            } catch (e) {
+              console.warn('[fetchCurrentUser] Failed to fetch permissions:', e);
+            }
+
+            set({
+              currentUser: {
+                id: user.id,
+                email: user.email!,
+                role: role,
+                name: user.user_metadata?.name || user.user_metadata?.full_name ||
+                  (role === 'owner' ? 'Pemilik Toko' : role === 'admin' ? 'Admin' : 'Staff'),
+                permissions: permissions
+              },
+            });
+            return;
+          }
+        } catch (e) {
+          console.warn('[fetchCurrentUser] RPC exception:', e);
+        }
+
+        // Priority 1: Check store_members table directly
+        // Note: Ownership is tracked via store_members.role = 'owner', NOT stores.owner_id
+        try {
+          console.warn('[fetchCurrentUser] Checking store_members...');
+          const { data: member, error: memberError } = await (supabase
+            .from('store_members') as any)
+            .select('role, name, permissions') // Added permissions
+            .eq('store_id', storeId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          console.warn('[fetchCurrentUser] Member result:', { member, memberError: memberError?.message });
+
+          if (!memberError && member) {
+            console.warn('[fetchCurrentUser] Member found - role:', member.role);
+            set({
+              currentUser: {
+                id: user.id,
+                email: user.email!,
+                role: member.role || 'staff',
+                name: member.name || user.user_metadata?.name || user.email?.split('@')[0],
+                permissions: member.permissions || []
+              },
+            });
+            return;
+          }
+        } catch (e) {
+          console.warn('[fetchCurrentUser] Member check exception:', e);
+        }
+
+        // Priority 2: FAILSAFE — set from auth session data
+        console.warn('[fetchCurrentUser] All DB checks failed! Using auth session fallback.');
+        set({
+          currentUser: {
+            id: user.id,
+            email: user.email!,
+            role: 'owner',
+            name: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          },
+        });
+
+
       },
 
       fetchOpnameMode: async () => {
@@ -1201,7 +1349,10 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             }
           }
 
-          const newSale = toSale(saleRow, items.map(i => ({ ...i, sale_id: saleRow.id })));
+          const currentUser = get().currentUser;
+          const cashierMap = currentUser ? new Map([[currentUser.id, currentUser.name || '']]) : undefined;
+
+          const newSale = toSale(saleRow, items.map(i => ({ ...i, sale_id: saleRow.id })), cashierMap);
           set((state) => { state.sales.unshift(newSale); });
 
           // Refresh products
@@ -1230,9 +1381,10 @@ export const useWarungStore = create<WarungState & WarungActions>()(
                 price: item.price,
                 cost: products.find(p => p.id === item.productId)?.cost || 0,
               })),
-              date: Date.now(),
               createdAt: Date.now(),
               notes: saleData.notes,
+              userId: get().currentUser?.id,
+              cashierName: get().currentUser?.name,
             };
 
             // Add to offline queue
@@ -2185,6 +2337,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         storeProfile: state.storeProfile,
         opnameMode: state.opnameMode,
         currentStoreId: state.currentStoreId,
+        currentUser: state.currentUser, // Persist user data across reloads
       }),
     }
   )
