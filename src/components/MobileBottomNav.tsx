@@ -27,7 +27,7 @@ export function MobileBottomNav() {
     const [activeTab, setActiveTab] = useState("pos");
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
 
-    const isOwnerOrAdmin = !currentUser || currentUser.role === 'owner' || currentUser.role === 'admin';
+    const isOwnerOrAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
     // Helper to check if user has permission
     const hasPermission = (perm: string) => {
@@ -276,7 +276,10 @@ export function MobileBottomNav() {
 
             {/* Bottom Navigation */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 bg-brand-white border-t-4 border-brand-black z-30 pb-[env(safe-area-inset-bottom,0px)]">
-                <div className={`grid h-16 ${tabs.length + 1 <= 4 ? 'grid-cols-4' : 'grid-cols-5'}`}>
+                <div
+                    className="grid h-16 w-full"
+                    style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, 1fr)` }}
+                >
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.value;

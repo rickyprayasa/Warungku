@@ -230,9 +230,8 @@ export function Sidebar() {
             <nav className="flex-1 py-3 overflow-y-auto">
 
                 {/* Helper: is this user an owner or admin? */}
-                {/* Helper: is this user an owner or admin? */}
                 {(() => {
-                    const isOwnerOrAdmin = !currentUser || currentUser.role === 'owner' || currentUser.role === 'admin';
+                    const isOwnerOrAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
                     // Helper to check if user has permission
                     const hasPermission = (perm: string) => {

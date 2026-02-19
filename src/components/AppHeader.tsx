@@ -54,20 +54,18 @@ export function AppHeader({ storeName, logoUrl }: AppHeaderProps = {}) {
             <div className="flex items-center justify-between h-16 md:h-20">
               {/* Logo (Left) */}
               {isAuthenticated && !isPublicMode ? (
-                <StoreProfileDialog trigger={
-                  <div id="mobile-tour-store-profile" className="flex items-center gap-3 relative z-10 cursor-pointer">
-                    {logoUrl ? (
-                      <div className="flex items-center gap-2">
-                        <img src={logoUrl} alt={storeName || 'Store'} className="h-14 w-auto object-contain" />
-                        {storeName && <span className="font-display font-bold text-xl text-brand-black hidden sm:inline">{storeName}</span>}
-                      </div>
-                    ) : storeName ? (
-                      <span className="font-display font-bold text-xl text-brand-black">{storeName}</span>
-                    ) : (
-                      <AnimatedLogo textColor="text-brand-white" />
-                    )}
-                  </div>
-                } />
+                <div className="flex items-center gap-3 relative z-10">
+                  {logoUrl ? (
+                    <div className="flex items-center gap-2">
+                      <img src={logoUrl} alt={storeName || 'Store'} className="h-14 w-auto object-contain" />
+                      {storeName && <span className="font-display font-bold text-xl text-brand-black hidden sm:inline">{storeName}</span>}
+                    </div>
+                  ) : storeName ? (
+                    <span className="font-display font-bold text-xl text-brand-black">{storeName}</span>
+                  ) : (
+                    <AnimatedLogo textColor="text-brand-white" />
+                  )}
+                </div>
               ) : (
                 <Link to="/" id="mobile-tour-store-profile" className="flex items-center gap-3 relative z-10">
                   {isPublicMode ? (
