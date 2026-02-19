@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ProductImageCapture } from './ImageCapture';
 import { usePlan } from '@/contexts/PlanContext';
 import { UpgradeDialog } from './UpgradeDialog';
+import { cn, getPackageLabel } from '@/lib/utils';
 
 const CATEGORIES = [
   "Makanan",
@@ -35,6 +36,18 @@ const CATEGORIES = [
   "Lainnya"
 ];
 
+const UNIT_OPTIONS = {
+  'Warung': ['pcs', 'pack', 'dus', 'renceng', 'bundle', 'ltr', 'kg'],
+  'Material/Bangunan': ['pcs', 'sak', 'batang', 'meter', 'm2', 'm3', 'kg', 'kaleng', 'lembar', 'dos', 'unit'],
+  'Listrik': ['pcs', 'unit', 'set', 'roll', 'batang', 'dus'],
+  'Elektronik': ['unit', 'pcs', 'set', 'box'],
+  'Pakaian': ['pcs', 'pasang', 'lusin', 'kodi', 'potong'],
+  'F&B': ['porsi', 'bungkus', 'cup', 'mangkok', 'gelas', 'box', 'paket', 'pcs'],
+  'Jasa': ['jam', 'sesi', 'kali', 'hari', 'bulan', 'tahun', 'paket'],
+  'Pertanian': ['kg', 'liter', 'karung', 'botol', 'sachet', 'zak'],
+  'Lainnya': ['pcs', 'unit', 'set', 'box', 'kg', 'liter']
+};
+
 interface ProductFormProps {
   product?: Product | null;
   onSuccess: () => void;
@@ -45,6 +58,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const updateProduct = useWarungStore((state) => state.updateProduct);
   const fetchProducts = useWarungStore((state) => state.fetchProducts);
   const adjustStock = useWarungStore((state) => state.adjustStock);
+  const storeProfile = useWarungStore((state) => state.storeProfile);
 
   const { canAddProduct, productLimitReached, limits } = usePlan();
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
@@ -86,7 +100,9 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
       category: product?.category || '',
       imageUrl: product?.imageUrl || '',
       minStockLevel: product?.minStockLevel || 10,
+      minStockLevel: product?.minStockLevel || 10,
       qtyPerUnit: product?.qtyPerUnit || 1,
+      unit: product?.unit || 'pcs',
     },
   });
   const isSubmitting = form.formState.isSubmitting;
@@ -222,24 +238,49 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="minStockLevel"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Min. Stok</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(Math.max(0, parseInt(e.target.value) || 0))}
-                          className="h-11 rounded-lg border-2 border-brand-black shadow-sm focus:shadow-hard transition-all font-bold font-mono text-center"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="unit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Satuan</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || 'pcs'}>
+                          <FormControl>
+                            <SelectTrigger className="h-11 rounded-lg border-2 border-brand-black shadow-sm focus:shadow-hard transition-all font-bold">
+                              <SelectValue placeholder="Satuan" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="rounded-lg border-2 border-brand-black font-bold max-h-[200px]">
+                            {(UNIT_OPTIONS[storeProfile.category as keyof typeof UNIT_OPTIONS] || UNIT_OPTIONS['Warung']).map((unit) => (
+                              <SelectItem key={unit} value={unit} className="uppercase">{unit}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="minStockLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-bold font-mono uppercase text-xs text-muted-foreground">Min. Stok</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="h-11 rounded-lg border-2 border-brand-black shadow-sm focus:shadow-hard transition-all font-bold font-mono text-center"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
             </div>
 
@@ -282,7 +323,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                     {isEditing ? "Update Stok & Modal" : "Stok Awal & Modal"}
                   </FormLabel>
                   <div className="text-[10px] font-mono font-bold bg-white border border-brand-black px-2 py-0.5 rounded-full">
-                    {costInputMode === 'perUnit' ? 'Mode: Per Unit' : 'Mode: Per Paket'}
+                    {costInputMode === 'perUnit' ? 'Mode: Per Unit' : `Mode: Per ${getPackageLabel(form.watch('unit'))}`}
                   </div>
                 </div>
 
@@ -339,14 +380,16 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                   onClick={() => setCostInputMode(costInputMode === 'perUnit' ? 'perPackage' : 'perUnit')}
                   className="w-full py-1 text-xs font-mono font-bold text-blue-600 hover:underline text-center"
                 >
-                  {costInputMode === 'perUnit' ? 'Beli stok dalam satuan Paket/Dus?' : 'Kembali ke input per unit'}
+                  {costInputMode === 'perUnit'
+                    ? `Beli stok dalam satuan ${getPackageLabel(form.watch('unit'))}?`
+                    : 'Kembali ke input per unit'}
                 </button>
 
                 {costInputMode === 'perPackage' && (
                   <div className="bg-white border-2 border-brand-black p-3 rounded-lg space-y-3 animate-in slide-in-from-top-2">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold font-mono uppercase">Harga Paket</label>
+                        <label className="text-[10px] font-bold font-mono uppercase">Harga {getPackageLabel(form.watch('unit'))}</label>
                         <Input
                           type="number"
                           value={packagePrice || ''}
@@ -355,7 +398,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold font-mono uppercase">Isi Paket</label>
+                        <label className="text-[10px] font-bold font-mono uppercase">Isi {getPackageLabel(form.watch('unit'))} (Pcs)</label>
                         <Input
                           type="number"
                           value={packageQuantity || ''}

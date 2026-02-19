@@ -171,12 +171,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const result = await withTimeout(
           (supabase
             .from('store_members') as any)
-            .select('store_id, role, stores(*)')
+            .select('store_id, role, stores(id, name, slug, plan, logo_url, address, created_at, updated_at)')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle(),
-          30000 // 30s timeout - increased for slow connections
+          15000 // 15s timeout - reduced to prevent long waits
         ) as any;
         memberData = result.data;
         memberError = result.error;

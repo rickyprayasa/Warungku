@@ -5,6 +5,7 @@ import { supabase } from './supabase';
 import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload, Reconciliation, ReconciliationPayload } from '@shared/types';
 import { AuditLogger } from './audit-logger';
 import { offlineSync } from './offline-sync';
+import { sessionEvents } from './session-events';
 
 // Helper to check if error is network related
 function isNetworkError(error: any): boolean {
@@ -232,12 +233,14 @@ async function ensureSession(): Promise<boolean> {
       const { data, error } = await supabase.auth.refreshSession();
       if (error || !data.session) {
         console.warn('[ensureSession] Session expired, need re-login');
+        sessionEvents.emitSessionExpired();
         return false;
       }
     }
     return true;
   } catch (err) {
     console.error('[ensureSession] Error checking session:', err);
+    sessionEvents.emitSessionExpired();
     return false;
   }
 }
@@ -262,10 +265,11 @@ async function withTimeout<T>(
   } catch (error: any) {
     clearTimeout(timeoutId!);
     // If auth error, try to refresh session
-    if (error?.message?.includes('JWT') || error?.message?.includes('session') || error?.code === 'PGRST301') {
+    if (sessionEvents.isAuthError(error)) {
       console.warn('[withTimeout] Auth error detected, refreshing session...');
       const refreshed = await ensureSession();
       if (!refreshed) {
+        sessionEvents.emitSessionExpired();
         throw new Error('Session expired. Please login again.');
       }
     }
@@ -606,11 +610,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         }
 
         try {
-          const { data, error } = await supabase
-            .from('purchases')
-            .select('*, suppliers(name)')
-            .eq('store_id', storeId)
-            .order('created_at', { ascending: false });
+          const { data, error } = await withTimeout(
+            supabase
+              .from('purchases')
+              .select('*, suppliers(name)')
+              .eq('store_id', storeId)
+              .order('created_at', { ascending: false }),
+            15000,
+            'Gagal memuat pembelian'
+          );
 
           if (error) throw error;
           set({ purchases: (data || []).map(toPurchase) });
@@ -627,11 +635,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         }
 
         try {
-          const { data, error } = await supabase
-            .from('suppliers')
-            .select('*')
-            .eq('store_id', storeId)
-            .order('name');
+          const { data, error } = await withTimeout(
+            supabase
+              .from('suppliers')
+              .select('*')
+              .eq('store_id', storeId)
+              .order('name'),
+            15000,
+            'Gagal memuat pemasok'
+          );
 
           if (error) throw error;
           set({ suppliers: (data || []).map(toSupplier) });
@@ -648,11 +660,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         }
 
         try {
-          const { data, error } = await supabase
-            .from('snack_requests')
-            .select('*')
-            .eq('store_id', storeId)
-            .order('created_at', { ascending: false });
+          const { data, error } = await withTimeout(
+            supabase
+              .from('snack_requests')
+              .select('*')
+              .eq('store_id', storeId)
+              .order('created_at', { ascending: false }),
+            15000,
+            'Gagal memuat request jajanan'
+          );
 
           if (error) throw error;
           set({ jajananRequests: (data || []).map(toJajananRequest) });
@@ -681,12 +697,16 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         if (!storeId) return;
 
         try {
-          const { data, error } = await supabase
-            .from('settings')
-            .select('value')
-            .eq('store_id', storeId)
-            .eq('key', 'initial_balance')
-            .single() as any;
+          const { data, error } = await withTimeout(
+            supabase
+              .from('settings')
+              .select('value')
+              .eq('store_id', storeId)
+              .eq('key', 'initial_balance')
+              .single() as any,
+            10000,
+            'Gagal memuat saldo awal'
+          );
 
           if (error) {
             // Ignore 406 errors and other common errors
@@ -711,11 +731,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         try {
           // Get store data directly
-          const { data: store, error } = await supabase
-            .from('stores')
-            .select('*')
-            .eq('id', storeId)
-            .single() as any;
+          const { data: store, error } = await withTimeout(
+            supabase
+              .from('stores')
+              .select('*')
+              .eq('id', storeId)
+              .single() as any,
+            15000,
+            'Gagal memuat profil toko'
+          );
 
           if (error) throw error;
 
@@ -1622,13 +1646,26 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           const newStock = currentStock + purchaseData.quantity;
           console.log('[addPurchase] Updating stock:', { productId: purchaseData.productId, currentStock, quantity: purchaseData.quantity, newStock });
 
+          // Calculate weighted average cost from all batches
+          const { data: allBatches } = await supabase
+            .from('stock_details')
+            .select('quantity, unit_cost')
+            .eq('product_id', purchaseData.productId)
+            .gt('quantity', 0);
+          let weightedAvgCost = purchaseData.unitCost;
+          if (allBatches && allBatches.length > 0) {
+            const totalQty = allBatches.reduce((s: number, b: any) => s + b.quantity, 0);
+            const totalValue = allBatches.reduce((s: number, b: any) => s + (b.quantity * b.unit_cost), 0);
+            weightedAvgCost = totalQty > 0 ? Math.round((totalValue / totalQty) * 100) / 100 : purchaseData.unitCost;
+          }
+
           // Update product stock and cost - use simple update without .select() to avoid RLS issues
           const { error: stockUpdateError } = await withTimeout(
             supabase
               .from('products')
               .update({
                 total_stock: newStock,
-                cost: purchaseData.unitCost  // Update the cost to the latest purchase cost
+                cost: weightedAvgCost  // Weighted average cost from all batches
               })
               .eq('id', purchaseData.productId) as any,
             10000,
@@ -1657,7 +1694,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             const p = state.products.find(p => p.id === purchaseData.productId);
             if (p) {
               p.totalStock = newStock;
-              p.cost = purchaseData.unitCost;  // Update the cost to the latest purchase cost
+              p.cost = weightedAvgCost;  // Weighted average cost from all batches
               console.log('[addPurchase] Optimistic update - set product stock to:', p.totalStock, 'and cost to:', p.cost);
             }
           });
@@ -1767,17 +1804,42 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         // Update stock detail
         // We assume one stock detail per purchase for simplicity
-        await withTimeout(
+        const { error: stockDetailError, data: stockDetailResult } = await withTimeout(
           supabase
             .from('stock_details')
             .update({
               quantity: purchaseData.quantity,
               unit_cost: purchaseData.unitCost,
             })
-            .eq('purchase_id', purchaseId),
+            .eq('purchase_id', purchaseId)
+            .select() as any,
           10000,
           'Gagal mengupdate detail stok'
         ) as any;
+
+        if (stockDetailError) {
+          console.error('[updatePurchase] Error updating stock_details:', stockDetailError);
+        } else if (!stockDetailResult || stockDetailResult.length === 0) {
+          console.warn('[updatePurchase] No stock_details matched purchase_id:', purchaseId, '- falling back to product_id match');
+          // Fallback: try matching by product_id and closest created_at to the purchase
+          const { error: fallbackError } = await supabase
+            .from('stock_details')
+            .update({
+              quantity: purchaseData.quantity,
+              unit_cost: purchaseData.unitCost,
+            })
+            .eq('product_id', oldPurchase.product_id)
+            .gte('created_at', new Date(new Date(oldPurchase.created_at).getTime() - 5000).toISOString())
+            .lte('created_at', new Date(new Date(oldPurchase.created_at).getTime() + 5000).toISOString());
+
+          if (fallbackError) {
+            console.error('[updatePurchase] Fallback stock_details update also failed:', fallbackError);
+          } else {
+            console.log('[updatePurchase] Fallback stock_details update succeeded');
+          }
+        } else {
+          console.log('[updatePurchase] stock_details updated successfully:', stockDetailResult.length, 'row(s)');
+        }
 
         // Update product stock and cost if relevant
         const productUpdates: { total_stock?: number; cost?: number } = {};
@@ -1793,9 +1855,16 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           productUpdates.total_stock = currentStock + quantityDiff;
         }
 
-        // Update cost if the unit cost has changed
-        if (oldPurchase.unit_cost !== purchaseData.unitCost) {
-          productUpdates.cost = purchaseData.unitCost;
+        // Recalculate weighted average cost from all batches
+        const { data: allBatches } = await supabase
+          .from('stock_details')
+          .select('quantity, unit_cost')
+          .eq('product_id', oldPurchase.product_id)
+          .gt('quantity', 0);
+        if (allBatches && allBatches.length > 0) {
+          const totalQty = allBatches.reduce((s: number, b: any) => s + b.quantity, 0);
+          const totalValue = allBatches.reduce((s: number, b: any) => s + (b.quantity * b.unit_cost), 0);
+          productUpdates.cost = totalQty > 0 ? Math.round((totalValue / totalQty) * 100) / 100 : purchaseData.unitCost;
         }
 
         if (Object.keys(productUpdates).length > 0) {
@@ -1823,9 +1892,9 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             if (quantityDiff !== 0) {
               p.totalStock = (p.totalStock || 0) + quantityDiff;
             }
-            // Update cost if the unit cost has changed
-            if (oldPurchase.unit_cost !== purchaseData.unitCost) {
-              p.cost = purchaseData.unitCost;
+            // Optimistically update cost to weighted average
+            if (productUpdates.cost !== undefined) {
+              p.cost = productUpdates.cost;
             }
           }
         });
@@ -2042,9 +2111,129 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
 
       createOpname: async (payload) => {
-        // For now, just refresh data - full opname logic to be implemented
-        await get().fetchProducts();
-        await get().fetchSales();
+        const storeId = get().currentStoreId;
+        if (!storeId) throw new Error('No store selected');
+
+        const products = get().products;
+        const soldItems: any[] = [];
+        let totalValue = 0;
+        let totalCost = 0;
+
+        try {
+          // Process updates sequentially to avoid race conditions
+          for (const item of payload.items) {
+            const product = products.find(p => p.id === item.productId);
+            if (!product) continue;
+
+            const currentStock = product.totalStock || 0;
+            const physicalStock = item.quantity;
+            const difference = physicalStock - currentStock;
+
+            if (difference === 0) continue;
+
+            // Update product total_stock
+            await withTimeout(
+              supabase
+                .from('products')
+                .update({ total_stock: physicalStock })
+                .eq('id', product.id),
+              10000,
+              `Gagal update stok ${product.name}`
+            );
+
+            // Handle Stock Details (Correcting batches)
+            if (difference < 0) {
+              // Missing stock (assumed sold)
+              const qtyMissing = Math.abs(difference);
+              await deductStockFIFO(product.id, qtyMissing);
+
+              // Prepare for Sale Record
+              // USER REQUEST: Record as pieces to match Opname visual
+              const qtyPerUnit = product.qtyPerUnit || 1;
+              const unitsSold = qtyMissing / qtyPerUnit;
+
+              // If it's a pack (qtyPerUnit > 1), we convert price/cost to per-piece
+              const isPack = qtyPerUnit > 1;
+              const quantityToRecord = qtyMissing; // Always record pieces
+              const priceToRecord = isPack ? Math.round(product.price / qtyPerUnit) : product.price;
+              const costToRecord = isPack ? Math.round((product.cost || 0) / qtyPerUnit) : (product.cost || 0);
+
+              console.log(`[createOpname] V2 - Item: ${product.name}`);
+              console.log(`[createOpname] Missing Qty (pcs): ${qtyMissing}`);
+              console.log(`[createOpname] Recording as: ${quantityToRecord} pcs @ ${priceToRecord}`);
+
+              soldItems.push({
+                product_id: product.id,
+                product_name: isPack ? `${product.name} (${qtyMissing} pcs)` : product.name, // Add info if it was a pack
+                quantity: quantityToRecord,
+                price: priceToRecord,
+                cost: costToRecord
+              });
+
+              // Total value calculation remains based on exact units sold to ensure currency accuracy
+              // totalValue += unitsSold * product.price; 
+              // Equivalent to:
+              totalValue += quantityToRecord * priceToRecord;
+              totalCost += quantityToRecord * costToRecord;
+
+            } else {
+              // Surplus stock (Found)
+              // Add to newest batch or create new
+              // Use last purchase cost or product cost
+              await restoreStockFIFO(storeId, product.id, difference, product.cost || 0);
+            }
+          }
+
+          // Create "Opname / Correction" Sale if there are missing items
+          if (soldItems.length > 0) {
+            const saleData = {
+              store_id: storeId,
+              total: Math.round(totalValue),
+              profit: Math.round(totalValue - totalCost),
+              sale_type: 'retail', // treat as retail sale
+              status: 'completed',
+              notes: `[OPNAME] Penyesuaian Stok Otomatis (${new Date().toLocaleDateString('id-ID')})`,
+            };
+
+            const { data: sale, error: saleError } = await withTimeout(
+              supabase
+                .from('sales')
+                .insert(saleData)
+                .select()
+                .single(),
+              15000,
+              'Gagal membuat data penjualan otomatis'
+            ) as any;
+
+            if (saleError) throw saleError;
+
+            if (sale) {
+              const saleItems = soldItems.map(item => ({
+                sale_id: sale.id,
+                ...item
+              }));
+
+              const { error: itemsError } = await withTimeout(
+                supabase
+                  .from('sale_items')
+                  .insert(saleItems),
+                10000,
+                'Gagal menyimpan detail penjualan otomatis'
+              );
+
+              if (itemsError) console.error("Failed to save opname sale items", itemsError);
+            }
+          }
+
+          // Refresh data
+          await get().fetchProducts();
+          await get().fetchSales();
+          await get().fetchStockDetails(soldItems[0]?.product_id || ''); // Fetch for at least one if exists? optional.
+
+        } catch (error) {
+          console.error('[createOpname] Error:', error);
+          throw error;
+        }
       },
 
       adjustStock: async (productId, quantity, unitCost, isFromProductForm = false) => {
@@ -2095,11 +2284,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         try {
           set({ isLoading: true, error: null });
-          const { data, error } = await supabase
-            .from('reconciliations' as any)
-            .select('*')
-            .eq('store_id', storeId)
-            .order('created_at', { ascending: false });
+          const { data, error } = await withTimeout(
+            supabase
+              .from('reconciliations' as any)
+              .select('*')
+              .eq('store_id', storeId)
+              .order('created_at', { ascending: false }),
+            15000,
+            'Gagal memuat riwayat rekonsiliasi'
+          ) as any;
 
           if (error) throw error;
           set({ reconciliations: (data || []).map(toReconciliation), isLoading: false });
@@ -2159,19 +2352,31 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           let itemCost = 0;
 
           if (difference < 0) {
-            const qtySold = Math.abs(difference);
-            itemValue = qtySold * product.price;
-            itemCost = qtySold * (product.cost || 0);
+            const qtySold = Math.abs(difference); // in pieces
+            const qtyPerUnit = product.qtyPerUnit || 1;
+
+            // USER FIX: Record as pieces to match Opname visual and avoid integer errors
+            const isPack = qtyPerUnit > 1;
+            const quantityToRecord = qtySold; // Always record pieces
+            const priceToRecord = isPack ? Math.round(product.price / qtyPerUnit) : product.price;
+            const costToRecord = isPack ? Math.round((product.cost || 0) / qtyPerUnit) : (product.cost || 0);
+
+            // Calculate totals based on actual piece value
+            itemValue = quantityToRecord * priceToRecord;
+            itemCost = quantityToRecord * costToRecord;
 
             totalStockValue += itemValue;
             totalStockCost += itemCost;
 
+            console.log(`[createReconciliation] Item: ${product.name}`);
+            console.log(`[createReconciliation] Sold: ${quantityToRecord} pcs @ ${priceToRecord}`);
+
             soldItems.push({
               product_id: product.id,
-              product_name: product.name,
-              quantity: qtySold,
-              price: product.price,
-              cost: product.cost || 0
+              product_name: isPack ? `${product.name} (${qtySold} pcs)` : product.name,
+              quantity: quantityToRecord,
+              price: priceToRecord,
+              cost: costToRecord
             });
           }
 
@@ -2181,8 +2386,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             systemStock,
             physicalStock,
             difference,
-            unitPrice: product.price,
-            unitCost: product.cost || 0,
+            unitPrice: product.price / (product.qtyPerUnit || 1), // per-piece price
+            unitCost: (product.cost || 0) / (product.qtyPerUnit || 1),
             totalValue: itemValue
           });
 

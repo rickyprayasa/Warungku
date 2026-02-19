@@ -123,8 +123,11 @@ export function ReconciliationTerpadu() {
     });
 
     const totalStockValue = soldItems.reduce((sum, p) => {
-        const diff = Math.abs(getStockDifference(p) || 0);
-        return sum + (diff * p.price);
+        const diff = Math.abs(getStockDifference(p) || 0); // in pieces
+        const qtyPerUnit = p.qtyPerUnit || 1;
+        // Convert pieces to selling units (bundles) before multiplying by price
+        const unitsSold = diff / qtyPerUnit;
+        return sum + Math.round(unitsSold * p.price);
     }, 0);
 
     const handleStockCountChange = (productId: string, value: string) => {
@@ -642,7 +645,11 @@ export function ReconciliationTerpadu() {
                                         {formatCurrency(totalStockValue)}
                                     </p>
                                     <p className="font-mono text-xs text-red-600">
-                                        {soldItems.length} produk × total {soldItems.reduce((sum, p) => sum + Math.abs(getStockDifference(p) || 0), 0)} unit
+                                        {soldItems.length} produk × total {Math.round(soldItems.reduce((sum, p) => {
+                                            const diff = Math.abs(getStockDifference(p) || 0);
+                                            const qtyPerUnit = p.qtyPerUnit || 1;
+                                            return sum + (diff / qtyPerUnit);
+                                        }, 0) * 100) / 100} unit
                                     </p>
                                 </div>
                             )}

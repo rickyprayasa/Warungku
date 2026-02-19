@@ -19,6 +19,7 @@ export interface Product {
   totalStock?: number; // Total available stock across all batches
   minStockLevel?: number; // Minimum stock level for low stock alerts (default: 10)
   qtyPerUnit?: number; // Qty of stock to deduct per unit sold (default: 1, e.g. 3 for "3pcs package")
+  unit?: string; // Unit of measurement (e.g. "pcs", "kg", "meter")
   createdAt: number;
 }
 // Zod schema for product validation
@@ -35,6 +36,7 @@ export const productSchema = z.object({
   isBestSeller: z.boolean().optional(),
   minStockLevel: z.number().min(0, "Minimum stock level tidak boleh negatif").optional(),
   qtyPerUnit: z.number().min(1, "Qty per unit minimal 1").optional(),
+  unit: z.string().optional(),
 });
 export type ProductFormValues = z.infer<typeof productSchema>;
 // Types for Sales
@@ -99,13 +101,49 @@ export interface Purchase {
 }
 export const purchaseSchema = z.object({
   productId: z.string().min(1, "Product is required."),
-  packQuantity: z.number().min(1, "Pack quantity must be at least 1.").optional(),
-  unitsPerPack: z.number().min(1, "Units per pack must be at least 1.").optional(),
-  quantity: z.number().min(1, "Quantity must be at least 1."),
+  packQuantity: z.number().optional(),
+  unitsPerPack: z.number().optional(),
+  quantity: z.number().optional(), // Make optional in base
   unitCost: z.number().min(0, "Unit cost must be a positive number."),
   supplier: z.string().optional(),
   supplierId: z.string().optional(),
   notes: z.string().optional(),
+  // UI ONLY 
+  isPackPurchase: z.boolean().optional(),
+  _display: z.object({
+    productName: z.string().optional(),
+    supplierName: z.string().optional(),
+    totalCost: z.number().optional(),
+    unitLabel: z.string().optional(),
+    isPackMode: z.boolean().optional(),
+    packQty: z.number().optional(),
+    packUnit: z.number().optional(),
+  }).optional(),
+}).superRefine((data, ctx) => {
+  if (data.isPackPurchase) {
+    if (!data.packQuantity || data.packQuantity < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Pack quantity must be at least 1.",
+        path: ["packQuantity"],
+      });
+    }
+    if (!data.unitsPerPack || data.unitsPerPack < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Units per pack must be at least 1.",
+        path: ["unitsPerPack"],
+      });
+    }
+  } else {
+    if (!data.quantity || data.quantity < 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Quantity must be at least 1.",
+        path: ["quantity"],
+      });
+    }
+  }
 });
 export type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 // Types for Suppliers

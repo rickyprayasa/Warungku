@@ -23,12 +23,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Set store ID and fetch settings when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      if (!store && !isRefreshing.current) {
-        // If authenticated but no store (e.g. came from public mode), refresh store
+      if (!store && !isRefreshing.current && !hasFetched.current) {
+        // If authenticated but no store (e.g. came from public mode), try refresh ONCE
+        console.log('[ProtectedRoute] Authenticated but no store, attempting refresh...');
         isRefreshing.current = true;
-        refreshStore().finally(() => {
-          isRefreshing.current = false;
-        });
+        refreshStore()
+          .then(() => {
+            console.log('[ProtectedRoute] Refresh complete');
+          })
+          .catch((err) => {
+            console.error('[ProtectedRoute] Refresh failed:', err);
+          })
+          .finally(() => {
+            isRefreshing.current = false;
+            // Mark as fetched even if failed, to prevent loop
+            hasFetched.current = true;
+          });
       } else if (store && !hasFetched.current) {
         hasFetched.current = true;
         setCurrentStoreId(store.id);

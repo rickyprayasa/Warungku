@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Settings, Trash2, Database, Download, Info, AlertTriangle, Package, ShoppingCart, LogOut, KeyRound } from 'lucide-react';
+import { Settings, Trash2, Database, Download, Info, AlertTriangle, Package, ShoppingCart, LogOut, KeyRound, Store } from 'lucide-react';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCartStore } from '@/lib/cart-store';
@@ -646,13 +646,42 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                         {isResetting ? 'Mereset...' : 'Reset Semua Data'}
                                     </Button>
                                 </div>
+                            </div>
+                        )}
 
-                                <Alert className="border-2 border-yellow-500 bg-yellow-50">
-                                    <AlertDescription className="text-xs font-mono text-yellow-800">
-                                        ⚠️ Reset data akan menghapus semua data secara permanen.
-                                        Export data terlebih dahulu untuk backup!
-                                    </AlertDescription>
-                                </Alert>
+                        {/* Store Category Settings */}
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                            <div className="border-2 border-brand-black p-4 space-y-3 bg-yellow-50">
+                                <h3 className="font-mono font-bold flex items-center gap-2">
+                                    <Store className="w-4 h-4" />
+                                    Kategori Toko
+                                </h3>
+
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-mono font-bold">Jenis Usaha</Label>
+                                    <Select
+                                        value={storeProfile.category || 'Warung'}
+                                        onValueChange={(val) => updateStoreProfile({ ...storeProfile, category: val })}
+                                    >
+                                        <SelectTrigger className="w-full border-2 border-brand-black rounded-none font-mono font-bold bg-white">
+                                            <SelectValue placeholder="Pilih Kategori" />
+                                        </SelectTrigger>
+                                        <SelectContent className="border-2 border-brand-black font-mono">
+                                            <SelectItem value="Warung">Warung / Retail (Umum)</SelectItem>
+                                            <SelectItem value="Material/Bangunan">Material / Bangunan</SelectItem>
+                                            <SelectItem value="F&B">Kuliner / F&B</SelectItem>
+                                            <SelectItem value="Pakaian">Fashion / Pakaian</SelectItem>
+                                            <SelectItem value="Jasa">Jasa / Service</SelectItem>
+                                            <SelectItem value="Pertanian">Pertanian / Agribisnis</SelectItem>
+                                            <SelectItem value="Listrik">Alat Listrik</SelectItem>
+                                            <SelectItem value="Elektronik">Elektronik / Gadget</SelectItem>
+                                            <SelectItem value="Lainnya">Lainnya</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground font-mono">
+                                        Pilihan ini akan menentukan opsi <strong>Satuan Barang</strong> yang tersedia saat menambah produk.
+                                    </p>
+                                </div>
                             </div>
                         )}
 

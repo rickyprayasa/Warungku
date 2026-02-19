@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { LogIn, RefreshCw, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { offlineSync } from '@/lib/offline-sync';
 import { useWarungStore } from '@/lib/store-supabase';
+import { sessionEvents } from '@/lib/session-events';
 
 interface SessionContextType {
     showReLoginModal: () => void;
@@ -49,6 +50,54 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             });
         };
     }, [updateActivity]);
+
+    // Listen for global session expired events (from store-supabase.ts)
+    useEffect(() => {
+        const unsubscribe = sessionEvents.onSessionExpired(() => {
+            console.warn('[SessionProvider] Received session expired event from store');
+            setIsSessionValid(false);
+            setIsModalOpen(true);
+        });
+        return unsubscribe;
+    }, []);
+
+    // Check session on tab visibility change (user returns after idle)
+    useEffect(() => {
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === 'visible') {
+                console.log('[SessionProvider] Tab became visible, checking session...');
+                try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session) {
+                        // Try refresh before showing modal
+                        const { data, error } = await supabase.auth.refreshSession();
+                        if (error || !data.session) {
+                            console.warn('[SessionProvider] Session invalid on tab return');
+                            setIsSessionValid(false);
+                            setIsModalOpen(true);
+                        } else {
+                            setIsSessionValid(true);
+                        }
+                    } else {
+                        // Check if about to expire
+                        const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+                        const timeUntilExpiry = expiresAt - Date.now();
+                        if (timeUntilExpiry < 10 * 60 * 1000) { // Less than 10 minutes
+                            await supabase.auth.refreshSession();
+                        }
+                        setIsSessionValid(true);
+                    }
+                } catch (err) {
+                    console.error('[SessionProvider] Error checking session on visibility:', err);
+                    setIsSessionValid(false);
+                    setIsModalOpen(true);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     // Check session validity periodically
     useEffect(() => {

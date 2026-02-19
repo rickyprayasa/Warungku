@@ -13,6 +13,17 @@ import type { CashEntry, Product } from '@shared/types';
 import { CardGridSkeleton, FormSkeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type OpnameMode = 'display' | 'retail' | 'terpadu';
 
@@ -25,6 +36,7 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
     const fetchSales = useWarungStore((state) => state.fetchSales);
     const fetchPurchases = useWarungStore((state) => state.fetchPurchases);
     const fetchProducts = useWarungStore((state) => state.fetchProducts);
+    const createOpname = useWarungStore((state) => state.createOpname);
 
     const [actualCash, setActualCash] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +55,7 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
     const [showSystemStock, setShowSystemStock] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [showOnlyUncounted, setShowOnlyUncounted] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const inputRefs = useRef<Record<string, HTMLInputElement>>({});
 
     useEffect(() => {
@@ -132,6 +145,20 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
         return diff !== null && diff !== 0;
     });
 
+    // Products with stock decrease (likely sold)
+    const soldItems = productsWithDifference.filter(p => {
+        const diff = getStockDifference(p);
+        return diff !== null && diff < 0;
+    });
+
+    // Estimated sales value from stock decrease — accounts for bundle pricing
+    const totalStockValue = soldItems.reduce((sum, p) => {
+        const diff = Math.abs(getStockDifference(p) || 0); // in pieces
+        const qtyPerUnit = p.qtyPerUnit || 1;
+        const unitsSold = diff / qtyPerUnit;
+        return sum + Math.round(unitsSold * p.price);
+    }, 0);
+
     const totalCounted = Object.keys(stockCounts).length;
 
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -147,14 +174,7 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
             [productId]: num
         }));
 
-        // Auto-focus next input
-        const productIndex = paginatedProducts.findIndex(p => p.id === productId);
-        if (productIndex < paginatedProducts.length - 1) {
-            const nextProduct = paginatedProducts[productIndex + 1];
-            if (nextProduct && inputRefs.current[nextProduct.id]) {
-                inputRefs.current[nextProduct.id].focus();
-            }
-        }
+
     };
 
     const handleKeyDown = (e: React.KeyboardEvent, productId: string) => {
@@ -214,44 +234,48 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
     };
 
     const handleStockReconciliation = async () => {
+        console.log('[OpnamePage] handleStockReconciliation triggered');
         if (productsWithDifference.length === 0) {
+            console.log('[OpnamePage] No differences to save');
             toast.info('Tidak ada selisih stok yang perlu disesuaikan.');
             return;
         }
 
-        const confirmed = window.confirm(
-            `KONFIRMASI PENYESUAIAN STOK\n\n` +
-            `${productsWithDifference.length} produk akan disesuaikan.\n\n` +
-            `Lanjutkan?`
-        );
+        // Open custom dialog instead of window.confirm
+        setIsConfirmOpen(true);
+    };
 
-        if (!confirmed) return;
+    const confirmStockReconciliation = async () => {
+        setIsConfirmOpen(false); // Close dialog
 
         try {
+            console.log('[OpnamePage] Starting submission...');
             setIsSubmitting(true);
+            toast.loading('Menyimpan penyesuaian stok...', { id: 'save-opname' });
 
-            for (const product of productsWithDifference) {
-                const newStock = stockCounts[product.id];
-                if (newStock === undefined) continue;
+            const payload = {
+                items: productsWithDifference.map(p => ({
+                    productId: p.id,
+                    quantity: stockCounts[p.id] !== undefined ? stockCounts[p.id] : (p.totalStock || 0)
+                }))
+            };
 
-                // Adjust stock to counted value
-                await fetch(`/api/products/${product.id}/adjust-stock`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        quantity: newStock,
-                        unitCost: product.price * 0.7,
-                        isFromProductForm: false
-                    }),
-                });
-            }
+            console.log('[OpnamePage] Payload prepared:', payload);
 
+            await createOpname(payload);
+
+            console.log('[OpnamePage] createOpname success');
+
+            toast.dismiss('save-opname');
             toast.success(`${productsWithDifference.length} produk berhasil disesuaikan!`);
             setStockCounts({});
-            await fetchProducts();
+            // fetchProducts is called within createOpname, but we can call it here to be safe or rely on store update
+            // await fetchProducts(); // createOpname already refreshes
+            // productsWithDifference is derived from stockCounts, so clearing stockCounts clears it.
 
         } catch (error) {
-            console.error(error);
+            toast.dismiss('save-opname');
+            console.error('[OpnamePage] Error during stock reconciliation:', error);
             toast.error('Gagal menyimpan penyesuaian stok.');
         } finally {
             setIsSubmitting(false);
@@ -314,7 +338,7 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
     ];
 
     return (
-        <div className="space-y-4 pb-32 md:pb-4">
+        <div className="space-y-4 pb-4 md:pb-4">
             {/* Header - Compact */}
             <div className="sticky top-0 bg-white z-10 pb-2 border-b-2 border-brand-black">
                 <div className="flex items-center justify-between">
@@ -543,15 +567,20 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <span className="text-xs font-mono">
-                                    <span className="text-muted-foreground">{totalCounted}/{products.length}</span>
-                                </span>
                                 {productsWithDifference.length > 0 && (
-                                    <div className="flex items-center gap-1 px-2 py-1 bg-red-100 border-2 border-red-500 rounded">
-                                        <AlertTriangle className="w-3 h-3 text-red-600" />
-                                        <span className="text-xs font-mono font-bold text-red-700">{productsWithDifference.length}</span>
-                                    </div>
+                                    <Button
+                                        onClick={handleStockReconciliation}
+                                        disabled={isSubmitting}
+                                        size="sm"
+                                        className="h-8 bg-brand-orange hover:bg-brand-orange/90 text-brand-black font-bold text-xs border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all animate-in fade-in zoom-in duration-300"
+                                    >
+                                        <Save className="w-3 h-3 mr-1" />
+                                        Simpan ({productsWithDifference.length})
+                                    </Button>
                                 )}
+                                <span className="text-xs font-mono text-muted-foreground">
+                                    {totalCounted}/{products.length}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -731,6 +760,60 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
                             </div>
                         </div>
                     )}
+
+                    {/* Estimated Sales from Stock Decrease */}
+                    {soldItems.length > 0 && (
+                        <div className="space-y-2">
+                            <div className="p-4 bg-red-50 border-2 border-red-500">
+                                <p className="font-mono font-bold text-sm text-red-800 mb-1">
+                                    Estimasi Penjualan dari Stok Berkurang:
+                                </p>
+                                <p className="text-2xl font-display font-bold text-red-700">
+                                    {formatCurrency(totalStockValue)}
+                                </p>
+                                <p className="font-mono text-xs text-red-600 mt-1">
+                                    {soldItems.length} produk × total {Math.round(soldItems.reduce((sum, p) => {
+                                        const diff = Math.abs(getStockDifference(p) || 0);
+                                        const qtyPerUnit = p.qtyPerUnit || 1;
+                                        return sum + (diff / qtyPerUnit);
+                                    }, 0) * 100) / 100} unit
+                                </p>
+                            </div>
+
+                            {/* Per-product breakdown */}
+                            <div className="border-2 border-brand-black bg-white">
+                                {soldItems.map((p) => {
+                                    const diff = Math.abs(getStockDifference(p) || 0);
+                                    const qtyPerUnit = p.qtyPerUnit || 1;
+                                    const unitsSold = diff / qtyPerUnit;
+                                    const value = Math.round(unitsSold * p.price);
+                                    return (
+                                        <div key={p.id} className="flex justify-between items-center p-2 border-b border-brand-black/10 text-xs font-mono">
+                                            <div>
+                                                <span className="font-bold">{p.name}</span>
+                                                {qtyPerUnit > 1 && (
+                                                    <span className="text-muted-foreground ml-1">({qtyPerUnit} pcs/unit)</span>
+                                                )}
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-red-600 font-bold">
+                                                    {qtyPerUnit > 1
+                                                        ? `${diff} pcs (${unitsSold.toFixed(1)} unit)`
+                                                        : `${diff} unit`
+                                                    }
+                                                </span>
+                                                <span className="text-muted-foreground mx-1">×</span>
+                                                <span>{formatCurrency(p.price)}</span>
+                                                <span className="text-muted-foreground mx-1">=</span>
+                                                <span className="font-bold text-red-700">{formatCurrency(value)}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             )}
 
@@ -747,6 +830,30 @@ export function OpnamePage({ isActive }: { isActive?: boolean }) {
                     </Button>
                 )}
             </div>
+            {/* Add AlertDialog at the end of the component */}
+            <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+                <AlertDialogContent className="border-2 border-brand-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 gap-6">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="font-bold text-xl">Konfirmasi Penyesuaian Stok</AlertDialogTitle>
+                        <AlertDialogDescription className="text-base text-gray-700">
+                            <span className="font-bold">{productsWithDifference.length} produk</span> akan disesuaikan stoknya.
+                            <br />
+                            Tindakan ini akan mempengaruhi stok sistem dan mencatat selisih sebagai penjualan/koreksi.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-3 sm:gap-0">
+                        <AlertDialogCancel className="border-2 border-brand-black bg-white text-brand-black font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all">
+                            Batal
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmStockReconciliation}
+                            className="bg-brand-orange text-brand-black font-bold border-2 border-brand-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-brand-orange/90 hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] transition-all"
+                        >
+                            Ya, Simpan
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
