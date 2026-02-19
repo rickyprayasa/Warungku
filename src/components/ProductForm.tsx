@@ -100,7 +100,6 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
       category: product?.category || '',
       imageUrl: product?.imageUrl || '',
       minStockLevel: product?.minStockLevel || 10,
-      minStockLevel: product?.minStockLevel || 10,
       qtyPerUnit: product?.qtyPerUnit || 1,
       unit: product?.unit || 'pcs',
     },
