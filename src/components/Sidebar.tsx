@@ -118,15 +118,11 @@ export function Sidebar() {
                 {!sidebarCollapsed ? (
                     <>
                         <div className="flex items-center gap-3 mb-2">
-                            {/* RSQUARE Logo */}
-                            <div className="w-12 h-12 flex items-center justify-center flex-shrink-0 bg-white border-2 border-brand-black shadow-sm">
-                                <img
-                                    src={rsquareLogo}
-                                    alt="RSQUARE Logo"
-                                    width={40}
-                                    height={40}
-                                    className="w-full h-full object-contain p-1"
-                                />
+                            {/* OMZETIN Logo */}
+                            <div className="w-12 h-12 flex items-center justify-center flex-shrink-0">
+                                <div className="scale-90">
+                                    <AnimatedLogo showText={false} />
+                                </div>
                             </div>
                             <div className="min-w-0">
                                 <h2 className="font-display font-black text-base text-brand-black uppercase leading-tight truncate">
@@ -199,14 +195,10 @@ export function Sidebar() {
                     </>
                 ) : (
                     <div className="flex flex-col items-center gap-2">
-                        <div className="w-10 h-10 flex items-center justify-center bg-white border-2 border-brand-black shadow-sm">
-                            <img
-                                src={rsquareLogo}
-                                alt="RSQUARE Logo"
-                                width={32}
-                                height={32}
-                                className="w-full h-full object-contain p-1"
-                            />
+                        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                            <div className="scale-75">
+                                <AnimatedLogo showText={false} />
+                            </div>
                         </div>
                         <div className="text-[10px] font-mono font-bold text-brand-black bg-white px-1 border border-brand-black">
                             {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
