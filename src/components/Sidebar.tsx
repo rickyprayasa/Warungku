@@ -6,11 +6,12 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { usePlan } from '@/contexts/PlanContext';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield, MessageCircle } from 'lucide-react';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield, MessageCircle, Crown } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
 import { SettingsDialog } from './SettingsDialog';
+import { UpgradePlanDialog } from './UpgradePlanDialog';
 import { useState, useEffect, useMemo } from 'react';
 import { useDemoMode } from '@/hooks/useDemoMode';
 import { Clock, Calendar } from 'lucide-react';
@@ -153,8 +154,8 @@ export function Sidebar() {
                             </div>
                         </div>
 
-                        {/* Trial Status Badge */}
-                        {isTrialActive && daysRemainingInTrial !== null && (
+                        {/* Trial Status Badge - hidden for demo */}
+                        {!isDemo && isTrialActive && daysRemainingInTrial !== null && (
                             <div className="mt-2 bg-green-50 border-2 border-green-600 rounded px-2 py-1.5">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-1">
@@ -166,6 +167,22 @@ export function Sidebar() {
                                     </span>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Demo CTA Badge */}
+                        {isDemo && (
+                            <UpgradePlanDialog
+                                trigger={
+                                    <button
+                                        className="mt-2 w-full bg-gradient-to-r from-orange-500 to-orange-600 border-2 border-brand-black rounded px-2 py-2 cursor-pointer hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm"
+                                    >
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <Crown className="w-3.5 h-3.5 text-white" />
+                                            <span className="font-mono text-[10px] font-bold text-white uppercase">Berlangganan Sekarang</span>
+                                        </div>
+                                    </button>
+                                }
+                            />
                         )}
 
                         {/* User Profile Badge */}

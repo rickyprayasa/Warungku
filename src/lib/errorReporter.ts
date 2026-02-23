@@ -647,8 +647,8 @@ const formatConsoleArgs = (args: unknown[]): string => {
       typeof arg === "string"
         ? arg
         : typeof arg === "object" && arg
-        ? JSON.stringify(arg, null, 2)
-        : String(arg)
+          ? JSON.stringify(arg, null, 2)
+          : String(arg)
     )
     .join(" ");
 };
@@ -702,11 +702,11 @@ const shouldReportImmediate = (context: ErrorContext): boolean => {
   // For errors without proper source code, skip them
   const hasSourceCode = stack
     ? stack
-        .split("\n")
-        .some(
-          (line) =>
-            /\.tsx?$/.test(line) || /\.jsx?$/.test(line) || /\/src\//.test(line)
-        )
+      .split("\n")
+      .some(
+        (line) =>
+          /\.tsx?$/.test(line) || /\.jsx?$/.test(line) || /\/src\//.test(line)
+      )
     : false;
 
   // Skip uncaught errors without source code
@@ -723,15 +723,7 @@ const shouldReportImmediate = (context: ErrorContext): boolean => {
 };
 
 const sendImmediateError = async (payload: ImmediatePayload): Promise<void> => {
-  try {
-    await fetch("/api/client-errors", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
-    // Fail silently
-  }
+  // Deliberately disabled local API fetch for client errors since there is no backend route for it.
 };
 
 // Intercept console methods IMMEDIATELY before React can cache them

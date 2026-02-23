@@ -131,7 +131,7 @@ export function PublicStorePage() {
       <div className="min-h-screen bg-brand-white flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <div className="mb-8 scale-110">
-            <AnimatedLogo isActive={true} />
+            <AnimatedLogo isActive={true} showText={false} />
           </div>
 
           <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden mb-6">

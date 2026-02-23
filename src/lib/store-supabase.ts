@@ -908,6 +908,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             .select('role, name, permissions') // Added permissions
             .eq('store_id', storeId)
             .eq('user_id', user.id)
+            .limit(1)
             .maybeSingle();
 
           console.warn('[fetchCurrentUser] Member result:', { member, memberError: memberError?.message });

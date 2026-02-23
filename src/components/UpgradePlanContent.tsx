@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -102,6 +103,7 @@ export function UpgradePlanContent() {
     const [dbPlans, setDbPlans] = useState<any[]>([]);
     const [plans, setPlans] = useState<PlanDetails[]>(defaultPlans);
     const currentPlan = store?.plan || 'free';
+    const { isDemo } = useDemoMode();
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -145,9 +147,16 @@ export function UpgradePlanContent() {
             return;
         }
 
+        if (isDemo) {
+            const planName = planId === 'free' ? 'Free' : planId === 'pro' ? 'Pro' : 'Enterprise';
+            const message = encodeURIComponent(`Halo, saya tertarik dengan plan ${planName} Omzetin. Bisa info lebih lanjut?`);
+            window.open(`https://wa.me/6285846055901?text=${message}`, '_blank');
+            return;
+        }
+
         if (planId === 'enterprise') {
-            // Open contact form or redirect to contact page
-            window.open('https://wa.me/6285846055901?text=Halo, saya tertarik dengan Enterprise plan Omzetin', '_blank');
+            const message = encodeURIComponent('Halo, saya tertarik dengan plan Enterprise Omzetin. Bisa info lebih lanjut?');
+            window.open(`https://wa.me/6285846055901?text=${message}`, '_blank');
             return;
         }
 
@@ -214,7 +223,7 @@ export function UpgradePlanContent() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {plans.map((plan) => {
                     const Icon = plan.icon;
-                    const isCurrentPlan = currentPlan === plan.id;
+                    const isCurrentPlan = !isDemo && currentPlan === plan.id;
                     const isUpgrade = plans.findIndex(p => p.id === plan.id) > plans.findIndex(p => p.id === currentPlan);
 
                     return (
@@ -297,7 +306,7 @@ export function UpgradePlanContent() {
                                             <Check className="w-3 h-3" />
                                             Aktif
                                         </div>
-                                    ) : plan.id === 'enterprise' ? (
+                                    ) : (plan.id === 'enterprise' || isDemo) ? (
                                         <div className="flex items-center gap-2">
                                             Hubungi
                                             <ArrowRight className="w-3 h-3" />

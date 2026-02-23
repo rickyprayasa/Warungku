@@ -108,7 +108,7 @@ const PageLoader = () => {
     <div className="fixed inset-0 bg-white flex flex-col items-center justify-center overflow-hidden z-[9999]">
       {/* OMZETIN Logo */}
       <div className="mb-8 scale-110">
-        <AnimatedLogo isActive={true} />
+        <AnimatedLogo isActive={true} showText={false} />
       </div>
 
       {/* Loading Bar */}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sparkles, Crown, Star, ChevronRight, AlertTriangle, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlan } from '@/contexts/PlanContext';
+import { useWarungStore } from '@/lib/store-supabase';
 import { useDemoMode } from '@/hooks/useDemoMode';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -124,16 +125,30 @@ export function PlanBadge() {
             <button
                 onClick={() => setShowDialog(true)}
                 className={`
-          inline-flex items-center gap-1.5 px-3 py-1.5 
-          ${isExpiringSoon ? 'bg-red-100 text-red-700 border-red-500 animate-pulse' : `${config.bgColor} ${config.color} border-2 ${config.borderColor}`}
-          font-mono font-bold text-xs uppercase
-          hover:opacity-80 transition-opacity cursor-pointer
-          shadow-sm
-        `}
+                    inline-flex items-center gap-1.5 px-3 py-1.5
+                    ${isDemo
+                        ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white border-2 border-brand-black'
+                        : isExpiringSoon
+                            ? 'bg-red-100 text-red-700 border-red-500 animate-pulse'
+                            : `${config.bgColor} ${config.color} border-2 ${config.borderColor}`
+                    }
+                    font-mono font-bold text-xs uppercase
+                    hover:opacity-80 transition-opacity cursor-pointer
+                    shadow-sm
+                `}
             >
-                {isExpiringSoon ? <AlertTriangle className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
-                {config.name}
-                {isExpiringSoon && <span className="text-[10px] ml-1">({daysUntilExpiry} hari lagi)</span>}
+                {isDemo ? (
+                    <>
+                        <Crown className="w-3.5 h-3.5" />
+                        Berlangganan
+                    </>
+                ) : (
+                    <>
+                        {isExpiringSoon ? <AlertTriangle className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
+                        {config.name}
+                        {isExpiringSoon && <span className="text-[10px] ml-1">({daysUntilExpiry} hari lagi)</span>}
+                    </>
+                )}
                 <ChevronRight className="w-3 h-3" />
             </button>
 
@@ -141,20 +156,20 @@ export function PlanBadge() {
                 <DialogContent className="max-w-md border-4 border-brand-black shadow-hard">
                     <DialogHeader>
                         <DialogTitle className="font-display text-xl flex items-center gap-2">
-                            <Icon className={`w-6 h-6 ${config.color}`} />
-                            Plan {config.name}
+                            <Icon className={`w-6 h-6 ${isDemo ? 'text-orange-600' : config.color}`} />
+                            {isDemo ? 'Berlangganan OMZETIN' : `Plan ${config.name}`}
                         </DialogTitle>
                         <DialogDescription className="font-mono text-sm">
-                            {config.description}
+                            {isDemo ? 'Kelola bisnis Anda lebih mudah dengan fitur premium OMZETIN' : config.description}
                         </DialogDescription>
                     </DialogHeader>
 
                     {/* Expiry Info */}
                     {expiryDate && (
-                        <div className={`mt-2 p-3 border-2 rounded-none font-mono text-sm ${isExpiringSoon || isExpired
+                        <div className={`mt - 2 p - 3 border - 2 rounded - none font - mono text - sm ${isExpiringSoon || isExpired
                             ? 'bg-red-50 border-red-500 text-red-700'
                             : 'bg-blue-50 border-blue-500 text-blue-700'
-                            }`}>
+                            } `}>
                             <div className="flex items-start gap-2">
                                 <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
                                 <div>
@@ -184,27 +199,42 @@ export function PlanBadge() {
                         </ul>
                     </div>
 
-                    {(currentPlan !== 'pro' && currentPlan !== 'enterprise') || isExpiringSoon ? (
+                    {(currentPlan !== 'pro' && currentPlan !== 'enterprise') || isExpiringSoon || isDemo ? (
                         <div className="mt-6 p-4 bg-orange-50 border-2 border-orange-300 rounded-none">
                             <h4 className="font-display font-bold text-orange-800 mb-2">
-                                {isExpiringSoon ? '⚡ Perpanjang Sekarang!' : '🚀 Upgrade ke Pro!'}
+                                {isDemo ? '🚀 Berlangganan Sekarang!' : isExpiringSoon ? '⚡ Perpanjang Sekarang!' : '🚀 Upgrade ke Pro!'}
                             </h4>
                             <p className="text-sm font-mono text-orange-700 mb-3">
-                                {isExpiringSoon
-                                    ? 'Jangan sampai kehilangan akses ke fitur premium Anda.'
-                                    : 'Dapatkan akses ke semua fitur premium dan tingkatkan bisnis Anda.'}
+                                {isDemo
+                                    ? 'Suka dengan fitur OMZETIN? Daftar dan mulai kelola bisnis Anda sendiri dengan semua fitur premium!'
+                                    : isExpiringSoon
+                                        ? 'Jangan sampai kehilangan akses ke fitur premium Anda.'
+                                        : 'Dapatkan akses ke semua fitur premium dan tingkatkan bisnis Anda.'}
                             </p>
                             <div className="flex gap-2">
-                                <UpgradePlanDialog
-                                    trigger={
-                                        <Button
-                                            className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
-                                        >
-                                            <Crown className="w-4 h-4 mr-2" />
-                                            {isExpiringSoon ? 'Perpanjang Plan' : 'Upgrade Sekarang'}
-                                        </Button>
-                                    }
-                                />
+                                {isDemo ? (
+                                    <UpgradePlanDialog
+                                        trigger={
+                                            <Button
+                                                className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
+                                            >
+                                                <Crown className="w-4 h-4 mr-2" />
+                                                Berlangganan Sekarang
+                                            </Button>
+                                        }
+                                    />
+                                ) : (
+                                    <UpgradePlanDialog
+                                        trigger={
+                                            <Button
+                                                className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
+                                            >
+                                                <Crown className="w-4 h-4 mr-2" />
+                                                {isExpiringSoon ? 'Perpanjang Plan' : 'Upgrade Sekarang'}
+                                            </Button>
+                                        }
+                                    />
+                                )}
                                 <Button
                                     variant="outline"
                                     onClick={() => setShowDialog(false)}
@@ -216,7 +246,7 @@ export function PlanBadge() {
                         </div>
                     ) : null}
 
-                    {((currentPlan === 'pro' || currentPlan === 'enterprise') && !isExpiringSoon) && (
+                    {((currentPlan === 'pro' || currentPlan === 'enterprise') && !isExpiringSoon && !isDemo) && (
                         <div className="mt-6 p-4 bg-green-50 border-2 border-green-300 rounded-none">
                             <p className="text-sm font-mono text-green-700 flex items-center gap-2">
                                 <span className="text-lg">✨</span>
