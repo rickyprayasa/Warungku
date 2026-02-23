@@ -16,6 +16,7 @@ import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCartStore } from '@/lib/cart-store';
 import { toast } from 'sonner';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { ChangePasswordDialog } from './ChangePasswordDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [activeTab, setActiveTab] = useState('system');
     const [isResetting, setIsResetting] = useState(false);
     const { store, user } = useAuth();
+    const { isDemo } = useDemoMode();
 
     // Domain Settings State
     const [customDomain, setCustomDomain] = useState('');
@@ -158,6 +160,10 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     };
 
     const handleSaveDomain = async () => {
+        if (isDemo) {
+            toast.info('Fitur simpan domain hanya simulasi pada akun demo');
+            return;
+        }
         if (!isProOrEnterprise) {
             toast.error('Fitur Custom Domain hanya untuk plan Pro dan Enterprise');
             return;
@@ -185,6 +191,10 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
 
 
     const handleRemoveMember = async (userId: string) => {
+        if (isDemo) {
+            toast.info('Fitur hapus member hanya simulasi pada akun demo');
+            return;
+        }
         if (!confirm('Apakah Anda yakin ingin menghapus member ini?')) return;
 
         setIsDeletingMember(userId);
@@ -210,6 +220,10 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     };
 
     const handleInviteMember = async () => {
+        if (isDemo) {
+            toast.info('Fitur undang member hanya simulasi pada akun demo');
+            return;
+        }
         if (!inviteEmail.trim()) {
             toast.error('Masukkan email member');
             return;
@@ -254,6 +268,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     };
 
     const handleModeChange = async (newMode: string) => {
+
         try {
             await updateOpnameMode(newMode as 'retail' | 'display' | 'terpadu');
 
@@ -275,6 +290,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     };
 
     const handleToggleCart = async (enabled: boolean) => {
+
         try {
             await updateStoreProfile({
                 ...storeProfile,
@@ -290,6 +306,10 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     };
 
     const handleResetData = async () => {
+        if (isDemo) {
+            toast.info('Fitur reset data hanya simulasi pada akun demo');
+            return;
+        }
         const confirmed = window.confirm(
             '⚠️ PERINGATAN!\n\n' +
             'Tindakan ini akan menghapus SEMUA data:\n' +
@@ -346,6 +366,10 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     };
 
     const handleClearCache = () => {
+        if (isDemo) {
+            toast.info('Fitur clear cache hanya simulasi pada akun demo');
+            return;
+        }
         try {
             // Preserve tour history
             const tourKeys = Object.keys(localStorage).filter(key => key.startsWith('has-seen-'));
@@ -375,6 +399,10 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     };
 
     const handleExportData = async () => {
+        if (isDemo) {
+            toast.info('Fitur ekspor data hanya simulasi pada akun demo');
+            return;
+        }
         try {
             const store = useWarungStore.getState();
 
@@ -473,12 +501,14 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         >
                             System
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="team"
-                            className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase border-r-2 border-brand-black"
-                        >
-                            Team
-                        </TabsTrigger>
+                        {!isDemo && (
+                            <TabsTrigger
+                                value="team"
+                                className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase border-r-2 border-brand-black"
+                            >
+                                Team
+                            </TabsTrigger>
+                        )}
                         {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
                             <TabsTrigger
                                 value="domain"
@@ -610,7 +640,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                         )}
 
                         {/* Data Management Section */}
-                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && !isDemo && (
                             <div className="border-2 border-brand-black p-4 space-y-3">
                                 <h3 className="font-mono font-bold flex items-center gap-2">
                                     <Database className="w-4 h-4" />
@@ -724,17 +754,19 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                 Akun & Keamanan
                             </h3>
 
-                            <ChangePasswordDialog
-                                trigger={
-                                    <Button
-                                        variant="outline"
-                                        className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
-                                    >
-                                        <KeyRound className="w-4 h-4 mr-2" />
-                                        Ganti Password
-                                    </Button>
-                                }
-                            />
+                            {!isDemo && (
+                                <ChangePasswordDialog
+                                    trigger={
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                        >
+                                            <KeyRound className="w-4 h-4 mr-2" />
+                                            Ganti Password
+                                        </Button>
+                                    }
+                                />
+                            )}
 
                             <Button
                                 onClick={async () => {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { OnboardingTour } from "@/components/OnboardingTour";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs } from "@/components/ui/tabs"
 import { ProductManagement } from "@/components/ProductManagement";
 import { SalesDashboard } from "@/components/SalesDashboard";
 import { PurchasesDashboard } from "@/components/PurchasesDashboard";
@@ -227,7 +227,7 @@ export function DashboardPage() {
         {/* Onboarding Tour removed to prevent conflicts with tab-specific tours */}
 
         {/* Desktop/Tablet Tabs - Hidden on Mobile */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <div className="w-full">
           {/* TabsList removed as navigation is now in Sidebar */}
 
           <div>
@@ -318,7 +318,7 @@ export function DashboardPage() {
               </motion.div>
             </div>
           </div>
-        </Tabs>
+        </div>
       </div>
     </div >
   );

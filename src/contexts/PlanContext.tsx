@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useState, useEffect, type ReactNode
 import { useAuth } from './AuthContext';
 import { useWarungStore } from '@/lib/store-supabase';
 import { supabase } from '@/lib/supabase';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 export type PlanType = 'free' | 'pro' | 'enterprise' | 'demo';
 
@@ -95,6 +96,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const { store, isAuthenticated } = useAuth();
   const products = useWarungStore((state) => state.products);
   const sales = useWarungStore((state) => state.sales);
+  const { isDemo } = useDemoMode();
 
   // Add a state to force refresh of the plan
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -116,6 +118,10 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       return 'enterprise';
     }
 
+    if (isDemo) {
+      return 'pro';
+    }
+
     const storePlan = (store as any)?.plan as string | undefined;
 
     if (storePlan && ['free', 'pro', 'enterprise', 'demo'].includes(storePlan)) {
@@ -124,7 +130,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
     // No plan set - default to free for new stores
     return 'free';
-  }, [isAuthenticated, store, refreshTrigger]);
+  }, [isAuthenticated, store, refreshTrigger, isDemo]);
 
   // Calculate effective plan (pro during trial)
   const effectivePlan = useMemo((): PlanType => {
@@ -177,7 +183,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   // Fetch trial status from database
   useEffect(() => {
     const fetchTrialStatus = async () => {
-      if (!isAuthenticated || !store?.id) {
+      if (!isAuthenticated || !store?.id || isDemo) {
         setTrialStatus({
           isTrialActive: false,
           trialEndsAt: null,
@@ -240,7 +246,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     };
 
     fetchTrialStatus();
-  }, [isAuthenticated, store?.id]);
+  }, [isAuthenticated, store?.id, isDemo]);
 
   const limits = PLAN_LIMITS[effectivePlan];
 

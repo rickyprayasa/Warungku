@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Store, Save, Loader2, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 const STORE_CATEGORIES = [
     { id: 'Warung', label: 'Warung (Default)', icon: '🏪' },
@@ -25,6 +26,7 @@ export function StoreProfileDialog({ iconOnly = false, compact = false, trigger 
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const { updateStoreSlug, storeId, refreshStore } = useAuth();
+    const { isDemo } = useDemoMode();
     const [isOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -52,6 +54,9 @@ export function StoreProfileDialog({ iconOnly = false, compact = false, trigger 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+
+
         setIsSaving(true);
         try {
             // Prepare payload with cleaned slug
@@ -113,6 +118,10 @@ export function StoreProfileDialog({ iconOnly = false, compact = false, trigger 
     };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isDemo) {
+            toast.info('Upload logo toko hanya simulasi pada akun demo');
+            return;
+        }
         const file = e.target.files?.[0];
         if (!file) return;
 

@@ -32,7 +32,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         // Skip admin check on public store pages to prevent 406 errors and improve performance
         // Public store URLs are usually /:slug where slug is not an admin route
         const path = window.location.pathname;
-        const isPublicRoute = !path.startsWith('/admin') && !path.startsWith('/dashboard') && path !== '/' && path !== '/login' && path !== '/register';
+        const isPublicRoute = !path.startsWith('/admin') && !path.startsWith('/dashboard') && path !== '/' && path !== '/login';
 
         if (isPublicRoute) {
             console.log('[AdminContext] Skipping admin check on public route');

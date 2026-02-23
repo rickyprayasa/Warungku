@@ -42,7 +42,7 @@ const barVariants: Variants = {
   }),
 };
 
-export function AnimatedLogo({ textColor = "text-brand-black", hideTextOnMobile = false, showText = true }: { textColor?: string; hideTextOnMobile?: boolean; showText?: boolean }) {
+export function AnimatedLogo({ textColor = "text-brand-black", hideTextOnMobile = false, showText = true, isActive = false }: { textColor?: string; hideTextOnMobile?: boolean; showText?: boolean; isActive?: boolean }) {
   const brandColors = ['rgb(243, 128, 32)', 'rgb(17, 17, 17)', 'rgb(160, 160, 160)', 'rgb(255, 255, 255)'];
   const donutColors = ['rgb(17, 17, 17)', 'rgb(255, 255, 255)', 'rgb(160, 160, 160)']; // Black, White, Gray
   const numDonutSegments = donutColors.length;
@@ -55,8 +55,8 @@ export function AnimatedLogo({ textColor = "text-brand-black", hideTextOnMobile 
     <motion.div
       initial="rest"
       whileHover="hover"
-      animate="rest"
-      className="flex items-center gap-3 cursor-pointer"
+      animate={isActive ? "hover" : "rest"}
+      className="flex items-center justify-center gap-3 cursor-pointer"
     >
       <motion.svg
         viewBox="0 0 24 24"

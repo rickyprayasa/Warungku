@@ -345,7 +345,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // For public store routes, we should consider it public mode regardless of authentication status
   // Check if current path is NOT an internal route
   // Note: /checkout is internal, but /:slug/checkout is public (handled by PublicStorePage)
-  const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
+  const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
 
   // Check if path matches /:slug/checkout pattern (public store checkout)
   const isPublicCheckout = /^\/[^\/]+\/checkout$/.test(window.location.pathname);

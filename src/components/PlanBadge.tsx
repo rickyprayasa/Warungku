@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Crown, Sparkles, Star, ChevronRight, AlertTriangle, Clock } from 'lucide-react';
+import { Sparkles, Crown, Star, ChevronRight, AlertTriangle, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlan } from '@/contexts/PlanContext';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { useNavigate } from 'react-router-dom';
 import {
     Dialog,
@@ -90,15 +92,17 @@ const planFeatures = {
 
 export function PlanBadge() {
     const { store } = useAuth();
+    const { effectivePlan } = usePlan();
+    const { isDemo } = useDemoMode();
     const navigate = useNavigate();
     const [showDialog, setShowDialog] = useState(false);
 
-    const currentPlan = (store?.plan || 'free') as PlanType;
+    const currentPlan = effectivePlan as PlanType;
     const config = planConfig[currentPlan] || planConfig.free;
     const Icon = config.icon;
 
     // Calculate expiry
-    const expiryDate = store?.plan_expires_at ? new Date(store.plan_expires_at) : null;
+    const expiryDate = (!isDemo && store?.plan_expires_at) ? new Date(store.plan_expires_at) : null;
     const now = new Date();
     const daysUntilExpiry = expiryDate
         ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))

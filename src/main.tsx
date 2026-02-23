@@ -17,6 +17,7 @@ import { SessionProvider } from '@/components/SessionProvider';
 import { OfflineStatusIndicator } from '@/components/OfflineStatusIndicator';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { shouldRetryQuery, getRetryDelay } from '@/lib/query-utils';
+import { AnimatedLogo } from '@/components/AnimatedLogo';
 import '@/index.css'
 
 // App version check - clear stale cached data when version changes
@@ -94,7 +95,7 @@ const AdminTestimonialsPage = lazy(() => import('@/pages/admin/AdminTestimonials
 const AdminStoresPage = lazy(() => import('@/pages/admin/AdminStoresPage').then(m => ({ default: m.AdminStoresPage })));
 
 const UpgradePlanPage = lazy(() => import('@/pages/UpgradePlanPage').then(m => ({ default: m.UpgradePlanPage })));
-const RegisterPage = lazy(() => import('@/pages/RegisterPage').then(m => ({ default: m.RegisterPage })));
+
 const AuthCallbackPage = lazy(() => import('@/pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
 const UpdatePasswordPage = lazy(() => import('@/pages/UpdatePasswordPage').then(m => ({ default: m.UpdatePasswordPage })));
@@ -104,68 +105,43 @@ const StoreLoginPage = lazy(() => import('@/pages/StoreLoginPage').then(m => ({ 
 // Loading animation
 const PageLoader = () => {
   return (
-    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center overflow-hidden">
-      {/* Loading animation */}
-      <div className="relative" style={{ animation: 'bounce 1.2s ease-in-out infinite' }}>
-        <div style={{
-          width: '80px',
-          height: '80px',
-          backgroundColor: '#F38020',
-          border: '4px solid #1A1A1A',
-          position: 'relative',
-          animation: 'rotate 3s linear infinite'
-        }}>
-          {/* Inner square */}
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '40px',
-            height: '40px',
-            backgroundColor: '#FEFEFE',
-            border: '3px solid #1A1A1A',
-          }} />
-        </div>
+    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center overflow-hidden z-[9999]">
+      {/* OMZETIN Logo */}
+      <div className="mb-8 scale-110">
+        <AnimatedLogo isActive={true} />
+      </div>
+
+      {/* Loading Bar */}
+      <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-brand-orange animate-pulse"
+          style={{
+            animation: 'loadingBar 1.5s ease-in-out infinite',
+            width: '50%',
+            transformOrigin: 'left'
+          }}
+        />
       </div>
 
       {/* Loading text */}
       <div style={{
-        marginTop: '40px',
+        marginTop: '20px',
         fontFamily: 'monospace',
-        fontSize: '18px',
+        fontSize: '16px',
         fontWeight: 'bold',
         color: '#1A1A1A',
-        backgroundColor: '#F38020',
-        padding: '12px 24px',
-        border: '3px solid #1A1A1A',
         textTransform: 'uppercase',
-        letterSpacing: '2px',
-        animation: 'pulse 1.5s ease-in-out infinite'
+        letterSpacing: '1px',
       }}>
-        Loading
+        Memuat komponen...
       </div>
 
       {/* CSS animations */}
       <style dangerouslySetInnerHTML={{
         __html: `
-          @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          
-          @keyframes bounce {
-            0%, 100% { 
-              transform: translateY(0) scale(1);
-            }
-            50% { 
-              transform: translateY(-15px) scale(1.1);
-            }
-          }
-          
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+          @keyframes loadingBar {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
           }
         `
       }} />
@@ -226,14 +202,7 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
-      {
-        path: "register",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <RegisterPage />
-          </Suspense>
-        ),
-      },
+
       {
         path: "checkout",
         element: (

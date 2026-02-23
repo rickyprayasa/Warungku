@@ -3,6 +3,8 @@ import { immer } from 'zustand/middleware/immer';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from './supabase';
 import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload, Reconciliation, ReconciliationPayload } from '@shared/types';
+import { DEMO_EMAIL } from './constants';
+import * as demoData from './demo-data';
 import { AuditLogger } from './audit-logger';
 import { offlineSync } from './offline-sync';
 import { sessionEvents } from './session-events';
@@ -504,6 +506,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           return;
         }
 
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set({ products: [...demoData.demoProducts] });
+          return;
+        }
+
         try {
           // Use withTimeout to prevent hanging indefinitely
           const { data, error } = await withTimeout(
@@ -548,6 +555,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const storeId = get().currentStoreId;
         if (!storeId) {
           // CRITICAL FIX: Don't clear sales when storeId is null
+          return;
+        }
+
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set({ sales: [...demoData.demoSales] });
           return;
         }
 
@@ -609,6 +621,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           return;
         }
 
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set({ purchases: [...demoData.demoPurchases] });
+          return;
+        }
+
         try {
           const { data, error } = await withTimeout(
             supabase
@@ -631,6 +648,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         const storeId = get().currentStoreId;
         if (!storeId) {
           // CRITICAL FIX: Don't clear suppliers when storeId is null
+          return;
+        }
+
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set({ suppliers: [...demoData.demoSuppliers] });
           return;
         }
 
@@ -659,6 +681,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           return;
         }
 
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set({ jajananRequests: [...demoData.demoJajananRequests] });
+          return;
+        }
+
         try {
           const { data, error } = await withTimeout(
             supabase
@@ -678,6 +705,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
 
       fetchStockDetails: async (productId) => {
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set({ stockDetails: [...demoData.demoStockDetails].filter(s => s.productId === productId) });
+          return;
+        }
+
         try {
           const { data, error } = await supabase
             .from('stock_details')
@@ -695,6 +727,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       fetchInitialBalance: async () => {
         const storeId = get().currentStoreId;
         if (!storeId) return;
+
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set({ initialBalance: demoData.demoInitialBalance });
+          return;
+        }
 
         try {
           const { data, error } = await withTimeout(
@@ -728,6 +765,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       fetchStoreProfile: async () => {
         const storeId = get().currentStoreId;
         if (!storeId) return;
+
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set({ storeProfile: { ...demoData.demoStoreProfile } });
+          return;
+        }
 
         try {
           // Get store data directly
@@ -953,7 +995,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       updateStoreProfile: async (profile) => {
         const storeId = get().currentStoreId;
+        const currentUser = get().currentUser;
         if (!storeId) throw new Error('No store selected');
+
+        if (currentUser?.email === DEMO_EMAIL) {
+          console.log('[updateStoreProfile] Demo mode: simulating local update only');
+          // Important: also update the auth store to keep it in sync, mostly for the name
+          set({ storeProfile: profile });
+          return;
+        }
 
         // Retry logic helper - more retries for slow connections
         const retryOperation = async (operation: () => Promise<any>, maxRetries = 4) => {
@@ -1075,7 +1125,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
       updateOpnameMode: async (mode) => {
         const storeId = get().currentStoreId;
+        const currentUser = get().currentUser;
         if (!storeId) throw new Error('No store selected');
+
+        if (currentUser?.email === DEMO_EMAIL) {
+          console.log('[updateOpnameMode] Demo mode: simulating local update only');
+          set({ opnameMode: mode });
+          window.dispatchEvent(new CustomEvent('opnameMode-changed'));
+          return;
+        }
 
         try {
           const { error } = await ((supabase as any)
@@ -1100,6 +1158,29 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       addProduct: async (productData) => {
         const storeId = get().currentStoreId;
         if (!storeId) throw new Error('No store selected');
+
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          const newProduct: Product = {
+            id: `demo-prod-${Date.now()}`,
+            name: productData.name,
+            price: productData.price,
+            cost: productData.cost || 0,
+            imageUrl: productData.imageUrl || '',
+            category: productData.category,
+            description: productData.description || '',
+            isPromo: productData.isPromo || false,
+            promoPrice: productData.promoPrice,
+            isActive: productData.isActive !== false,
+            isBestSeller: productData.isBestSeller || false,
+            totalStock: 0,
+            minStockLevel: productData.minStockLevel || 10,
+            qtyPerUnit: productData.qtyPerUnit || 1,
+            unit: productData.unit,
+            createdAt: Date.now(),
+          };
+          set((state) => { state.products.push(newProduct); });
+          return newProduct;
+        }
 
         // Retry logic helper - more retries for slow connections
         const retryOperation = async (operation: () => Promise<any>, maxRetries = 4) => {
@@ -1198,6 +1279,19 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
 
       updateProduct: async (productId, productData) => {
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          let updated: Product | null = null;
+          set((state) => {
+            const index = state.products.findIndex(p => p.id === productId);
+            if (index !== -1) {
+              state.products[index] = { ...state.products[index], ...productData } as Product;
+              updated = state.products[index];
+            }
+          });
+          if (!updated) throw new Error("Product not found");
+          return updated;
+        }
+
         // Retry logic helper
         const retryOperation = async (operation: () => Promise<any>, maxRetries = 3) => {
           let lastError;
@@ -1263,6 +1357,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
 
       deleteProduct: async (productId) => {
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set((state) => { state.products = state.products.filter(p => p.id !== productId); });
+          return;
+        }
+
         const { error } = await withTimeout(
           supabase
             .from('products' as any)
@@ -1289,6 +1388,50 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       addSale: async (saleData) => {
         const storeId = get().currentStoreId;
         if (!storeId) throw new Error('No store selected');
+
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          const products = get().products;
+          let total = 0; let profit = 0;
+          const items = saleData.items.map(item => {
+            const product = products.find(p => p.id === item.productId);
+            const price = item.price;
+            const cost = product?.cost || 0;
+            total += price * item.quantity;
+            profit += (price - cost) * item.quantity;
+            return {
+              productId: item.productId,
+              productName: item.productName,
+              quantity: item.quantity,
+              price: price,
+              cost: cost,
+            };
+          });
+
+          const newSale: Sale = {
+            id: `demo-sale-${Date.now()}`,
+            items,
+            total,
+            profit,
+            createdAt: Date.now(),
+            saleType: (saleData as any).saleType || 'retail',
+            notes: saleData.notes,
+            customerName: saleData.customerName,
+            status: 'completed',
+            cashierName: 'Ryus (Demo Owner)'
+          };
+
+          set((state) => {
+            state.sales.unshift(newSale);
+            // deduct stock
+            for (const item of items) {
+              const pIdx = state.products.findIndex(p => p.id === item.productId);
+              if (pIdx !== -1) {
+                state.products[pIdx].totalStock = (state.products[pIdx].totalStock || 0) - item.quantity;
+              }
+            }
+          });
+          return newSale;
+        }
 
         // Calculate totals first
         const products = get().products;
@@ -1520,6 +1663,22 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
 
       deleteSale: async (saleId) => {
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          set((state) => {
+            const sale = state.sales.find(s => s.id === saleId);
+            if (sale) {
+              for (const item of sale.items) {
+                const pIdx = state.products.findIndex(p => p.id === item.productId);
+                if (pIdx !== -1) {
+                  state.products[pIdx].totalStock = (state.products[pIdx].totalStock || 0) + item.quantity;
+                }
+              }
+            }
+            state.sales = state.sales.filter((s) => s.id !== saleId);
+          });
+          return;
+        }
+
         // Get sale items first for stock restoration
         const { data: items } = await withTimeout(
           supabase
@@ -1574,6 +1733,37 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       addPurchase: async (purchaseData) => {
         const storeId = get().currentStoreId;
         if (!storeId) throw new Error('No store selected');
+
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          const qty = purchaseData.isPackPurchase
+            ? (purchaseData.packQuantity || 1) * (purchaseData.unitsPerPack || 1)
+            : purchaseData.quantity || 1;
+
+          const newPurchase: Purchase = {
+            id: `demo-purch-${Date.now()}`,
+            productId: purchaseData.productId,
+            productName: purchaseData._display?.productName || 'Unknown',
+            quantity: qty,
+            packQuantity: purchaseData.packQuantity,
+            unitsPerPack: purchaseData.unitsPerPack,
+            unitCost: purchaseData.unitCost,
+            totalCost: qty * purchaseData.unitCost,
+            supplier: purchaseData._display?.supplierName,
+            supplierId: purchaseData.supplierId,
+            notes: purchaseData.notes,
+            createdAt: Date.now(),
+          };
+
+          set((state) => {
+            state.purchases.unshift(newPurchase);
+            const pIdx = state.products.findIndex(p => p.id === purchaseData.productId);
+            if (pIdx !== -1) {
+              state.products[pIdx].totalStock = (state.products[pIdx].totalStock || 0) + qty;
+              state.products[pIdx].cost = purchaseData.unitCost;
+            }
+          });
+          return newPurchase;
+        }
 
         const product = get().products.find(p => p.id === purchaseData.productId);
         if (!product) throw new Error('Product not found');
@@ -1957,6 +2147,19 @@ export const useWarungStore = create<WarungState & WarungActions>()(
       },
 
       addSupplier: async (supplierData) => {
+        if (get().currentUser?.email === DEMO_EMAIL) {
+          const newSupplier: Supplier = {
+            id: `demo-sup-${Date.now()}`,
+            name: supplierData.name,
+            contactPerson: supplierData.contactPerson,
+            phone: supplierData.phone,
+            address: supplierData.address,
+            createdAt: Date.now(),
+          };
+          set((state) => { state.suppliers.push(newSupplier); });
+          return newSupplier;
+        }
+
         const storeId = get().currentStoreId;
         if (!storeId) throw new Error('No store selected');
 

@@ -10,6 +10,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { AppFooter } from '@/components/AppFooter';
 import { AlertTriangle } from 'lucide-react';
 import { POSPage } from './POSPage';
+import { AnimatedLogo } from '@/components/AnimatedLogo';
 
 export function PublicStorePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -128,42 +129,29 @@ export function PublicStorePage() {
   if (publicStoreLoading) {
     return (
       <div className="min-h-screen bg-brand-white flex flex-col">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="relative mx-auto" style={{ animation: 'bounce 1.2s ease-in-out infinite' }}>
-              <div style={{
-                width: '80px',
-                height: '80px',
-                backgroundColor: '#F38020',
-                border: '4px solid #1A1A1A',
-                position: 'relative',
-                animation: 'rotate 3s linear infinite',
-                margin: '0 auto'
-              }}>
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  width: '40px',
-                  height: '40px',
-                  backgroundColor: '#FEFEFE',
-                  border: '3px solid #1A1A1A',
-                }} />
-              </div>
-            </div>
-            <p className="font-mono text-lg font-bold text-brand-black">Memuat toko...</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <div className="mb-8 scale-110">
+            <AnimatedLogo isActive={true} />
           </div>
+
+          <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden mb-6">
+            <div
+              className="h-full bg-brand-orange animate-pulse"
+              style={{
+                animation: 'loadingBar 1.5s ease-in-out infinite',
+                width: '50%',
+                transformOrigin: 'left'
+              }}
+            />
+          </div>
+          <p className="font-mono text-sm font-bold text-brand-black">Memuat toko...</p>
         </div>
+
         <style dangerouslySetInnerHTML={{
           __html: `
-            @keyframes rotate {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }
-            @keyframes bounce {
-              0%, 100% { transform: translateY(0) scale(1); }
-              50% { transform: translateY(-15px) scale(1.1); }
+            @keyframes loadingBar {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(200%); }
             }
           `
         }} />

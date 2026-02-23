@@ -12,6 +12,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { QRISDownloadButton } from './QRISDownload';
 import { usePlan } from '@/contexts/PlanContext';
 import { PlanUpgradePrompt } from '@/components/PlanUpgradePrompt';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 const PAYMENT_METHODS = [
     { id: 'gopay', label: 'GoPay', type: 'wallet' },
@@ -28,6 +29,7 @@ const PAYMENT_METHODS = [
 
 export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void }) {
     const { limits } = usePlan();
+    const { isDemo } = useDemoMode();
     const [upgradeOpen, setUpgradeOpen] = useState(false);
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
@@ -114,6 +116,10 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
     };
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isDemo) {
+            toast.info('Upload QRIS hanya simulasi pada akun demo');
+            return;
+        }
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -170,6 +176,8 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+
+
         if (qrisString && !validation?.valid) {
             toast.error('QRIS tidak valid. Periksa kembali kode QRIS Anda.');
             return;
@@ -199,6 +207,7 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
     const qrisInfo = qrisString ? parseQRISInfo(qrisString) : null;
 
     const handleDelete = async () => {
+
         if (!confirm('Apakah Anda yakin ingin menghapus QRIS? Pelanggan tidak akan bisa membayar dengan QRIS setelah dihapus.')) {
             return;
         }

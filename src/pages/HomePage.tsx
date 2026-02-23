@@ -33,7 +33,7 @@ export function HomePage() {
     if (authLoading) return;
 
     // Check if we're on a public store route - even if authenticated, we should let PublicStorePage handle it
-    const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/register', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
+    const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
     const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin');
     const isPublicStoreRoute = !isInternalRoute && window.location.pathname !== '/';
     if (isPublicStoreRoute) {

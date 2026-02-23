@@ -12,6 +12,7 @@ import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
 import { SettingsDialog } from './SettingsDialog';
 import { useState, useEffect, useMemo } from 'react';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { Clock, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import rsquareLogo from '@/assets/rsquare-logo-80.png';
@@ -27,6 +28,7 @@ export function Sidebar() {
     const { isAdmin } = useAdmin();
     const { isFreePlan, isTrialActive, daysRemainingInTrial, plan, effectivePlan } = usePlan();
     const storeProfile = useWarungStore((state) => state.storeProfile);
+    const { isDemo } = useDemoMode();
     const navigate = useNavigate();
     const location = useLocation();
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -172,7 +174,7 @@ export function Sidebar() {
                                 <div className="min-w-0 flex-1">
                                     <p className="font-mono text-xs font-bold text-brand-black truncate">
                                         {currentUser ? (
-                                            currentUser.name || currentUser.email?.split('@')[0]
+                                            isDemo ? "Pemilik Toko (Demo)" : (currentUser.name || currentUser.email?.split('@')[0])
                                         ) : (
                                             <span className="opacity-50">Loading...</span>
                                         )}
@@ -185,8 +187,8 @@ export function Sidebar() {
                                         )}
                                     </p>
                                     {currentUser?.email && (
-                                        <p className="font-mono text-[9px] text-muted-foreground truncate mt-0.5" title={currentUser.email}>
-                                            {currentUser.email}
+                                        <p className="font-mono text-[9px] text-muted-foreground truncate mt-0.5" title={isDemo ? 'demo@omzetin.web.id' : currentUser.email}>
+                                            {isDemo ? 'demo@omzetin.web.id' : currentUser.email}
                                         </p>
                                     )}
                                 </div>

@@ -55,8 +55,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const unsubscribe = sessionEvents.onSessionExpired(() => {
             console.warn('[SessionProvider] Received session expired event from store');
+
+            // Only show modal on explicitly protected routes
+            const path = window.location.pathname;
+            const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
+
             setIsSessionValid(false);
-            setIsModalOpen(true);
+
+            if (isProtectedRoute) {
+                setIsModalOpen(true);
+            }
         });
         return unsubscribe;
     }, []);
@@ -73,8 +81,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                         const { data, error } = await supabase.auth.refreshSession();
                         if (error || !data.session) {
                             console.warn('[SessionProvider] Session invalid on tab return');
+                            const path = window.location.pathname;
+                            const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
                             setIsSessionValid(false);
-                            setIsModalOpen(true);
+                            if (isProtectedRoute) {
+                                setIsModalOpen(true);
+                            }
                         } else {
                             setIsSessionValid(true);
                         }
@@ -89,8 +101,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                     }
                 } catch (err) {
                     console.error('[SessionProvider] Error checking session on visibility:', err);
+                    const path = window.location.pathname;
+                    const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
                     setIsSessionValid(false);
-                    setIsModalOpen(true);
+                    if (isProtectedRoute) {
+                        setIsModalOpen(true);
+                    }
                 }
             }
         };
@@ -106,8 +122,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
             if (!session) {
                 // Only show modal if user was previously authenticated and is on a protected route
-                const isProtectedRoute = !window.location.pathname.startsWith('/') ||
-                    ['/dashboard', '/pos', '/opname'].some(route => window.location.pathname.startsWith(route));
+                const path = window.location.pathname;
+                const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
 
                 if (isProtectedRoute && !isModalOpen) {
                     setIsSessionValid(false);

@@ -236,9 +236,9 @@ function DynamicTestimonials() {
                     <div className="flex items-center gap-4 border-t-4 border-brand-black pt-4">
                         {testimonial.stores?.logo_url ? (
                             <div className="h-12 w-12 border-4 border-brand-black overflow-hidden bg-white flex items-center justify-center">
-                                <img 
-                                    src={testimonial.stores.logo_url} 
-                                    alt={testimonial.stores?.name || 'Store'} 
+                                <img
+                                    src={testimonial.stores.logo_url}
+                                    alt={testimonial.stores?.name || 'Store'}
                                     className="w-full h-full object-contain"
                                 />
                             </div>
@@ -645,10 +645,10 @@ export function LandingPage() {
                         </motion.button>
                         <motion.button
                             className="flex items-center justify-center gap-2 font-mono uppercase font-bold text-sm text-white bg-brand-black border-2 border-brand-black rounded-none shadow-hard hover:shadow-hard-sm hover:bg-brand-orange hover:text-brand-black active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-200 px-4 py-2"
-                            onClick={() => navigate('/register')}
+                            onClick={() => navigate('/login')}
                         >
-                            <span className="material-symbols-outlined text-[18px]">person_add</span>
-                            Daftar
+                            <span className="material-symbols-outlined text-[18px]">play_circle</span>
+                            Coba Demo
                         </motion.button>
                     </div>
                 </div>
@@ -714,9 +714,9 @@ export function LandingPage() {
                                     <NeoButton
                                         variant="primary"
                                         className="h-14 px-8 text-lg flex items-center justify-center gap-3"
-                                        onClick={() => navigate('/register')}
+                                        onClick={() => navigate('/login')}
                                     >
-                                        Coba Gratis
+                                        Coba Demo Gratis
                                         <span className="material-symbols-outlined text-2xl">arrow_forward</span>
                                     </NeoButton>
                                     <NeoButton
@@ -1042,9 +1042,9 @@ export function LandingPage() {
                                 <NeoButton
                                     variant="black"
                                     className="h-16 w-full px-8 text-xl sm:w-auto shadow-[8px_8px_0px_0px_#000]"
-                                    onClick={() => navigate('/register')}
+                                    onClick={() => navigate('/login')}
                                 >
-                                    Mulai Gratis Sekarang
+                                    Coba Demo Sekarang
                                 </NeoButton>
                                 <LandingUpgradeDialog />
                             </div>
