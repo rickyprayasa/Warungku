@@ -45,6 +45,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
+      // Check if user is a platform admin in the database
+      const { data: adminData } = await supabase
+        .from('platform_admins')
+        .select('*')
+        .eq('email', userEmail)
+        .maybeSingle();
+
+      if (adminData) {
+        console.log('[AuthContext] User is platform admin, skipping store creation');
+        return null;
+      }
+
       // CRITICAL FIX: Check if user ALREADY has a store to prevent duplicates
       const { data: existingMember } = await supabase
         .from('store_members')
@@ -179,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle(),
-          15000 // 15s timeout - reduced to prevent long waits
+          5000 // 5s timeout
         ) as any;
         memberData = result.data;
         memberError = result.error;
@@ -205,8 +217,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
             return newStore;
           }
+          // If auto-create returned null (e.g. they are an admin), resolve gracefully
           setStore(null);
           useWarungStore.getState().setCurrentStoreId(null);
+          setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
+          return null;
         }
         return null;
       }
@@ -221,6 +236,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
           return newStore;
         }
+        // If auto-create returned null (e.g. they are an admin), resolve gracefully
+        setStore(null);
+        useWarungStore.getState().setCurrentStoreId(null);
+        setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
         return null;
       }
 
@@ -252,7 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .select('*')
             .eq('id', memberData.store_id)
             .single(),
-          30000
+          10000
         ) as any;
         directStoreData = storeResult.data;
         directStoreError = storeResult.error;

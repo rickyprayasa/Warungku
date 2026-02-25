@@ -57,7 +57,7 @@ export function DashboardPage() {
     };
 
     loadAllData();
-  }, [preloadDashboardData, currentStoreId]);
+  }, [preloadDashboardData, currentStoreId, currentUser]);
 
   // Sync state with URL param
   useEffect(() => {
@@ -218,119 +218,133 @@ export function DashboardPage() {
           onSuccess={() => window.location.reload()}
         />
       )}
-      <div className="py-8 md:py-10 lg:py-12">
-        <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-3 mb-1">
-            <h2 className="text-3xl font-display font-bold text-brand-black">
-              Dasbor Omzetin
-            </h2>
-            <PlanBadge />
-          </div>
-          <p className="font-mono text-muted-foreground">
-            Kelola produk, penjualan, dan keuangan toko Anda.
-          </p>
-        </div>
 
-        {/* Email Verification Banner */}
-        <EmailVerificationBanner />
-
-        {/* Onboarding Tour removed to prevent conflicts with tab-specific tours */}
-
-        {/* Desktop/Tablet Tabs - Hidden on Mobile */}
-        <div className="w-full">
-          {/* TabsList removed as navigation is now in Sidebar */}
-
-          <div>
-            {/* Render all components to ensure data is loaded, but only show the active one */}
-            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-              <div className={activeTab === 'analytics' ? 'block' : 'hidden'}>
-                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                  <AnalyticsDashboard isActive={activeTab === 'analytics'} />
-                </motion.div>
-              </div>
-            )}
-            <div className={activeTab === 'products' ? 'block' : 'hidden'}>
-              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                <ProductManagement isActive={activeTab === 'products'} />
-              </motion.div>
-            </div>
-            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-              <div className={activeTab === 'opname' ? 'block' : 'hidden'}>
-                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                  <OpnameDashboard isActive={activeTab === 'opname'} />
-                </motion.div>
-              </div>
-            )}
-            <div className={activeTab === 'sales' ? 'block' : 'hidden'}>
-              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                <SalesDashboard isActive={activeTab === 'sales'} />
-              </motion.div>
-            </div>
-            <div className={activeTab === 'purchases' ? 'block' : 'hidden'}>
-              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                <PurchasesDashboard isActive={activeTab === 'purchases'} />
-              </motion.div>
-            </div>
-            <div className={activeTab === 'suppliers' ? 'block' : 'hidden'}>
-              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                <SuppliersDashboard isActive={activeTab === 'suppliers'} />
-              </motion.div>
-            </div>
-            <div className={activeTab === 'price-reference' ? 'block' : 'hidden'}>
-              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                <PriceReferenceTab isActive={activeTab === 'price-reference'} />
-              </motion.div>
-            </div>
-            <div className={activeTab === 'requests' ? 'block' : 'hidden'}>
-              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                <JajananRequestsDashboard isActive={activeTab === 'requests'} />
-              </motion.div>
-            </div>
-            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-              <div className={activeTab === 'cashflow' ? 'block' : 'hidden'}>
-                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                  <CashFlowDashboard isActive={activeTab === 'cashflow'} />
-                </motion.div>
-              </div>
-            )}
-            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-              <div className={activeTab === 'finance' ? 'block' : 'hidden'}>
-                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                  <FinanceDashboard isActive={activeTab === 'finance'} />
-                </motion.div>
-              </div>
-            )}
-            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-              <div className={activeTab === 'qris' ? 'block' : 'hidden'}>
-                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                  <div className="max-w-2xl mx-auto bg-white border-4 border-brand-black p-6 shadow-hard">
-                    <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
-                      <QrCode className="w-8 h-8" />
-                      Setup QRIS & Pembayaran
-                    </h2>
-                    <QRISSetupContent />
-                  </div>
-                </motion.div>
-              </div>
-            )}
-
-            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-              <div className={activeTab === 'settings' ? 'block' : 'hidden'}>
-                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                  <SettingsDashboard />
-                </motion.div>
-              </div>
-            )}
-
-            <div className={activeTab === 'testimonials' ? 'block' : 'hidden'}>
-              <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
-                <TestimonialDashboard />
-              </motion.div>
-            </div>
+      {/* CRITICAL FIX: Add graceful fallback if store isn't ready or missing */}
+      {!currentStoreId && currentUser && !isLoading ? (
+        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-8">
+          <h2 className="text-2xl font-black font-display uppercase mb-4 text-brand-black">Toko Belum Tersedia</h2>
+          <p className="text-gray-600 mb-6">Anda belum memiliki toko atau akses ke toko manapun.</p>
+          <div className="flex flex-col gap-4 w-full max-w-sm">
+            <a href="/admin" className="w-full inline-flex justify-center items-center py-3 px-4 rounded-none border-2 border-brand-black bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black font-mono font-bold uppercase transition-all">
+              Ke Halaman Admin Global
+            </a>
           </div>
         </div>
-      </div>
-    </div >
+      ) : (
+        <div className="py-8 md:py-10 lg:py-12">
+          <div className="mb-8">
+            <div className="flex flex-wrap items-center gap-3 mb-1">
+              <h2 className="text-3xl font-display font-bold text-brand-black">
+                Dasbor Omzetin
+              </h2>
+              <PlanBadge />
+            </div>
+            <p className="font-mono text-muted-foreground">
+              Kelola produk, penjualan, dan keuangan toko Anda.
+            </p>
+          </div>
+
+          {/* Email Verification Banner */}
+          <EmailVerificationBanner />
+
+          {/* Onboarding Tour removed to prevent conflicts with tab-specific tours */}
+
+          {/* Desktop/Tablet Tabs - Hidden on Mobile */}
+          <div className="w-full">
+            {/* TabsList removed as navigation is now in Sidebar */}
+
+            <div>
+              {/* Render all components to ensure data is loaded, but only show the active one */}
+              {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                <div className={activeTab === 'analytics' ? 'block' : 'hidden'}>
+                  <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                    <AnalyticsDashboard isActive={activeTab === 'analytics'} />
+                  </motion.div>
+                </div>
+              )}
+              <div className={activeTab === 'products' ? 'block' : 'hidden'}>
+                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                  <ProductManagement isActive={activeTab === 'products'} />
+                </motion.div>
+              </div>
+              {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                <div className={activeTab === 'opname' ? 'block' : 'hidden'}>
+                  <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                    <OpnameDashboard isActive={activeTab === 'opname'} />
+                  </motion.div>
+                </div>
+              )}
+              <div className={activeTab === 'sales' ? 'block' : 'hidden'}>
+                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                  <SalesDashboard isActive={activeTab === 'sales'} />
+                </motion.div>
+              </div>
+              <div className={activeTab === 'purchases' ? 'block' : 'hidden'}>
+                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                  <PurchasesDashboard isActive={activeTab === 'purchases'} />
+                </motion.div>
+              </div>
+              <div className={activeTab === 'suppliers' ? 'block' : 'hidden'}>
+                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                  <SuppliersDashboard isActive={activeTab === 'suppliers'} />
+                </motion.div>
+              </div>
+              <div className={activeTab === 'price-reference' ? 'block' : 'hidden'}>
+                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                  <PriceReferenceTab isActive={activeTab === 'price-reference'} />
+                </motion.div>
+              </div>
+              <div className={activeTab === 'requests' ? 'block' : 'hidden'}>
+                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                  <JajananRequestsDashboard isActive={activeTab === 'requests'} />
+                </motion.div>
+              </div>
+              {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                <div className={activeTab === 'cashflow' ? 'block' : 'hidden'}>
+                  <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                    <CashFlowDashboard isActive={activeTab === 'cashflow'} />
+                  </motion.div>
+                </div>
+              )}
+              {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                <div className={activeTab === 'finance' ? 'block' : 'hidden'}>
+                  <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                    <FinanceDashboard isActive={activeTab === 'finance'} />
+                  </motion.div>
+                </div>
+              )}
+              {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                <div className={activeTab === 'qris' ? 'block' : 'hidden'}>
+                  <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                    <div className="max-w-2xl mx-auto bg-white border-4 border-brand-black p-6 shadow-hard">
+                      <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
+                        <QrCode className="w-8 h-8" />
+                        Setup QRIS & Pembayaran
+                      </h2>
+                      <QRISSetupContent />
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+
+              {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                <div className={activeTab === 'settings' ? 'block' : 'hidden'}>
+                  <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                    <SettingsDashboard />
+                  </motion.div>
+                </div>
+              )}
+
+              <div className={activeTab === 'testimonials' ? 'block' : 'hidden'}>
+                <motion.div initial="hidden" animate="visible" variants={tabContentVariants}>
+                  <TestimonialDashboard />
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

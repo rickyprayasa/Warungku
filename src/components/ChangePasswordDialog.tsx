@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { KeyRound, Loader2, Save } from 'lucide-react';
+import { KeyRound, Loader2, Save, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -21,6 +21,24 @@ export function ChangePasswordDialog({ trigger, open, onOpenChange, forceLock, o
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    const calculateStrength = (pass: string) => {
+        let score = 0;
+        if (!pass) return { score: 0, label: '', color: 'bg-gray-200' };
+        if (pass.length >= 8) score += 1;
+        if (/[A-Z]/.test(pass)) score += 1;
+        if (/[a-z]/.test(pass)) score += 1;
+        if (/\d/.test(pass)) score += 1;
+        if (/[^A-Za-z0-9]/.test(pass) || pass.length >= 12) score += 1;
+
+        if (score <= 2) return { score, label: 'Lemah', color: 'bg-red-500' };
+        if (score <= 4) return { score, label: 'Sedang', color: 'bg-yellow-500' };
+        return { score, label: 'Kuat', color: 'bg-green-500' };
+    };
+
+    const strength = calculateStrength(password);
 
     const isControlled = open !== undefined;
     const isOpen = isControlled ? open : internalOpen;
@@ -29,8 +47,17 @@ export function ChangePasswordDialog({ trigger, open, onOpenChange, forceLock, o
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (password.length < 6) {
-            toast.error('Password minimal 6 karakter');
+        if (password.length < 8) {
+            toast.error('Password minimal 8 karakter');
+            return;
+        }
+
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+
+        if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
+            toast.error('Password harus mengandung kombinasi huruf besar, huruf kecil, dan angka');
             return;
         }
 
@@ -92,30 +119,70 @@ export function ChangePasswordDialog({ trigger, open, onOpenChange, forceLock, o
                     </DialogHeader>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 text-left">
+                    {forceLock && (
+                        <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-4 text-sm mb-4">
+                            <p className="font-semibold mb-1">Selamat datang di Omzetin!</p>
+                            <p>Demi keamanan akun Anda, silakan ubah password sementara yang diberikan ke password baru yang lebih kuat. Anda baru bisa mengakses dashboard setelah menyimpannya.</p>
+                        </div>
+                    )}
+
                     <div className="space-y-2">
                         <Label htmlFor="new-password">Password Baru</Label>
-                        <Input
-                            id="new-password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="rounded-none border-2 border-brand-black"
-                            placeholder="Minimal 6 karakter"
-                            required
-                        />
+                        <div className="relative">
+                            <Input
+                                id="new-password"
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="rounded-none border-2 border-brand-black pr-10"
+                                placeholder="Minimal 8 karakter"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-brand-black focus:outline-none"
+                            >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
+                        {password && (
+                            <div className="pt-1">
+                                <div className="flex gap-1 h-1.5 w-full">
+                                    <div className={`flex-1 rounded-l-full transition-all duration-300 ${strength.score >= 1 ? strength.color : 'bg-gray-200'}`}></div>
+                                    <div className={`flex-1 transition-all duration-300 ${strength.score >= 3 ? strength.color : 'bg-gray-200'}`}></div>
+                                    <div className={`flex-1 rounded-r-full transition-all duration-300 ${strength.score >= 5 ? strength.color : 'bg-gray-200'}`}></div>
+                                </div>
+                                <p className={`text-[10px] text-right font-medium mt-1 ${strength.score <= 2 ? 'text-red-500' : strength.score <= 4 ? 'text-yellow-600' : 'text-green-600'}`}>
+                                    {strength.label}
+                                </p>
+                            </div>
+                        )}
+                        <p className="text-xs text-brand-black/60 mt-1 pb-1">
+                            Minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka.
+                        </p>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="confirm-password">Konfirmasi Password</Label>
-                        <Input
-                            id="confirm-password"
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="rounded-none border-2 border-brand-black"
-                            placeholder="Ulangi password baru"
-                            required
-                        />
+                        <div className="relative">
+                            <Input
+                                id="confirm-password"
+                                type={showConfirmPassword ? "text" : "password"}
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="rounded-none border-2 border-brand-black pr-10"
+                                placeholder="Ulangi password baru"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-brand-black focus:outline-none"
+                            >
+                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="pt-2">

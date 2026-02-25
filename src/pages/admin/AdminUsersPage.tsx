@@ -189,7 +189,7 @@ export function AdminUsersPage() {
                         email: inviteEmail.trim().toLowerCase(),
                         password: generatedPassword,
                         role: 'owner',
-                        loginUrl: window.location.origin + '/login'
+                        loginUrl: 'https://omzetin.web.id/login'
                     }
                 });
 
@@ -327,10 +327,20 @@ export function AdminUsersPage() {
 
             await Promise.all(deletePromises);
 
-            // Note: We cannot delete from auth.users from client-side without Service Role
-            // But deleting the stores removes the "Application Data" for this user.
+            // Now delete from auth.users using the new RPC
+            const { data, error } = await supabase.rpc('admin_delete_auth_user', {
+                p_user_id: user.user_id
+            });
 
-            toast.success(`Data toko untuk user ${user.email} berhasil dihapus`);
+            if (error) {
+                console.warn('Auth user deletion failed (RPC might not be deployed):', error);
+                toast.warning(`Sisa akun user ${user.email} tidak dapat dihapus sepenuhnya, namun toko berhasil dihapus.`);
+            } else if (data && !(data as any).success) {
+                toast.warning((data as any).message);
+            } else {
+                toast.success(`User ${user.email} berhasil dihapus sepenuhnya beserta tokonya.`);
+            }
+
             refetchUsers();
         } catch (error: any) {
             console.error('Error deleting user:', error);
