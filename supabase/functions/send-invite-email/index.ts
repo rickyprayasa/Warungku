@@ -64,7 +64,7 @@ serve(async (req) => {
                                 <tr>
                                     <td align="center">
                                         <!-- Logo -->
-                                        <img src="https://ysujcewkfhbenxtaguuw.supabase.co/storage/v1/object/public/public-assets/omzetin-logo.png" alt="Omzetin" width="64" height="64" style="display: block; margin: 0 auto 12px auto; width: 64px; height: 64px;" />
+                                        <img src="https://ysujcewkfhbenxtaguuw.supabase.co/storage/v1/object/public/public-assets/omzetin-logo.png?v=2" alt="Omzetin" width="64" height="64" style="display: block; margin: 0 auto 12px auto; width: 64px; height: 64px;" />
                                         <!-- Brand Name -->
                                         <h1 style="color: #1A1A1A; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-shadow: 2px 2px 0px rgba(0,0,0,0.15);">OMZETIN</h1>
                                         <p style="color: #1A1A1A; margin: 6px 0 0 0; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; opacity: 0.6; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">Platform Manajemen Toko</p>

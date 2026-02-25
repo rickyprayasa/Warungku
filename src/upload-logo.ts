@@ -19,7 +19,7 @@ async function uploadLogo() {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // Read the PNG file
-    const logoPath = path.join(__dirname, '..', 'omzetin.png');
+    const logoPath = path.join(__dirname, '..', 'omzetin-square.png');
     const logoBuffer = fs.readFileSync(logoPath);
 
     // Create bucket if not exists
