@@ -80,15 +80,24 @@ export function ChangePasswordDialog({ trigger, open, onOpenChange, forceLock, o
                 if (rpcError) console.error('Failed to clear must_change_password flag', rpcError);
             }
 
-            toast.success('Password berhasil diubah');
+            toast.success('Password berhasil diubah! Memuat ulang...');
             setPassword('');
             setConfirmPassword('');
+
+            // Force refresh the session to get a new token
+            await supabase.auth.refreshSession();
 
             if (onSuccess) {
                 onSuccess();
             } else {
                 setIsOpen?.(false);
             }
+
+            // Reload the page to re-establish all WebSocket connections
+            // and API calls with the fresh token
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         } catch (error: any) {
             console.error('Error updating password:', error);
             toast.error(`Gagal mengubah password: ${error.message}`);

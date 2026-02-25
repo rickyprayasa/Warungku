@@ -66,7 +66,7 @@ serve(async (req) => {
                                         <!-- Logo -->
                                         <img src="https://ysujcewkfhbenxtaguuw.supabase.co/storage/v1/object/public/public-assets/omzetin-logo.png?v=2" alt="Omzetin" width="64" height="64" style="display: block; margin: 0 auto 12px auto; width: 64px; height: 64px;" />
                                         <!-- Brand Name -->
-                                        <h1 style="color: #1A1A1A; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-shadow: 2px 2px 0px rgba(0,0,0,0.15);">OMZETIN</h1>
+                                        <h1 style="color: #FFFFFF; margin: 0; font-size: 34px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; font-family: Impact, 'Arial Black', 'Segoe UI Black', sans-serif; text-shadow: -1px -1px 0 #1A1A1A, 1px -1px 0 #1A1A1A, -1px 1px 0 #1A1A1A, 1px 1px 0 #1A1A1A, 3px 3px 0 #1A1A1A;">OMZETIN</h1>
                                         <p style="color: #1A1A1A; margin: 6px 0 0 0; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; opacity: 0.6; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">Platform Manajemen Toko</p>
                                     </td>
                                 </tr>
@@ -188,7 +188,7 @@ serve(async (req) => {
                             <table width="100%" border="0" cellspacing="0" cellpadding="0">
                                 <tr>
                                     <td align="center">
-                                        <p style="color: rgb(243, 128, 32); font-size: 16px; font-weight: 800; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 2px; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">OMZETIN</p>
+                                        <p style="color: rgb(243, 128, 32); font-size: 18px; font-weight: 900; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 2px; font-family: Impact, 'Arial Black', 'Segoe UI Black', sans-serif;">OMZETIN</p>
                                         <p style="color: #777777; font-size: 11px; margin: 0; line-height: 1.6; font-family: 'Courier New', Courier, monospace;">
                                             &copy; 2025 Omzetin by RSQUAREidea. All rights reserved.<br>
                                             Platform Manajemen Toko Modern
