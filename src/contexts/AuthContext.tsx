@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [mustChangePassword, setMustChangePassword] = useState(false);
 
   // Auto-create store for users who don't have one
-  const createStoreForUser = useCallback(async (userId: string, userEmail?: string): Promise<Store | null> => {
+  const createStoreForUser = useCallback(async (userId: string, userEmail?: string, userMetadata?: any): Promise<Store | null> => {
     try {
       console.log('[AuthContext] Creating store for user:', userId);
 
@@ -101,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           store_id: storeData.id,
           user_id: userId,
           role: 'owner',
+          must_change_password: userMetadata?.must_change_password || false
         });
 
       if (memberError) {
@@ -196,10 +197,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('[AuthContext] Error fetching store member:', memberError);
         if (memberError.code === 'PGRST116') {
           console.log('[AuthContext] User has no store, auto-creating store...');
-          const newStore = await createStoreForUser(userId, userEmail);
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          const newStore = await createStoreForUser(userId, userEmail, currentUser?.user_metadata);
           if (newStore) {
             setStore(newStore);
             useWarungStore.getState().setCurrentStoreId(newStore.id);
+            setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
             return newStore;
           }
           setStore(null);
@@ -210,10 +213,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!memberData?.store_id) {
         console.warn('[AuthContext] No store_id found in member data, auto-creating store...');
-        const newStore = await createStoreForUser(userId, userEmail);
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const newStore = await createStoreForUser(userId, userEmail, currentUser?.user_metadata);
         if (newStore) {
           setStore(newStore);
           useWarungStore.getState().setCurrentStoreId(newStore.id);
+          setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
           return newStore;
         }
         return null;
@@ -222,7 +227,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (memberData?.must_change_password !== undefined) {
         setMustChangePassword(memberData.must_change_password);
       } else {
-        setMustChangePassword(false);
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
       }
 
       // Extract store data from the JOIN result

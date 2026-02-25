@@ -173,11 +173,9 @@ export function AdminUsersPage() {
 
         setIsInviting(true);
         try {
-            const { data, error } = await (supabase.rpc as any)('create_team_member', {
+            const { data, error } = await (supabase.rpc as any)('create_global_user', {
                 p_email: inviteEmail.trim().toLowerCase(),
                 p_password: generatedPassword,
-                p_role: 'owner', // Default role for users invited by Admin
-                p_name: null,
                 p_must_change_password: true
             });
 
@@ -209,7 +207,7 @@ export function AdminUsersPage() {
         } catch (error: any) {
             console.error('Error creating invite:', error);
             if (error.message?.includes('not found') || error.code === '42883') {
-                toast.error('Fitur ini belum tersedia. Pastikan RPC create_team_member sudah diperbarui.');
+                toast.error('Fitur ini belum tersedia. Pastikan RPC create_global_user sudah diperbarui.');
             } else {
                 toast.error('Gagal membuat undangan: ' + error.message);
             }
