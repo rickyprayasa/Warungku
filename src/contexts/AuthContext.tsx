@@ -14,6 +14,7 @@ interface AuthContextType {
   storeId: string | null;
   loading: boolean;
   isAuthenticated: boolean;
+  mustChangePassword?: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
   signUp: (email: string, password: string, storeName: string) => Promise<{ error?: string }>;
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   // Auto-create store for users who don't have one
   const createStoreForUser = useCallback(async (userId: string, userEmail?: string): Promise<Store | null> => {
@@ -171,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const result = await withTimeout(
           (supabase
             .from('store_members') as any)
-            .select('store_id, role, stores(id, name, slug, plan, logo_url, address, created_at, updated_at)')
+            .select('store_id, role, must_change_password, stores(id, name, slug, plan, logo_url, address, created_at, updated_at)')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -215,6 +217,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return newStore;
         }
         return null;
+      }
+
+      if (memberData?.must_change_password !== undefined) {
+        setMustChangePassword(memberData.must_change_password);
+      } else {
+        setMustChangePassword(false);
       }
 
       // Extract store data from the JOIN result
@@ -773,6 +781,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSession(null);
       setStore(null);
+      setMustChangePassword(false);
 
       // Clear ALL storage to prevent data leakage, BUT preserve tour history
       const tourKeys = Object.keys(localStorage).filter(key => key.startsWith('has-seen-'));
@@ -854,6 +863,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     storeId: store?.id ?? null,
     loading,
     isAuthenticated: generalIsAuthenticated, // Use general auth status
+    mustChangePassword,
     signIn,
     signInWithGoogle,
     signUp,

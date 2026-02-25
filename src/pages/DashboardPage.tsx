@@ -20,6 +20,8 @@ import { TestimonialDashboard } from "@/components/TestimonialDashboard";
 import { Package, ShoppingCart, DollarSign, ArrowRightLeft, Banknote, Truck, Inbox, Warehouse, ClipboardCheck, BarChart3, Tag, QrCode, Crown, Settings, MessageCircle } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useWarungStore } from "@/lib/store";
+import { useAuth } from "@/contexts/AuthContext";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 export function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,6 +31,7 @@ export function DashboardPage() {
   const preloadDashboardData = useWarungStore((state) => state.preloadDashboardData);
   const currentStoreId = useWarungStore((state) => state.currentStoreId);
   const currentUser = useWarungStore((state) => state.currentUser);
+  const { mustChangePassword } = useAuth();
 
   const tabContentVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
@@ -208,6 +211,13 @@ export function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 md:pb-0">
+      {mustChangePassword && (
+        <ChangePasswordDialog
+          open={true}
+          forceLock={true}
+          onSuccess={() => window.location.reload()}
+        />
+      )}
       <div className="py-8 md:py-10 lg:py-12">
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-3 mb-1">

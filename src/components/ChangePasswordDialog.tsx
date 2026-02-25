@@ -12,9 +12,11 @@ interface ChangePasswordDialogProps {
     trigger?: React.ReactNode;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    forceLock?: boolean;
+    onSuccess?: () => void;
 }
 
-export function ChangePasswordDialog({ trigger, open, onOpenChange }: ChangePasswordDialogProps) {
+export function ChangePasswordDialog({ trigger, open, onOpenChange, forceLock, onSuccess }: ChangePasswordDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false);
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,10 +47,21 @@ export function ChangePasswordDialog({ trigger, open, onOpenChange }: ChangePass
 
             if (error) throw error;
 
+            if (forceLock) {
+                // Clear the flag in db
+                const { error: rpcError } = await supabase.rpc('clear_must_change_password');
+                if (rpcError) console.error('Failed to clear must_change_password flag', rpcError);
+            }
+
             toast.success('Password berhasil diubah');
             setPassword('');
             setConfirmPassword('');
-            setIsOpen?.(false);
+
+            if (onSuccess) {
+                onSuccess();
+            } else {
+                setIsOpen?.(false);
+            }
         } catch (error: any) {
             console.error('Error updating password:', error);
             toast.error(`Gagal mengubah password: ${error.message}`);
@@ -58,9 +71,18 @@ export function ChangePasswordDialog({ trigger, open, onOpenChange }: ChangePass
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={forceLock ? undefined : setIsOpen}>
             {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-            <DialogContent className="sm:max-w-[400px] rounded-none border-4 border-brand-black bg-white p-0">
+            <DialogContent
+                className="sm:max-w-[400px] rounded-none border-4 border-brand-black bg-white p-0"
+                onInteractOutside={(e) => {
+                    if (forceLock) e.preventDefault();
+                }}
+                onEscapeKeyDown={(e) => {
+                    if (forceLock) e.preventDefault();
+                }}
+                hideCloseButton={forceLock}
+            >
                 <div className="bg-brand-orange p-4 border-b-4 border-brand-black">
                     <DialogHeader>
                         <DialogTitle className="font-display font-black text-xl text-brand-black uppercase tracking-wider flex items-center gap-2">

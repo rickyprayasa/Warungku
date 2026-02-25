@@ -169,17 +169,50 @@ export function AdminUsersPage() {
             return;
         }
 
+        const generatedPassword = Math.random().toString(36).slice(-8);
+
         setIsInviting(true);
         try {
-            const inviteLink = `https://omzetin.web.id/invite?email=${encodeURIComponent(inviteEmail)}`;
+            const { data, error } = await (supabase.rpc as any)('create_team_member', {
+                p_email: inviteEmail.trim().toLowerCase(),
+                p_password: generatedPassword,
+                p_role: 'owner', // Default role for users invited by Admin
+                p_name: null,
+                p_must_change_password: true
+            });
 
-            await navigator.clipboard.writeText(inviteLink);
-            toast.success(`Link undangan telah disalin! Share link ini: ${inviteLink}`);
-            setInviteEmail('');
-            setIsInviteDialogOpen(false);
+            if (error) throw error;
+
+            if (data && !data.success) {
+                toast.error(data.message || 'Gagal membuat undangan');
+            } else {
+                const { error: fnError } = await supabase.functions.invoke('send-invite-email', {
+                    body: {
+                        email: inviteEmail.trim().toLowerCase(),
+                        password: generatedPassword,
+                        role: 'owner',
+                        loginUrl: window.location.origin + '/login'
+                    }
+                });
+
+                if (fnError) {
+                    console.error('Email failed:', fnError);
+                    toast.warning(`User berhasil ditambahkan tetapi email gagal dikirim: ${fnError.message}`);
+                } else {
+                    toast.success(data.message || `Undangan berhasil dikirim ke ${inviteEmail}`);
+                }
+
+                setInviteEmail('');
+                setIsInviteDialogOpen(false);
+                refetchUsers();
+            }
         } catch (error: any) {
             console.error('Error creating invite:', error);
-            toast.error('Gagal membuat undangan');
+            if (error.message?.includes('not found') || error.code === '42883') {
+                toast.error('Fitur ini belum tersedia. Pastikan RPC create_team_member sudah diperbarui.');
+            } else {
+                toast.error('Gagal membuat undangan: ' + error.message);
+            }
         } finally {
             setIsInviting(false);
         }
