@@ -13,7 +13,7 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UpgradePlanDialog } from './UpgradePlanDialog';
+import { UpgradePlanContent } from './UpgradePlanContent';
 
 type PlanType = 'free' | 'trial' | 'pro' | 'enterprise';
 
@@ -97,6 +97,7 @@ export function PlanBadge() {
     const { isDemo } = useDemoMode();
     const navigate = useNavigate();
     const [showDialog, setShowDialog] = useState(false);
+    const [showUpgradeContent, setShowUpgradeContent] = useState(false);
 
     const currentPlan = effectivePlan as PlanType;
     const config = planConfig[currentPlan] || planConfig.free;
@@ -123,7 +124,10 @@ export function PlanBadge() {
     return (
         <>
             <button
-                onClick={() => setShowDialog(true)}
+                onClick={() => {
+                    setShowUpgradeContent(false);
+                    setShowDialog(true);
+                }}
                 className={`
                     inline-flex items-center gap-1.5 px-3 py-1.5
                     ${isDemo
@@ -152,107 +156,128 @@ export function PlanBadge() {
                 <ChevronRight className="w-3 h-3" />
             </button>
 
-            <Dialog open={showDialog} onOpenChange={setShowDialog}>
-                <DialogContent className="max-w-md border-4 border-brand-black shadow-hard">
+            <Dialog open={showDialog} onOpenChange={(open) => {
+                setShowDialog(open);
+                if (!open) setTimeout(() => setShowUpgradeContent(false), 300);
+            }}>
+                <DialogContent className={`border-4 border-brand-black shadow-hard transition-all duration-300 ${showUpgradeContent ? 'max-w-5xl' : 'max-w-md'}`}>
                     <DialogHeader>
                         <DialogTitle className="font-display text-xl flex items-center gap-2">
-                            <Icon className={`w-6 h-6 ${isDemo ? 'text-orange-600' : config.color}`} />
-                            {isDemo ? 'Berlangganan OMZETIN' : `Plan ${config.name}`}
+                            {showUpgradeContent ? (
+                                <>
+                                    <Crown className="w-6 h-6 text-brand-orange" />
+                                    Upgrade Plan
+                                </>
+                            ) : (
+                                <>
+                                    <Icon className={`w-6 h-6 ${isDemo ? 'text-orange-600' : config.color}`} />
+                                    {isDemo ? 'Berlangganan OMZETIN' : `Plan ${config.name}`}
+                                </>
+                            )}
                         </DialogTitle>
                         <DialogDescription className="font-mono text-sm">
-                            {isDemo ? 'Kelola bisnis Anda lebih mudah dengan fitur premium OMZETIN' : config.description}
+                            {showUpgradeContent
+                                ? 'Pilih paket langganan yang sesuai dengan kebutuhan bisnis Anda.'
+                                : isDemo ? 'Kelola bisnis Anda lebih mudah dengan fitur premium OMZETIN' : config.description}
                         </DialogDescription>
                     </DialogHeader>
 
-                    {/* Expiry Info */}
-                    {expiryDate && (
-                        <div className={`mt - 2 p - 3 border - 2 rounded - none font - mono text - sm ${isExpiringSoon || isExpired
-                            ? 'bg-red-50 border-red-500 text-red-700'
-                            : 'bg-blue-50 border-blue-500 text-blue-700'
-                            } `}>
-                            <div className="flex items-start gap-2">
-                                <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <p className="font-bold">
-                                        {isExpired ? 'Plan Berakhir:' : 'Berakhir pada:'}
-                                    </p>
-                                    <p>{formatDate(expiryDate)}</p>
-                                    {isExpiringSoon && (
-                                        <p className="mt-1 font-bold text-xs bg-red-200 px-2 py-0.5 inline-block">
-                                            ⚠️ Habis dalam {daysUntilExpiry} hari!
-                                        </p>
-                                    )}
+                    {showUpgradeContent ? (
+                        <div className="mt-4 max-h-[70vh] overflow-y-auto px-1 py-1">
+                            <UpgradePlanContent />
+                        </div>
+                    ) : (
+                        <>
+                            {/* Expiry Info */}
+                            {expiryDate && (
+                                <div className={`mt-2 p-3 border-2 rounded-none font-mono text-sm ${isExpiringSoon || isExpired
+                                    ? 'bg-red-50 border-red-500 text-red-700'
+                                    : 'bg-blue-50 border-blue-500 text-blue-700'
+                                    }`}>
+                                    <div className="flex items-start gap-2">
+                                        <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                        <div>
+                                            <p className="font-bold">
+                                                {isExpired ? 'Plan Berakhir:' : 'Berakhir pada:'}
+                                            </p>
+                                            <p>{formatDate(expiryDate)}</p>
+                                            {isExpiringSoon && (
+                                                <p className="mt-1 font-bold text-xs bg-red-200 px-2 py-0.5 inline-block">
+                                                    ⚠️ Habis dalam {daysUntilExpiry} hari!
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
+                            )}
+
+                            <div className="mt-4">
+                                <h4 className="font-mono font-bold text-sm mb-2">Fitur yang Anda dapatkan:</h4>
+                                <ul className="space-y-2">
+                                    {planFeatures[currentPlan]?.map((feature, idx) => (
+                                        <li key={idx} className="flex items-center gap-2 text-sm font-mono">
+                                            <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs">✓</span>
+                                            {feature}
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        </div>
-                    )}
 
-                    <div className="mt-4">
-                        <h4 className="font-mono font-bold text-sm mb-2">Fitur yang Anda dapatkan:</h4>
-                        <ul className="space-y-2">
-                            {planFeatures[currentPlan]?.map((feature, idx) => (
-                                <li key={idx} className="flex items-center gap-2 text-sm font-mono">
-                                    <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs">✓</span>
-                                    {feature}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                            {(currentPlan !== 'pro' && currentPlan !== 'enterprise') || isExpiringSoon || isDemo ? (
+                                <div className="mt-6 p-4 bg-orange-50 border-2 border-orange-300 rounded-none">
+                                    <h4 className="font-display font-bold text-orange-800 mb-2">
+                                        {isDemo ? '🚀 Berlangganan Sekarang!' : isExpiringSoon ? '⚡ Perpanjang Sekarang!' : '🚀 Upgrade ke Pro!'}
+                                    </h4>
+                                    <p className="text-sm font-mono text-orange-700 mb-3">
+                                        {isDemo
+                                            ? 'Suka dengan fitur OMZETIN? Daftar dan mulai kelola bisnis Anda sendiri dengan semua fitur premium!'
+                                            : isExpiringSoon
+                                                ? 'Jangan sampai kehilangan akses ke fitur premium Anda.'
+                                                : 'Dapatkan akses ke semua fitur premium dan tingkatkan bisnis Anda.'}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={() => {
+                                                if (isDemo) {
+                                                    const message = encodeURIComponent(`Halo, saya tertarik berlangganan Pro Omzetin. Bisa info lebih lanjut?`);
+                                                    window.open(`https://wa.me/6285846055901?text=${message}`, '_blank');
+                                                } else {
+                                                    setShowUpgradeContent(true);
+                                                }
+                                            }}
+                                            className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
+                                        >
+                                            <Crown className="w-4 h-4 mr-2" />
+                                            {isDemo ? 'Berlangganan Sekarang' : isExpiringSoon ? 'Perpanjang Plan' : 'Upgrade Sekarang'}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setShowDialog(false)}
+                                            className="border-2 border-brand-black"
+                                        >
+                                            Nanti
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : null}
 
-                    {(currentPlan !== 'pro' && currentPlan !== 'enterprise') || isExpiringSoon || isDemo ? (
-                        <div className="mt-6 p-4 bg-orange-50 border-2 border-orange-300 rounded-none">
-                            <h4 className="font-display font-bold text-orange-800 mb-2">
-                                {isDemo ? '🚀 Berlangganan Sekarang!' : isExpiringSoon ? '⚡ Perpanjang Sekarang!' : '🚀 Upgrade ke Pro!'}
-                            </h4>
-                            <p className="text-sm font-mono text-orange-700 mb-3">
-                                {isDemo
-                                    ? 'Suka dengan fitur OMZETIN? Daftar dan mulai kelola bisnis Anda sendiri dengan semua fitur premium!'
-                                    : isExpiringSoon
-                                        ? 'Jangan sampai kehilangan akses ke fitur premium Anda.'
-                                        : 'Dapatkan akses ke semua fitur premium dan tingkatkan bisnis Anda.'}
-                            </p>
-                            <div className="flex gap-2">
-                                {isDemo ? (
-                                    <UpgradePlanDialog
-                                        trigger={
-                                            <Button
-                                                className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
-                                            >
-                                                <Crown className="w-4 h-4 mr-2" />
-                                                Berlangganan Sekarang
-                                            </Button>
-                                        }
-                                    />
-                                ) : (
-                                    <UpgradePlanDialog
-                                        trigger={
-                                            <Button
-                                                className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
-                                            >
-                                                <Crown className="w-4 h-4 mr-2" />
-                                                {isExpiringSoon ? 'Perpanjang Plan' : 'Upgrade Sekarang'}
-                                            </Button>
-                                        }
-                                    />
-                                )}
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowDialog(false)}
-                                    className="border-2 border-brand-black"
-                                >
-                                    Nanti
-                                </Button>
-                            </div>
-                        </div>
-                    ) : null}
-
-                    {((currentPlan === 'pro' || currentPlan === 'enterprise') && !isExpiringSoon && !isDemo) && (
-                        <div className="mt-6 p-4 bg-green-50 border-2 border-green-300 rounded-none">
-                            <p className="text-sm font-mono text-green-700 flex items-center gap-2">
-                                <span className="text-lg">✨</span>
-                                Anda sudah menggunakan plan {config.name}. Terima kasih!
-                            </p>
-                        </div>
+                            {((currentPlan === 'pro' || currentPlan === 'enterprise') && !isExpiringSoon && !isDemo) && (
+                                <div className="mt-6 p-4 bg-green-50 border-2 border-green-300 rounded-none">
+                                    <p className="text-sm font-mono text-green-700 flex items-center gap-2 mb-3">
+                                        <span className="text-lg">✨</span>
+                                        Anda sudah menggunakan plan {config.name}. Terima kasih!
+                                    </p>
+                                    <Button
+                                        variant="outline"
+                                        className="border-2 border-brand-black font-bold hover:bg-brand-orange hover:text-brand-black w-full"
+                                        onClick={() => setShowUpgradeContent(true)}
+                                    >
+                                        <Crown className="w-4 h-4 mr-2" />
+                                        Ganti Plan
+                                    </Button>
+                                </div>
+                            )}
+                        </>
                     )}
                 </DialogContent>
             </Dialog>

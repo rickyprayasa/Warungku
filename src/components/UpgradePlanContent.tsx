@@ -61,7 +61,6 @@ const defaultPlans: PlanDetails[] = [
             'Export data CSV/PDF',
             'Multi-user access (5 user)',
             'Tanpa watermark',
-            'Domain custom',
         ],
     },
     {
@@ -119,7 +118,7 @@ export function UpgradePlanContent() {
                 // Merge database plans with default plans
                 if (data && data.length > 0) {
                     const mergedPlans: PlanDetails[] = defaultPlans.map((defaultPlan) => {
-                        const dbPlan = data.find((p: any) => p.name.toLowerCase() === defaultPlan.id);
+                        const dbPlan: any = data.find((p: any) => p.name.toLowerCase() === defaultPlan.id);
 
                         if (dbPlan && dbPlan.price !== null && dbPlan.price !== undefined && defaultPlan.id !== 'enterprise') {
                             return {
@@ -163,8 +162,8 @@ export function UpgradePlanContent() {
         setIsProcessing(planId);
         try {
             if (planId === 'pro') {
-                // Find the Pro plan in the database
-                const proPlan = dbPlans.find(p => p.name.toLowerCase().includes('pro'));
+                // Find the exact Pro plan in the database (avoiding legacy "Pro Monthly" rows)
+                const proPlan = dbPlans.find(p => p.name.toLowerCase() === 'pro');
 
                 if (!proPlan) {
                     toast.error('Paket Pro tidak ditemukan di database. Hubungi admin.');
@@ -187,11 +186,24 @@ export function UpgradePlanContent() {
                     body: {
                         plan_id: proPlan.id,
                         store_id: store?.id,
-                        payment_method: 'VC', // Default to Virtual Account, or let Duitku handle it
+                        payment_method: 'M2', // Mandiri Virtual Account ( universally enabled in Sandbox )
                     },
                 });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Edge function full error object:', error);
+                    if (error.context) {
+                        try {
+                            const errorBody = await error.context.json();
+                            console.error('Edge function error body:', errorBody);
+                            throw new Error(errorBody.error || error.message);
+                        } catch (e) {
+                            // If it wasn't valid JSON or already consumed
+                            throw error;
+                        }
+                    }
+                    throw error;
+                }
 
                 if (data?.paymentUrl) {
                     // Redirect to Duitku Payment Page
