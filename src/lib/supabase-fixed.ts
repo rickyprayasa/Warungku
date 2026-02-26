@@ -1,6 +1,6 @@
 /**
  * Supabase client configuration with additional debugging
- * Fixed to properly handle environment variables with Cloudflare plugin
+ * Fixed to properly handle environment variables
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -11,7 +11,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('Environment variables check:');
   console.log('- VITE_SUPABASE_URL exists:', !!import.meta.env.VITE_SUPABASE_URL);
   console.log('- VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
-  
+
   if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
     console.error('❌ Missing required Supabase environment variables!');
     console.error('Make sure your .env.local file contains VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
@@ -113,7 +113,7 @@ export const testConnection = async () => {
   try {
     // Simple ping to check if we can reach Supabase
     const { error } = await supabase.from('stores').select('count').limit(1);
-    
+
     if (error) {
       console.error('❌ Supabase connection failed:', error.message);
       return { success: false, error: error.message };

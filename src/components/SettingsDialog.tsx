@@ -59,10 +59,6 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const { store, user } = useAuth();
     const { isDemo } = useDemoMode();
 
-    // Domain Settings State
-    const [customDomain, setCustomDomain] = useState('');
-    const [isSavingDomain, setIsSavingDomain] = useState(false);
-
     // Team Settings State
     const [members, setMembers] = useState<StoreMember[]>([]);
     const [isLoadingMembers, setIsLoadingMembers] = useState(false);
@@ -103,12 +99,6 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     }, [isOpen, fetchOpnameMode]);
 
     useEffect(() => {
-        if (store?.settings && (store.settings as any).custom_domain) {
-            setCustomDomain((store.settings as any).custom_domain);
-        }
-    }, [store]);
-
-    useEffect(() => {
         if (activeTab === 'team' && isProOrEnterprise && isOpen) {
             fetchMembers();
         }
@@ -129,8 +119,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
             // Map out_ prefixed columns from RPC to frontend property names
             const mapped = (data || []).map((m: any) => {
                 const userId = m.out_user_id || m.user_id;
-                // Find matching permissions
-                const userPerms = permData?.find(p => p.user_id === userId)?.permissions;
+                const userPerms = (permData as any[])?.find(p => p.user_id === userId)?.permissions;
 
                 return {
                     user_id: userId,
@@ -158,37 +147,6 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
             setIsLoadingMembers(false);
         }
     };
-
-    const handleSaveDomain = async () => {
-        if (isDemo) {
-            toast.info('Fitur simpan domain hanya simulasi pada akun demo');
-            return;
-        }
-        if (!isProOrEnterprise) {
-            toast.error('Fitur Custom Domain hanya untuk plan Pro dan Enterprise');
-            return;
-        }
-
-        setIsSavingDomain(true);
-        try {
-            const currentSettings = (store?.settings as any) || {};
-            const newSettings = { ...currentSettings, custom_domain: customDomain };
-
-            const { error } = await supabase
-                .from('stores')
-                .update({ settings: newSettings })
-                .eq('id', store?.id);
-
-            if (error) throw error;
-            toast.success('Pengaturan domain berhasil disimpan');
-        } catch (error: any) {
-            console.error('Error saving domain:', error);
-            toast.error('Gagal menyimpan domain: ' + error.message);
-        } finally {
-            setIsSavingDomain(false);
-        }
-    };
-
 
     const handleRemoveMember = async (userId: string) => {
         if (isDemo) {
@@ -460,8 +418,8 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
             '✓ Laporan Keuangan Lengkap\n\n' +
             '🛠️ Teknologi:\n' +
             '• Frontend: React + TypeScript\n' +
-            '• Backend: Cloudflare Workers\n' +
-            '• Database: Cloudflare D1 (SQLite)\n' +
+            '• Backend: Supabase Edge Functions\n' +
+            '• Database: Supabase PostgreSQL\n' +
             '• UI: Shadcn/ui + Tailwind CSS\n\n' +
             '© 2025 RSQUARE - All Rights Reserved'
         );
@@ -507,14 +465,6 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                 className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase border-r-2 border-brand-black"
                             >
                                 Team
-                            </TabsTrigger>
-                        )}
-                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-                            <TabsTrigger
-                                value="domain"
-                                className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase"
-                            >
-                                Domain
                             </TabsTrigger>
                         )}
                     </TabsList>
@@ -729,7 +679,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Database:</span>
-                                    <span className="font-bold">Cloudflare DO</span>
+                                    <span className="font-bold">Supabase</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Storage:</span>
@@ -788,7 +738,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                             <AlertDescription className="text-xs font-mono text-brand-black">
                                 <strong>🏢 Developed by RSQUARE</strong><br />
                                 Sistem manajemen warung modern dengan teknologi cloud.
-                                Data Anda aman tersimpan di Cloudflare D1 dengan backup otomatis.
+                                Data Anda aman tersimpan di Supabase dengan backup otomatis.
                             </AlertDescription>
                         </Alert>
                     </TabsContent>
@@ -952,85 +902,6 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                             </div>
                         )}
 
-                    </TabsContent>
-
-                    <TabsContent value="domain" className="space-y-4 py-2">
-                        {/* Only rendered if trigger is visible, but good to be safe */}
-                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-                            !isProOrEnterprise ? (
-                                <div className="text-center py-8 border-2 border-brand-black bg-gray-50">
-                                    <Shield className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                                    <h3 className="font-display font-bold text-lg mb-2">Upgrade ke Pro</h3>
-                                    <p className="font-mono text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                                        Fitur Custom Domain hanya tersedia untuk paket Pro dan Enterprise.
-                                        Tingkatkan kredibilitas toko Anda dengan domain sendiri.
-                                    </p>
-                                    <UpgradePlanDialog
-                                        trigger={
-                                            <Button
-                                                className="bg-brand-orange text-brand-black border-2 border-brand-black font-bold hover:bg-orange-400"
-                                            >
-                                                Upgrade Sekarang
-                                            </Button>
-                                        }
-                                    />
-                                </div>
-                            ) : (
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="domain" className="font-mono font-bold">Nama Domain</Label>
-                                        <div className="flex gap-2">
-                                            <Input
-                                                id="domain"
-                                                placeholder="contoh: tokoanda.com"
-                                                value={customDomain}
-                                                onChange={(e) => setCustomDomain(e.target.value)}
-                                                className="rounded-none border-2 border-brand-black font-mono"
-                                            />
-                                            <Button
-                                                onClick={handleSaveDomain}
-                                                disabled={isSavingDomain}
-                                                className="bg-brand-black text-white hover:bg-gray-800 rounded-none border-2 border-brand-black font-bold"
-                                            >
-                                                {isSavingDomain ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <Save className="w-4 h-4 mr-2" />
-                                                )}
-                                                Simpan
-                                            </Button>
-                                        </div>
-                                        <p className="text-xs font-mono text-muted-foreground">
-                                            Masukkan domain tanpa http:// atau https://
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-blue-50 border-2 border-blue-200 p-4">
-                                        <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
-                                            <AlertCircle className="w-4 h-4" />
-                                            Instruksi DNS
-                                        </h4>
-                                        <p className="text-sm text-blue-700 mb-3 font-mono">
-                                            Untuk menghubungkan domain, tambahkan record berikut di penyedia domain Anda:
-                                        </p>
-                                        <div className="bg-white border border-blue-200 p-3 font-mono text-xs space-y-2">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Type:</span>
-                                                <span className="font-bold">CNAME</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Name:</span>
-                                                <span className="font-bold">@ (atau www)</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-500">Value:</span>
-                                                <span className="font-bold">domains.omzetin.com</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        )}
                     </TabsContent>
                 </Tabs>
 
@@ -1233,11 +1104,11 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                         } else {
                                             // RPC doesn't support permissions yet, so update it directly
                                             // This works because owner/admin has RLS update rights on store_members
-                                            const { error: permError } = await supabase
+                                            const { error: permError } = await (supabase
                                                 .from('store_members')
-                                                .update({ permissions: editPermissions })
+                                                .update({ permissions: editPermissions } as any)
                                                 .eq('user_id', editingMember.user_id)
-                                                .eq('store_id', store?.id);
+                                                .eq('store_id', store?.id)) as any;
 
                                             if (permError) {
                                                 console.error('Error updating permissions:', permError);

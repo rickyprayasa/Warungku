@@ -3,7 +3,6 @@ import path from "path";
 import react from "@vitejs/plugin-react";
 import { exec } from "node:child_process";
 import pino from "pino";
-import { cloudflare } from "@cloudflare/vite-plugin";
 import viteCompression from "vite-plugin-compression";
 
 const logger = pino();
@@ -92,9 +91,6 @@ export default ({ mode }: { mode: string }) => {
   return defineConfig({
     plugins: [
       react(),
-      // Only use Cloudflare plugin for production builds
-      // For development, we don't need the Cloudflare plugin which might interfere with local env vars
-      mode !== 'development' && cloudflare(),
       watchDependenciesPlugin(),
       // Compression plugins for production
       mode !== 'development' && viteCompression({

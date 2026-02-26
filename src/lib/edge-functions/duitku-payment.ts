@@ -85,7 +85,6 @@ serve(async (req) => {
             const origin = req.headers.get('origin');
             const allowedOrigins = [
                 'https://omzetin.web.id', // Production domain
-                'https://omzetin-main-rsquare.pages.dev', // Cloudflare Pages deployment domain
                 'http://localhost:3000', // For development
                 'http://localhost:5173'  // For development
             ];

@@ -73,7 +73,7 @@ export function AppFooter() {
               Sistem POS modern untuk warung, dirancang untuk Generasi Z.
             </p>
             <p className="font-mono text-xs text-gray-500 mt-4">
-              Dibangun dengan ❤️ di Cloudflare.
+              Dibangun dengan ❤️ di Indonesia.
             </p>
           </div>
 

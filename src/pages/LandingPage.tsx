@@ -1059,6 +1059,7 @@ export function LandingPage() {
 }
 
 function LandingUpgradeDialog() {
+    const navigate = useNavigate();
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -1105,7 +1106,7 @@ function LandingUpgradeDialog() {
                                 </li>
                             ))}
                         </ul>
-                        <button className="w-full py-3 border-3 border-black font-bold bg-white hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
+                        <button onClick={() => navigate('/login')} className="w-full py-3 border-3 border-black font-bold bg-white hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
                             Daftar Gratis
                         </button>
                     </div>
@@ -1139,7 +1140,7 @@ function LandingUpgradeDialog() {
                                 </li>
                             ))}
                         </ul>
-                        <button className="w-full py-3 border-3 border-black font-black bg-brand-orange hover:bg-white transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
+                        <button onClick={() => navigate('/login')} className="w-full py-3 border-3 border-black font-black bg-brand-orange hover:bg-white transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
                             Pilih Paket Juragan
                         </button>
                     </div>
@@ -1169,7 +1170,7 @@ function LandingUpgradeDialog() {
                                 </li>
                             ))}
                         </ul>
-                        <button className="w-full py-3 border-3 border-black font-bold bg-white hover:bg-purple-50 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
+                        <button onClick={() => window.open('https://wa.me/6285846055901?text=' + encodeURIComponent('Halo, saya tertarik dengan paket Sultan/Enterprise Omzetin. Bisa info lebih lanjut?'), '_blank')} className="w-full py-3 border-3 border-black font-bold bg-white hover:bg-purple-50 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
                             Hubungi Sales
                         </button>
                     </div>

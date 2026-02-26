@@ -27,7 +27,7 @@ export default tseslint.config(
       ...importPlugin.configs.recommended.rules,
       ...importPlugin.configs.typescript.rules,
       'prefer-const': 'off',
-      "react-hooks/rules-of-hooks": "error", 
+      "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
       '@typescript-eslint/no-unused-vars': "off",
       '@typescript-eslint/no-explicit-any': 'off',
@@ -37,8 +37,8 @@ export default tseslint.config(
       ],
       'import/named': 'error',
       'import/default': 'error',
-      'import/no-unresolved': ['error', { 
-        ignore: ['cloudflare:workers', 'agents'] 
+      'import/no-unresolved': ['error', {
+        ignore: ['agents']
       }],
 
       // CHANGED: Replaced the flawed rule with a more intelligent one.

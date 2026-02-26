@@ -13,18 +13,15 @@
 	],
 	"compilerOptions": {
 		"incremental": true,
-		"types": [
-			"@cloudflare/workers-types"
-		],
 		"baseUrl": ".",
 		"paths": {
 			"@/*": [
 				"./src/*"
 			],
-            "@shared/*": [
-                "./shared/*"
-            ]
+			"@shared/*": [
+				"./shared/*"
+			]
 		},
-        "skipLibCheck": true
+		"skipLibCheck": true
 	}
 }
