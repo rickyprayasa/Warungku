@@ -95,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: storeName.charAt(0).toUpperCase() + storeName.slice(1),
           slug: slug,
           plan: 'free',
+          settings: { onboarded: false },
         })
         .select()
         .single();
@@ -161,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Skip fetching user store if we are in public store mode
       if (typeof window !== 'undefined') {
-        const internalRoutes = ['/pos', '/dashboard', '/opname', '/login', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
+        const internalRoutes = ['/pos', '/dashboard', '/opname', '/login', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback', '/onboarding'];
         const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin') || window.location.pathname === '/';
         if (!isInternalRoute && window.location.pathname !== '/') {
           console.log('[AuthContext] Skipping user store fetch in public mode');
@@ -186,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const result = await withTimeout(
           (supabase
             .from('store_members') as any)
-            .select('store_id, role, must_change_password, stores(id, name, slug, plan, logo_url, address, created_at, updated_at)')
+            .select('store_id, role, must_change_password, stores(id, name, slug, plan, logo_url, address, phone, settings, created_at, updated_at)')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(1)

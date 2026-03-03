@@ -101,6 +101,7 @@ const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then(
 const UpdatePasswordPage = lazy(() => import('@/pages/UpdatePasswordPage').then(m => ({ default: m.UpdatePasswordPage })));
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const StoreLoginPage = lazy(() => import('@/pages/StoreLoginPage').then(m => ({ default: m.StoreLoginPage })));
+const OnboardingPage = lazy(() => import('@/pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
 
 // Loading animation
 const PageLoader = () => {
@@ -244,6 +245,16 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<PageLoader />}>
         <AuthCallbackPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/onboarding",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <OnboardingPage />
+        </ProtectedRoute>
       </Suspense>
     ),
   },

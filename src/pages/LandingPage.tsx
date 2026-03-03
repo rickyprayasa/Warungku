@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence, useInView, animate } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { UpgradePlanDialog } from '@/components/UpgradePlanDialog';
@@ -113,28 +113,69 @@ function RealStatsSection() {
         }
     ];
 
+    function AnimatedCounter({ from, to, suffix = "", duration = 2 }: { from: number, to: number, suffix?: string, duration?: number }) {
+        const ref = useRef<HTMLSpanElement>(null);
+        const inView = useInView(ref, { once: true, margin: "-50px" });
+
+        useEffect(() => {
+            if (inView && ref.current) {
+                const controls = animate(from, to, {
+                    duration,
+                    ease: "easeOut",
+                    onUpdate(value) {
+                        if (ref.current) {
+                            ref.current.textContent = Math.floor(value).toLocaleString() + suffix;
+                        }
+                    }
+                });
+                return controls.stop;
+            }
+        }, [from, to, inView, duration, suffix]);
+
+        return <span ref={ref}>{from}{suffix}</span>;
+    }
+
     return (
-        <section className="w-full border-b-3 border-black bg-black text-white py-12">
-            <div className="mx-auto max-w-7xl px-6 lg:px-10">
+        <section className="w-full border-b-3 border-black bg-black text-white py-16 relative overflow-hidden" id="stats">
+            <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
+                <div className="text-center mb-12">
+                    <motion.h2
+                        className="text-4xl md:text-5xl font-black uppercase inline-block border-b-4 border-brand-orange pb-2"
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                    >
+                        Angka Yang Berbicara
+                    </motion.h2>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {statsData.map((stat, idx) => (
-                        <motion.div
-                            key={idx}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: idx * 0.1 }}
-                            className="text-center"
-                        >
-                            <div className="text-4xl md:text-5xl font-black text-brand-orange">
-                                {loading ? '...' : stat.value}
-                            </div>
-                            <div className="text-sm font-bold uppercase tracking-wider mt-2 flex items-center justify-center gap-2">
-                                <stat.icon size={16} />
-                                {stat.label}
-                            </div>
-                        </motion.div>
-                    ))}
+                    {statsData.map((stat, idx) => {
+                        const numericValue = parseInt((stat.value as string).replace(/[^0-9]/g, '')) || 0;
+                        const hasPlus = (stat.value as string).includes('+');
+
+                        return (
+                            <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.15, type: 'spring', stiffness: 100 }}
+                                className="relative bg-[#111] border-3 border-brand-orange shadow-[8px_8px_0px_0px_#FF6B00] p-8 text-center"
+                                whileHover={{ y: -5, boxShadow: "12px 12px 0px 0px #FF6B00" }}
+                            >
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <stat.icon size={64} className="text-brand-orange" />
+                                </div>
+                                <div className="text-5xl md:text-6xl font-black text-brand-orange mb-4 drop-shadow-[2px_2px_0px_#fff]">
+                                    {loading ? '...' : <AnimatedCounter from={0} to={numericValue} suffix={hasPlus ? '+' : ''} duration={2.5} />}
+                                </div>
+                                <div className="text-lg font-bold uppercase tracking-wider text-white flex items-center justify-center gap-2">
+                                    {stat.label}
+                                </div>
+                            </motion.div>
+                        );
+                    })}
                 </div>
             </div>
         </section>
@@ -529,34 +570,45 @@ export function LandingPage() {
         );
     };
 
+    const [activeFeature, setActiveFeature] = useState(0);
+    const [activeScreenshot, setActiveScreenshot] = useState(0);
+
     const features = [
         {
             icon: "point_of_sale",
             title: "POS Kasir",
             desc: "Sistem kasir cepat & mudah. Terima pembayaran tunai, QRIS, dan kartu debit dalam hitungan detik.",
             hoverColor: "",
-            color: "bg-brand-orange"
+            color: "bg-brand-orange",
+            screenshots: ["/features/kasir.png", "/features/struk.png"],
+            highlights: ["Pencarian produk instan", "Keranjang belanja real-time", "Cetak struk otomatis", "Multi metode pembayaran"]
         },
         {
             icon: "inventory_2",
             title: "Manajemen Inventori",
             desc: "Pantau stok barang real-time. Dapatkan notifikasi saat stok menipis agar penjualan tidak terhambat.",
             hoverColor: "",
-            color: "bg-blue-500"
+            color: "bg-blue-500",
+            screenshots: ["/features/inventory.png", "/features/detail-produk.png"],
+            highlights: ["Stok real-time tracking", "Alert stok rendah & habis", "Metode FIFO/LIFO", "Kategori produk"]
         },
         {
             icon: "account_balance_wallet",
             title: "Laporan Keuangan",
             desc: "Laporan laba rugi otomatis. Tahu persis keuntungan harian, mingguan, dan bulanan tanpa pusing hitung manual.",
             hoverColor: "",
-            color: "bg-green-500"
+            color: "bg-green-500",
+            screenshots: ["/features/laporan-keuangan.png"],
+            highlights: ["Pendapatan & HPP otomatis", "Margin laba real-time", "Grafik kinerja bulanan", "Ekspor laporan PDF"]
         },
         {
             icon: "monitoring",
             title: "Analitik Bisnis",
             desc: "Analisis tren penjualan terlaris. Ambil keputusan bisnis berdasarkan data, bukan tebak-tebakan.",
             hoverColor: "",
-            color: "bg-purple-500"
+            color: "bg-purple-500",
+            screenshots: ["/features/analitik.png", "/features/analitik2.png", "/features/analitik3.png"],
+            highlights: ["Tren pendapatan & profit", "Filter periode fleksibel", "Pertumbuhan vs periode lalu", "Overview bisnis lengkap"]
         }
     ];
 
@@ -656,28 +708,35 @@ export function LandingPage() {
 
             <main className="flex flex-col items-center w-full">
                 {/* Hero Section */}
-                <section className="relative w-full border-b-3 border-black bg-white overflow-hidden" style={{
-                    backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
-                    backgroundSize: '20px 20px'
-                }}>
+                <section className="relative w-full border-b-3 border-black bg-white overflow-hidden">
                     {/* Animated floating elements */}
                     <motion.div
-                        variants={floatVariants as any}
-                        animate="animate"
-                        className="absolute top-20 left-10 w-20 h-20 bg-purple-500 border-3 border-black rounded-full opacity-20 hidden lg:block"
-                    />
+                        className="absolute top-20 left-10 md:left-20 hidden lg:flex items-center justify-center -z-10"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], y: [-10, -20] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut" }}
+                    >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "48px" }}>storefront</span>
+                    </motion.div>
                     <motion.div
-                        variants={floatVariants as any}
-                        animate="animate"
-                        transition={{ delay: 0.5 }}
-                        className="absolute bottom-20 right-10 w-32 h-32 bg-brand-yellow border-3 border-black rounded-full opacity-20 hidden lg:block"
-                    />
+                        className="absolute bottom-20 right-10 md:right-20 hidden lg:flex items-center justify-center -z-10"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], y: [10, -10] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut", delay: 0.5 }}
+                    >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "56px" }}>fastfood</span>
+                    </motion.div>
                     <motion.div
-                        variants={floatVariants as any}
-                        animate="animate"
-                        transition={{ delay: 1 }}
-                        className="absolute top-1/2 right-1/4 w-16 h-16 bg-brand-orange border-3 border-black rounded-full opacity-20 hidden lg:block"
-                    />
+                        className="absolute top-1/3 right-1/4 hidden lg:flex items-center justify-center -z-10"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], scale: [1, 1.1] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut", delay: 1 }}
+                    >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "64px" }}>store</span>
+                    </motion.div>
 
                     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10 lg:py-24">
                         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16 items-center">
@@ -768,15 +827,32 @@ export function LandingPage() {
 
                                     {/* Decorative Elements */}
                                     <motion.div
-                                        className="absolute -bottom-4 -right-4 w-full h-full bg-brand-orange/20 rounded-xl -z-10 border-3 border-black/10 transform rotate-1"
-                                        animate={{ rotate: [1, 2, 1] }}
-                                        transition={{ duration: 4, repeat: Infinity }}
-                                    />
+                                        className="absolute -bottom-10 -right-10 flex items-center justify-center -z-10 pointer-events-none"
+                                        initial={{ opacity: 0 }}
+                                        whileInView={{ opacity: [0, 0.3, 0], y: [0, -20] }}
+                                        viewport={{ once: false, amount: 0.2 }}
+                                        transition={{ duration: 4, ease: "easeInOut" }}
+                                    >
+                                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "56px" }}>restaurant</span>
+                                    </motion.div>
                                     <motion.div
-                                        className="absolute -top-4 -left-4 w-full h-full bg-blue-500/10 rounded-xl -z-10 border-3 border-black/10 transform -rotate-1"
-                                        animate={{ rotate: [-1, -2, -1] }}
-                                        transition={{ duration: 5, repeat: Infinity }}
-                                    />
+                                        className="absolute top-10 -left-10 flex items-center justify-center -z-10 pointer-events-none"
+                                        initial={{ opacity: 0 }}
+                                        whileInView={{ opacity: [0, 0.3, 0], y: [0, 20] }}
+                                        viewport={{ once: false, amount: 0.2 }}
+                                        transition={{ duration: 5, ease: "easeInOut", delay: 0.5 }}
+                                    >
+                                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "48px" }}>electrical_services</span>
+                                    </motion.div>
+                                    <motion.div
+                                        className="absolute -top-16 right-10 flex items-center justify-center -z-10 pointer-events-none"
+                                        initial={{ opacity: 0 }}
+                                        whileInView={{ opacity: [0, 0.3, 0], rotate: [0, 15] }}
+                                        viewport={{ once: false, amount: 0.2 }}
+                                        transition={{ duration: 4, ease: "easeInOut", delay: 1 }}
+                                    >
+                                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "40px" }}>dry_cleaning</span>
+                                    </motion.div>
                                 </motion.div>
                             </div>
                         </div>
@@ -787,13 +863,7 @@ export function LandingPage() {
                 <RealStatsSection />
 
                 {/* Features Section */}
-                <section className="relative w-full border-b-3 border-black bg-brand-yellow/10 py-24 overflow-hidden" id="features">
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 opacity-10" style={{
-                        backgroundImage: 'radial-gradient(#000 2px, transparent 2px)',
-                        backgroundSize: '30px 30px'
-                    }} />
-
+                <section className="relative w-full border-b-3 border-black bg-white py-24 overflow-hidden" id="features">
                     <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
                         <motion.div
                             initial="hidden"
@@ -816,41 +886,145 @@ export function LandingPage() {
                                 </p>
                             </motion.div>
 
-                            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                                {features.map((feature, idx) => (
-                                    <NeoCard
-                                        key={idx}
-                                        hoverColor={feature.hoverColor}
-                                        className="flex flex-col items-start gap-0 p-0 overflow-hidden h-full"
-                                    >
-                                        <div
-                                            className={`w-full h-32 border-b-3 border-black flex items-center justify-center relative overflow-hidden ${feature.color}`}
+                            {/* Interactive Feature Showcase */}
+                            <motion.div variants={itemVariants} className="flex flex-col lg:flex-row gap-8 items-stretch">
+                                {/* Feature Selector Tabs - Left Side */}
+                                <div className="lg:w-[340px] flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-x-visible pb-3 lg:pb-0 scrollbar-hide">
+                                    {features.map((feature, idx) => (
+                                        <motion.button
+                                            key={idx}
+                                            onClick={() => { setActiveFeature(idx); setActiveScreenshot(0); }}
+                                            className={`relative flex items-center gap-4 p-4 lg:p-5 border-3 border-black text-left transition-all duration-300 min-w-[220px] lg:min-w-0 ${activeFeature === idx
+                                                ? `${feature.color} text-white shadow-[6px_6px_0px_0px_#000] -translate-x-1 -translate-y-1`
+                                                : 'bg-white hover:bg-gray-50 shadow-[4px_4px_0px_0px_#000] hover:shadow-[6px_6px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5'
+                                                }`}
+                                            whileTap={{ scale: 0.97 }}
                                         >
-                                            {/* Abstract shapes in background */}
-                                            <div className="absolute top-0 right-0 w-16 h-16 bg-black/10 rounded-bl-full" />
-                                            <div className="absolute bottom-0 left-0 w-12 h-12 bg-white/20 rounded-tr-full" />
-
-                                            <motion.div
-                                                className="bg-white border-3 border-black p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] rounded-lg relative z-10"
-                                                whileHover={{ scale: 1.1, rotate: 5 }}
-                                                transition={{ type: "spring", stiffness: 300 }}
-                                            >
-                                                <span className="material-symbols-outlined text-4xl text-black">
+                                            {/* Active indicator line */}
+                                            {activeFeature === idx && (
+                                                <motion.div
+                                                    className="absolute left-0 top-0 bottom-0 w-1.5 bg-black"
+                                                    layoutId="activeFeatureIndicator"
+                                                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                                />
+                                            )}
+                                            <div className={`p-2 border-2 border-black rounded-lg shrink-0 ${activeFeature === idx ? 'bg-white/20' : 'bg-gray-100'
+                                                }`}>
+                                                <span className={`material-symbols-outlined text-2xl ${activeFeature === idx ? 'text-white' : 'text-black'
+                                                    }`}>
                                                     {feature.icon}
                                                 </span>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className={`font-black uppercase text-sm lg:text-base leading-tight ${activeFeature === idx ? 'text-white' : 'text-black'
+                                                    }`}>
+                                                    {feature.title}
+                                                </h3>
+                                                <p className={`text-xs lg:text-sm mt-1 leading-snug line-clamp-2 ${activeFeature === idx ? 'text-white/80' : 'text-gray-500'
+                                                    }`}>
+                                                    {feature.desc}
+                                                </p>
+                                            </div>
+                                        </motion.button>
+                                    ))}
+                                </div>
+
+                                {/* Screenshot Preview - Right Side */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="bg-white border-3 border-black shadow-[8px_8px_0px_0px_#000] overflow-hidden">
+                                        {/* Browser Chrome Bar */}
+                                        <div className="flex items-center gap-2 px-4 py-3 bg-gray-100 border-b-3 border-black">
+                                            <div className="flex gap-2">
+                                                <div className="w-3 h-3 rounded-full bg-red-400 border border-red-500" />
+                                                <div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-500" />
+                                                <div className="w-3 h-3 rounded-full bg-green-400 border border-green-500" />
+                                            </div>
+                                            <div className="flex-1 mx-4">
+                                                <div className="bg-white border-2 border-gray-300 rounded-full px-4 py-1 text-xs font-mono text-gray-400 flex items-center gap-2">
+                                                    <span className="material-symbols-outlined text-sm">lock</span>
+                                                    omzetin.web.id
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Screenshot Container */}
+                                        <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
+                                            <AnimatePresence mode="wait">
+                                                <motion.img
+                                                    key={`${activeFeature}-${activeScreenshot}`}
+                                                    src={features[activeFeature].screenshots[activeScreenshot] || features[activeFeature].screenshots[0]}
+                                                    alt={features[activeFeature].title}
+                                                    className="absolute inset-0 w-full h-full object-contain"
+                                                    initial={{ opacity: 0, scale: 1.03, filter: 'blur(8px)' }}
+                                                    animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                                    exit={{ opacity: 0, scale: 0.97, filter: 'blur(8px)' }}
+                                                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                                                />
+                                            </AnimatePresence>
+
+                                            {/* Gradient overlay at bottom */}
+                                            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
+
+                                            {/* Feature label badge */}
+                                            <motion.div
+                                                className={`absolute bottom-4 left-4 ${features[activeFeature].color} text-white font-black uppercase text-sm px-4 py-2 border-2 border-black shadow-[3px_3px_0px_0px_#000]`}
+                                                key={`badge-${activeFeature}`}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: 0.3, duration: 0.4 }}
+                                            >
+                                                <span className="material-symbols-outlined text-base align-middle mr-1">{features[activeFeature].icon}</span>
+                                                {features[activeFeature].title}
                                             </motion.div>
                                         </div>
 
-                                        <div className="p-6 flex flex-col flex-1 bg-white relative z-20">
-                                            <h3 className="text-xl font-black uppercase mb-3 leading-tight">
-                                                {feature.title}
-                                            </h3>
-                                            <p className="font-medium text-gray-700 leading-relaxed text-sm flex-1">
-                                                {feature.desc}
-                                            </p>
-                                        </div>
-                                    </NeoCard>
-                                ))}
+                                        {/* Thumbnail carousel (if multiple screenshots) */}
+                                        {features[activeFeature].screenshots.length > 1 && (
+                                            <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-t-2 border-gray-200">
+                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mr-2">Preview:</span>
+                                                <div className="flex gap-2 overflow-x-auto">
+                                                    {features[activeFeature].screenshots.map((src: string, i: number) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => setActiveScreenshot(i)}
+                                                            className={`w-20 h-12 border-2 rounded overflow-hidden transition-all shrink-0 ${activeScreenshot === i
+                                                                ? 'border-brand-orange ring-2 ring-brand-orange opacity-100 shadow-[2px_2px_0px_0px_#000]'
+                                                                : 'border-black opacity-60 hover:opacity-100'
+                                                                }`}
+                                                        >
+                                                            <img src={src} alt="" className="w-full h-full object-cover object-top" />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Feature Highlights */}
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={`highlights-${activeFeature}`}
+                                            className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6"
+                                            initial={{ opacity: 0, y: 15 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.4, ease: 'easeOut' }}
+                                        >
+                                            {features[activeFeature].highlights.map((highlight: string, i: number) => (
+                                                <motion.div
+                                                    key={`${activeFeature}-${i}`}
+                                                    className="flex items-center gap-2 bg-white border-2 border-black p-3 shadow-[3px_3px_0px_0px_#000]"
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: i * 0.08, duration: 0.3 }}
+                                                >
+                                                    <span className={`material-symbols-outlined text-sm ${features[activeFeature].color} text-white p-0.5 border border-black rounded`}>check</span>
+                                                    <span className="text-xs font-bold text-black leading-tight">{highlight}</span>
+                                                </motion.div>
+                                            ))}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </div>
                             </motion.div>
                         </motion.div>
                     </div>
@@ -859,19 +1033,9 @@ export function LandingPage() {
                 {/* Dashboard Preview Section with Screenshot */}
                 <motion.section
                     ref={sectionRef}
-                    className="w-full border-y-3 border-black bg-[#F2F2F2] py-24 relative overflow-hidden"
-                    style={{
-                        background: 'repeating-linear-gradient(45deg, #fff, #fff 10px, #f2f2f2 10px, #f2f2f2 20px)'
-                    }}
+                    className="w-full border-y-3 border-black bg-white py-24 relative overflow-hidden"
                     id="dashboard"
                 >
-                    <motion.div
-                        className="absolute inset-0 opacity-5"
-                        style={{
-                            backgroundImage: 'radial-gradient(#000 2px, transparent 2px)',
-                            backgroundSize: '30px 30px'
-                        }}
-                    />
                     <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
                         <motion.div
                             initial={{ opacity: 0, x: -50 }}
@@ -944,25 +1108,202 @@ export function LandingPage() {
                                         />
                                     </div>
                                 </motion.div>
-                                {/* Decorative elements */}
+                                {/* Decorative icons */}
                                 <motion.div
-                                    className="absolute -bottom-6 -right-6 w-full h-full bg-brand-orange/20 border-3 border-black/10 -z-10 transform rotate-2"
-                                    animate={{ rotate: [2, 3, 2] }}
-                                    transition={{ duration: 4, repeat: Infinity }}
-                                />
+                                    className="absolute -bottom-10 -right-10 flex items-center justify-center -z-10 pointer-events-none"
+                                    animate={{ rotate: [-5, 5, -5], y: [0, -10, 0] }}
+                                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                                >
+                                    <span className="material-symbols-outlined text-gray-500 opacity-20" style={{ fontSize: "64px" }}>request_quote</span>
+                                </motion.div>
+                                <motion.div
+                                    className="absolute top-10 -left-10 flex items-center justify-center -z-10 pointer-events-none"
+                                    animate={{ y: [0, -15, 0], x: [0, 10, 0] }}
+                                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                                >
+                                    <span className="material-symbols-outlined text-gray-500 opacity-20" style={{ fontSize: "56px" }}>analytics</span>
+                                </motion.div>
                             </motion.div>
                         </motion.div>
                     </div>
                 </motion.section>
 
-                {/* Testimonials Section - Dynamic from DB */}
-                <section className="relative w-full py-24 overflow-hidden bg-brand-cream" id="stories">
-                    {/* Decorative Pattern Overlay */}
-                    <div className="absolute inset-0 opacity-5" style={{
-                        backgroundImage: 'radial-gradient(#1a1a1a 1px, transparent 1px)',
-                        backgroundSize: '30px 30px'
-                    }} />
+                {/* Public Store / Toko Online Section */}
+                <motion.section
+                    className="w-full border-y-3 border-black bg-white py-24 relative overflow-hidden"
+                    id="toko-online"
+                >
+                    <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
+                        <div className="flex flex-col-reverse lg:flex-row gap-12 lg:gap-20 items-center">
 
+                            {/* Left: Phone Mockup */}
+                            <motion.div
+                                className="w-full lg:w-5/12 relative flex justify-center"
+                                initial={{ opacity: 0, y: 50 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.6 }}
+                            >
+                                {/* Phone Frame */}
+                                <div className="relative w-[300px] h-[600px] bg-white border-4 border-black rounded-[40px] shadow-[16px_16px_0px_0px_#000] overflow-hidden z-10 flex flex-col">
+                                    {/* Notch */}
+                                    <div className="absolute top-0 inset-x-0 h-6 bg-black rounded-b-3xl w-40 mx-auto z-20"></div>
+
+                                    {/* App UI Header */}
+                                    <div className="bg-brand-orange text-white pt-10 pb-4 px-4 shadow-sm relative z-10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-brand-orange font-bold text-xl border-2 border-black">
+                                                W
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-lg leading-tight">Warungku</h3>
+                                                <p className="text-xs opacity-90">Buka • Pesen sekarang</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* App UI Content */}
+                                    <div className="flex-1 bg-gray-50 p-4 overflow-hidden relative">
+                                        <div className="mb-4">
+                                            <div className="h-8 w-full bg-white border-2 border-black rounded flex items-center px-3 gap-2 text-gray-400 text-sm">
+                                                <span className="material-symbols-outlined text-sm">search</span> Cari menu...
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2 mb-4 overflow-hidden">
+                                            <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">Semua</span>
+                                            <span className="bg-white border-2 border-black px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">Makanan</span>
+                                            <span className="bg-white border-2 border-black px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">Minuman</span>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {/* Product 1 */}
+                                            <div className="bg-white p-3 border-2 border-black flex gap-3 shadow-[2px_2px_0px_0px_#000]">
+                                                <div className="w-16 h-16 bg-brand-yellow/30 border border-black rounded flex-shrink-0 flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-brand-orange text-2xl">local_pizza</span>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h4 className="font-bold text-sm">Paket Kenyang</h4>
+                                                    <p className="text-brand-orange font-black text-sm mt-1">Rp 25.000</p>
+                                                    <button className="mt-2 text-xs bg-black text-white px-3 py-1 rounded w-full font-bold uppercase">Tambah</button>
+                                                </div>
+                                            </div>
+                                            {/* Product 2 */}
+                                            <div className="bg-white p-3 border-2 border-black flex gap-3 shadow-[2px_2px_0px_0px_#000]">
+                                                <div className="w-16 h-16 bg-blue-100 border border-black rounded flex-shrink-0 flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-blue-500 text-2xl">local_cafe</span>
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h4 className="font-bold text-sm">Kopi Susu Gula Aren</h4>
+                                                    <p className="text-brand-orange font-black text-sm mt-1">Rp 15.000</p>
+                                                    <button className="mt-2 text-xs bg-black text-white px-3 py-1 rounded w-full font-bold uppercase">Tambah</button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Cart Bar */}
+                                        <div className="absolute bottom-4 left-4 right-4 bg-brand-orange border-2 border-black p-3 flex justify-between items-center shadow-[4px_4px_0px_0px_#000]">
+                                            <div className="text-white">
+                                                <div className="text-xs font-bold">2 Item</div>
+                                                <div className="font-black">Rp 40.000</div>
+                                            </div>
+                                            <div className="bg-white text-black px-4 py-2 font-bold text-sm flex items-center gap-1 border border-black">
+                                                Checkout <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Decorative elements behind phone */}
+                                <motion.div
+                                    className="absolute top-10 -left-10 hidden md:flex items-center justify-center -z-10 pointer-events-none"
+                                    animate={{ y: [0, -15, 0], rotate: [-5, 5, -5] }}
+                                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                                >
+                                    <span className="material-symbols-outlined text-gray-500 opacity-20" style={{ fontSize: "56px" }}>storefront</span>
+                                </motion.div>
+                                <motion.div
+                                    className="absolute -bottom-10 -right-10 hidden md:flex items-center justify-center -z-10 pointer-events-none"
+                                    animate={{ y: [0, 15, 0], rotate: [0, 10, 0] }}
+                                    transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                                >
+                                    <span className="material-symbols-outlined text-gray-500 opacity-20" style={{ fontSize: "64px" }}>local_shipping</span>
+                                </motion.div>
+                                <motion.div
+                                    className="absolute top-1/2 -right-10 flex items-center justify-center -z-10 transform -translate-y-1/2 pointer-events-none"
+                                    animate={{ scale: [1, 1.1, 1], rotate: [5, -5, 5] }}
+                                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                                >
+                                    <span className="material-symbols-outlined text-gray-500 opacity-20" style={{ fontSize: "48px" }}>shopping_basket</span>
+                                </motion.div>
+                            </motion.div>
+
+                            {/* Right: Copy & QR */}
+                            <div className="lg:w-7/12">
+                                <motion.div
+                                    initial={{ opacity: 0, x: 50 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.6 }}
+                                >
+                                    <div className="inline-block bg-white border-2 border-black px-3 py-1 text-sm font-bold uppercase tracking-wider mb-6 shadow-[2px_2px_0px_0px_#000]">
+                                        Toko Online Otomatis
+                                    </div>
+                                    <h2 className="text-4xl lg:text-5xl font-black uppercase mb-6 leading-tight">
+                                        Punya Toko Digital <br className="hidden lg:block" />
+                                        <span className="text-white bg-black px-2 inline-block transform -rotate-1 mt-2">Tanpa Coding</span>
+                                    </h2>
+                                    <p className="text-xl font-medium mb-8">
+                                        Setiap merchant Omzetin otomatis mendapatkan halaman toko publik. Katalog produk dari kasir langsung tayang di internet!
+                                    </p>
+
+                                    <div className="grid sm:grid-cols-2 gap-4 mb-10">
+                                        {[
+                                            { icon: "link", title: "Link Toko Pendek", desc: "Mudah disebar ke WhatsApp/IG" },
+                                            { icon: "qr_code_2", title: "QR Code Meja", desc: "Tinggal scan untuk pesan mandiri" },
+                                            { icon: "sync", title: "Satu Katalog", desc: "Update di kasir, update di toko" },
+                                            { icon: "shopping_bag", title: "Terima Pesanan", desc: "Orderan masuk langsung ke kasir" }
+                                        ].map((feature, idx) => (
+                                            <div key={idx} className="flex gap-3 bg-white p-4 border-2 border-black shadow-[4px_4px_0px_0px_#000]">
+                                                <div className="w-10 h-10 bg-brand-yellow flex-shrink-0 flex items-center justify-center border-2 border-black">
+                                                    <span className="material-symbols-outlined">{feature.icon}</span>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-sm uppercase">{feature.title}</h4>
+                                                    <p className="text-sm text-gray-600 leading-tight mt-1">{feature.desc}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* QR Code Demo */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-6 bg-white p-6 border-3 border-black shadow-[8px_8px_0px_0px_#000]">
+                                        <div className="border-4 border-black p-2 bg-white flex-shrink-0 w-[120px] h-[120px] flex items-center justify-center">
+                                            <QRCodeCanvas
+                                                value="https://omzetin.web.id/warungku"
+                                                size={100}
+                                                level="H"
+                                                fgColor="#000000"
+                                            />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-black text-xl mb-1 uppercase">Coba Scan QR Ini!</h4>
+                                            <p className="text-gray-600 mb-4">Lihat langsung contoh toko online yang bisa didapatkan secara instan.</p>
+                                            <div className="flex items-center gap-2 text-sm font-bold bg-gray-100 py-2 px-3 border-2 border-dashed border-gray-400">
+                                                <span className="material-symbols-outlined text-gray-500">content_copy</span>
+                                                omzetin.web.id/warungku
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </div>
+
+                        </div>
+                    </div>
+                </motion.section>
+
+                {/* Testimonials Section - Dynamic from DB */}
+                <section className="relative w-full py-24 overflow-hidden bg-white" id="stories">
                     <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
                         <motion.div
                             initial="hidden"
@@ -985,197 +1326,286 @@ export function LandingPage() {
 
                     {/* Floating decorative elements */}
                     <motion.div
-                        className="absolute top-20 left-10 w-24 h-24 bg-brand-orange/20 rounded-full blur-xl"
-                        animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
-                        transition={{ duration: 6, repeat: Infinity }}
-                    />
+                        className="absolute top-10 left-10 flex items-center justify-center -z-10 pointer-events-none"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], y: [0, -20] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut" }}
+                    >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "56px" }}>construction</span>
+                    </motion.div>
                     <motion.div
-                        className="absolute bottom-20 right-10 w-32 h-32 bg-purple-500/20 rounded-full blur-xl"
-                        animate={{ y: [10, -10, 10], x: [5, -5, 5] }}
-                        transition={{ duration: 8, repeat: Infinity }}
-                    />
+                        className="absolute bottom-10 right-10 flex items-center justify-center -z-10 pointer-events-none"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], y: [0, 20] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut", delay: 0.5 }}
+                    >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "48px" }}>local_mall</span>
+                    </motion.div>
                 </section>
 
 
-                {/* Pricing CTA Section */}
+                {/* How to Start / 3 Steps Section */}
                 <motion.section
-                    className="w-full max-w-7xl px-6 py-20 lg:px-10 mx-auto"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    id="pricing"
+                    className="w-full bg-white py-24 relative overflow-hidden"
+                    id="cara-pakai"
                 >
+                    {/* Floating icons background */}
                     <motion.div
-                        className="relative overflow-hidden border-3 border-black bg-brand-orange px-6 py-16 text-center shadow-[12px_12px_0px_0px_#000] sm:px-12 sm:py-24"
-                        style={{
-                            backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
-                            backgroundSize: '20px 20px'
-                        }}
-                        whileHover={{ scale: 1.01 }}
+                        className="absolute top-10 right-10 md:top-20 md:right-20 flex items-center justify-center -z-10 pointer-events-none"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], y: [0, -20] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut" }}
                     >
-                        <motion.div
-                            className="absolute top-0 right-0 w-32 h-32 bg-brand-yellow border-b-3 border-l-3 border-black"
-                            animate={{ rotate: [0, 5, 0] }}
-                            transition={{ duration: 5, repeat: Infinity }}
-                        />
-                        <motion.div
-                            className="absolute bottom-0 left-0 w-24 h-24 bg-white border-t-3 border-r-3 border-black"
-                            animate={{ rotate: [0, -5, 0] }}
-                            transition={{ duration: 6, repeat: Infinity }}
-                        />
-                        <motion.div
-                            className="relative z-10 mx-auto max-w-3xl bg-white border-3 border-black p-8 sm:p-12 shadow-[5px_5px_0px_0px_#000] transform rotate-1"
-                            whileHover={{ rotate: 0, scale: 1.02 }}
-                        >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "64px" }}>inventory_2</span>
+                    </motion.div>
+                    <motion.div
+                        className="absolute bottom-10 left-10 md:bottom-20 md:left-20 flex items-center justify-center -z-10 pointer-events-none"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], y: [0, 20] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut", delay: 0.5 }}
+                    >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "56px" }}>receipt_long</span>
+                    </motion.div>
+
+                    <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
+                        <div className="text-center mb-16">
                             <motion.h2
-                                className="mb-6 text-4xl font-black tracking-tight text-black uppercase sm:text-6xl"
+                                className="text-4xl md:text-5xl font-black uppercase inline-block"
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                             >
-                                Siap Scale Up?
+                                Mulai Jualan <span className="text-brand-orange">Hari Ini</span>
                             </motion.h2>
-                            <p className="mb-10 text-xl font-medium text-gray-800">
-                                Bergabunglah dengan ribuan pebisnis UMKM yang telah sukses bersama Omzetin.
-                            </p>
-                            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                                <NeoButton
-                                    variant="black"
-                                    className="h-16 w-full px-8 text-xl sm:w-auto shadow-[8px_8px_0px_0px_#000]"
-                                    onClick={() => navigate('/login')}
+                            <p className="mt-4 text-xl font-bold text-gray-600">Hanya butuh 3 menit untuk transformasi bisnismu.</p>
+                        </div>
+
+                        <div className="relative">
+                            {/* Connecting Line (Desktop only) */}
+                            <div className="hidden md:block absolute top-1/2 left-[15%] right-[15%] h-2 bg-black -translate-y-1/2 -z-10 rounded-full" />
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative z-10">
+                                {/* Step 1 */}
+                                <motion.div
+                                    className="bg-white border-4 border-black p-8 text-center relative shadow-[8px_8px_0px_0px_#000] group"
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    whileHover={{ y: -8, scale: 1.02, transition: { type: "spring", stiffness: 400, damping: 17 } }}
+                                    transition={{ duration: 0.4 }}
                                 >
-                                    Coba Demo Sekarang
-                                </NeoButton>
-                                <LandingUpgradeDialog />
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-brand-orange text-white font-black text-2xl flex items-center justify-center border-4 border-black transform -rotate-6 group-hover:rotate-0 transition-transform">
+                                        1
+                                    </div>
+                                    <div className="w-20 h-20 mx-auto mt-4 mb-6 bg-brand-yellow rounded-full border-4 border-black flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-4xl">person_add</span>
+                                    </div>
+                                    <h3 className="text-2xl font-black uppercase mb-3 text-brand-orange">Daftar Gratis</h3>
+                                    <p className="font-bold text-gray-600">Buat akun dengan email, langsung pilih Paket Starter (Rp 0 selamanya).</p>
+                                </motion.div>
+
+                                {/* Step 2 */}
+                                <motion.div
+                                    className="bg-white border-4 border-black p-8 text-center relative shadow-[8px_8px_0px_0px_#000] group mt-8 md:mt-0"
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    whileHover={{ y: -8, scale: 1.02, transition: { type: "spring", stiffness: 400, damping: 17 } }}
+                                    transition={{ delay: 0.15, duration: 0.4 }}
+                                >
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-blue-500 text-white font-black text-2xl flex items-center justify-center border-4 border-black transform rotate-6 group-hover:rotate-0 transition-transform">
+                                        2
+                                    </div>
+                                    <div className="w-20 h-20 mx-auto mt-4 mb-6 bg-blue-100 rounded-full border-4 border-black flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-4xl text-blue-600">storefront</span>
+                                    </div>
+                                    <h3 className="text-2xl font-black uppercase mb-3 text-blue-600">Setup Toko</h3>
+                                    <p className="font-bold text-gray-600">Masukkan nama warung, upload logo, dan tambahkan produk pertamamu.</p>
+                                </motion.div>
+
+                                {/* Step 3 */}
+                                <motion.div
+                                    className="bg-white border-4 border-black p-8 text-center relative shadow-[8px_8px_0px_0px_#000] group mt-8 md:mt-0"
+                                    initial={{ opacity: 0, y: 30 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    whileHover={{ y: -8, scale: 1.02, transition: { type: "spring", stiffness: 400, damping: 17 } }}
+                                    transition={{ delay: 0.3, duration: 0.4 }}
+                                >
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-green-500 text-white font-black text-2xl flex items-center justify-center border-4 border-black transform -rotate-3 group-hover:rotate-0 transition-transform">
+                                        3
+                                    </div>
+                                    <div className="w-20 h-20 mx-auto mt-4 mb-6 bg-green-100 rounded-full border-4 border-black flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-4xl text-green-600">point_of_sale</span>
+                                    </div>
+                                    <h3 className="text-2xl font-black uppercase mb-3 text-green-600">Mulai Jualan</h3>
+                                    <p className="font-bold text-gray-600">Kasir siap digunakan! Pantau transaksi dan sebar link tokomu ke pelanggan.</p>
+                                </motion.div>
                             </div>
-                        </motion.div>
+                        </div>
+                    </div>
+                </motion.section>
+
+                {/* Pricing Table Section - Inline */}
+                <motion.section
+                    className="w-full bg-white border-t-3 border-black py-24 relative overflow-hidden"
+                    id="pricing"
+                >
+                    {/* Floating icons for Pricing section */}
+                    <motion.div
+                        className="absolute top-10 left-10 md:left-20 flex items-center justify-center -z-10 pointer-events-none"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], y: [0, -20] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut" }}
+                    >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "56px" }}>sell</span>
                     </motion.div>
+                    <motion.div
+                        className="absolute bottom-10 right-10 md:right-20 flex items-center justify-center -z-10 pointer-events-none"
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: [0, 0.3, 0], y: [0, 20] }}
+                        viewport={{ once: false, amount: 0.2 }}
+                        transition={{ duration: 4, ease: "easeInOut", delay: 0.5 }}
+                    >
+                        <span className="material-symbols-outlined text-gray-500" style={{ fontSize: "64px" }}>price_check</span>
+                    </motion.div>
+
+                    <div className="mx-auto max-w-7xl px-6 lg:px-10 relative z-10">
+                        <div className="text-center mb-16">
+                            <motion.h2
+                                className="text-4xl md:text-5xl font-black uppercase inline-block mb-4"
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                            >
+                                Pilih Paket <span className="text-white bg-black px-2 transform -rotate-2 inline-block">Juara</span>
+                            </motion.h2>
+                            <p className="text-xl font-bold text-gray-700">Investasi terbaik untuk pertumbuhan bisnis Anda.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Free Plan */}
+                            <motion.div
+                                className="border-4 border-black p-8 flex flex-col relative bg-white shadow-[8px_8px_0px_0px_#000]"
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.4 }}
+                                whileHover={{ y: -5, boxShadow: "12px 12px 0px 0px #000" }}
+                            >
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-gray-300">Starter</h3>
+                                    <div className="mt-4 flex items-baseline gap-1">
+                                        <span className="text-5xl font-black">Rp 0</span>
+                                        <span className="text-sm font-bold text-gray-500 uppercase">/selamanya</span>
+                                    </div>
+                                    <p className="mt-4 font-bold text-gray-600 border-l-4 border-gray-300 pl-3">Cocok untuk warung kecil yang baru mulai digitalisasi.</p>
+                                </div>
+                                <ul className="space-y-4 mb-8 flex-1">
+                                    {[
+                                        "Maksimal 50 Produk",
+                                        "Laporan Harian Dasar",
+                                        "Manajemen Stok Simpel",
+                                        "1 User Kasir",
+                                        "Support via Email"
+                                    ].map((feature, i) => (
+                                        <li key={i} className="flex items-center gap-3 font-bold">
+                                            <span className="material-symbols-outlined text-green-500 font-bold border-2 border-green-500 rounded p-0.5 text-sm shadow-[2px_2px_0px_0px_#22c55e]">check</span>
+                                            {feature}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button onClick={() => navigate('/login')} className="w-full py-4 text-lg border-4 border-black font-black bg-gray-100 hover:bg-gray-200 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 uppercase">
+                                    Daftar Gratis
+                                </button>
+                            </motion.div>
+
+                            {/* Pro Plan */}
+                            <motion.div
+                                className="border-4 border-black p-8 flex flex-col relative bg-brand-yellow transform md:-translate-y-6 md:scale-105 shadow-[12px_12px_0px_0px_#000] z-10"
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.2, duration: 0.4 }}
+                            >
+                                <div className="absolute -top-4 -right-4 bg-brand-orange text-white px-4 py-2 text-sm font-black uppercase border-4 border-black shadow-[4px_4px_0px_0px_#000] transform rotate-3">
+                                    Paling Laris 🔥
+                                </div>
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-brand-orange">Juragan</h3>
+                                    <div className="mt-4 flex items-baseline gap-1">
+                                        <span className="text-5xl font-black">Rp 50<span className="text-3xl">rb</span></span>
+                                        <span className="text-sm font-bold text-black uppercase">/bulan</span>
+                                    </div>
+                                    <p className="mt-4 font-bold text-black border-l-4 border-brand-orange pl-3">Untuk UMKM yang siap scale-up dan mengelola cabang.</p>
+                                </div>
+                                <ul className="space-y-4 mb-8 flex-1">
+                                    {[
+                                        "Produk Unlimited",
+                                        "Laporan Keuangan Lengkap",
+                                        "Toko Online Publik",
+                                        "Manajemen Stok & Opname",
+                                        "5 User Akses Kasir",
+                                        "Export Laporan Excel/PDF",
+                                        "Support Prioritas WhatsApp"
+                                    ].map((feature, i) => (
+                                        <li key={i} className="flex items-center gap-3 font-bold">
+                                            <span className="material-symbols-outlined text-white bg-black rounded-full p-0.5 text-sm shadow-[2px_2px_0px_0px_#FF6B00]">star</span>
+                                            {feature}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button onClick={() => navigate('/login')} className="w-full py-4 text-lg border-4 border-black font-black bg-brand-orange text-white hover:bg-black transition-colors shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-1.5 active:translate-y-1.5 uppercase tracking-wide">
+                                    Pilih Paket Juragan
+                                </button>
+                            </motion.div>
+
+                            {/* Enterprise Plan */}
+                            <motion.div
+                                className="border-4 border-black p-8 flex flex-col relative bg-[#FCE3FE] shadow-[8px_8px_0px_0px_#000]"
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: 0.4, duration: 0.4 }}
+                                whileHover={{ y: -5, boxShadow: "12px 12px 0px 0px #000" }}
+                            >
+                                <div className="mb-6">
+                                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-purple-500">Sultan</h3>
+                                    <div className="mt-4 flex items-baseline gap-1">
+                                        <span className="text-5xl font-black">Custom</span>
+                                    </div>
+                                    <p className="mt-4 font-bold text-black border-l-4 border-purple-500 pl-3">Solusi khusus untuk franchise & chain store skala besar.</p>
+                                </div>
+                                <ul className="space-y-4 mb-8 flex-1">
+                                    {[
+                                        "Semua Fitur Juragan",
+                                        "Multi-Cabang / Outlet",
+                                        "Dedicated Account Manager",
+                                        "Custom Integrasi API",
+                                        "SLA Guarantee 99.9%",
+                                        "White Label Option"
+                                    ].map((feature, i) => (
+                                        <li key={i} className="flex items-center gap-3 font-bold">
+                                            <span className="material-symbols-outlined text-purple-600 font-bold">diamond</span>
+                                            {feature}
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button onClick={() => window.open('https://wa.me/6285846055901?text=' + encodeURIComponent('Halo, saya tertarik dengan paket Sultan/Enterprise Omzetin. Bisa info lebih lanjut?'), '_blank')} className="w-full py-4 text-lg border-4 border-black font-black bg-white hover:bg-purple-100 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 uppercase">
+                                    Hubungi Sales
+                                </button>
+                            </motion.div>
+                        </div>
+                    </div>
                 </motion.section>
             </main>
 
             <AppFooter />
         </div>
-    );
-}
-
-function LandingUpgradeDialog() {
-    const navigate = useNavigate();
-    return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <motion.button
-                    className="h-16 w-full px-8 text-xl sm:w-auto border-3 border-black font-bold transition-all duration-200 shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 bg-white text-black hover:bg-[#F2F2F2]"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                >
-                    Lihat Paket Harga
-                </motion.button>
-            </DialogTrigger>
-            <DialogContent className="max-w-5xl bg-white border-3 border-black p-0 shadow-[10px_10px_0px_0px_#000] sm:rounded-none overflow-hidden">
-                <div className="bg-brand-orange border-b-3 border-black p-6 flex justify-between items-center">
-                    <div>
-                        <DialogTitle className="text-3xl font-black uppercase tracking-tight">Pilih Paket Juara</DialogTitle>
-                        <DialogDescription className="text-black font-bold opacity-80">
-                            Investasi terbaik untuk pertumbuhan bisnis Anda.
-                        </DialogDescription>
-                    </div>
-                </div>
-
-                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto max-h-[80vh]">
-                    {/* Free Plan */}
-                    <div className="border-3 border-black p-6 flex flex-col relative bg-gray-50">
-                        <div className="mb-4">
-                            <h3 className="text-2xl font-black uppercase">Starter</h3>
-                            <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-4xl font-black">Rp 0</span>
-                                <span className="text-sm font-bold text-gray-600">/selamanya</span>
-                            </div>
-                            <p className="mt-2 text-sm font-bold text-gray-600">Cocok untuk warung kecil yang baru mulai.</p>
-                        </div>
-                        <ul className="space-y-3 mb-8 flex-1">
-                            {[
-                                "Maksimal 50 Produk",
-                                "Laporan Harian Dasar",
-                                "Manajemen Stok Simpel",
-                                "1 User Kasir",
-                                "Support via Email"
-                            ].map((feature, i) => (
-                                <li key={i} className="flex items-center gap-2 text-sm font-bold">
-                                    <span className="material-symbols-outlined text-green-600 text-lg">check_circle</span>
-                                    {feature}
-                                </li>
-                            ))}
-                        </ul>
-                        <button onClick={() => navigate('/login')} className="w-full py-3 border-3 border-black font-bold bg-white hover:bg-gray-100 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
-                            Daftar Gratis
-                        </button>
-                    </div>
-
-                    {/* Pro Plan */}
-                    <div className="border-3 border-black p-6 flex flex-col relative bg-brand-yellow transform md:-translate-y-4 shadow-[8px_8px_0px_0px_#000]">
-                        <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-xs font-black uppercase border-l-3 border-b-3 border-black">
-                            Paling Laris
-                        </div>
-                        <div className="mb-4">
-                            <h3 className="text-2xl font-black uppercase">Juragan</h3>
-                            <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-4xl font-black">Rp 199rb</span>
-                                <span className="text-sm font-bold text-black">/bulan</span>
-                            </div>
-                            <p className="mt-2 text-sm font-bold text-black">Untuk bisnis yang siap scale-up serius.</p>
-                        </div>
-                        <ul className="space-y-3 mb-8 flex-1">
-                            {[
-                                "Produk Unlimited",
-                                "Laporan Keuangan Lengkap",
-                                "Manajemen Stok & Opname",
-                                "5 User Kasir",
-                                "Export Laporan Excel/PDF",
-                                "Support Prioritas WhatsApp",
-                                "Custom Struk Logo"
-                            ].map((feature, i) => (
-                                <li key={i} className="flex items-center gap-2 text-sm font-bold">
-                                    <span className="material-symbols-outlined text-black text-lg">verified</span>
-                                    {feature}
-                                </li>
-                            ))}
-                        </ul>
-                        <button onClick={() => navigate('/login')} className="w-full py-3 border-3 border-black font-black bg-brand-orange hover:bg-white transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
-                            Pilih Paket Juragan
-                        </button>
-                    </div>
-
-                    {/* Enterprise Plan */}
-                    <div className="border-3 border-black p-6 flex flex-col relative bg-purple-100">
-                        <div className="mb-4">
-                            <h3 className="text-2xl font-black uppercase">Sultan</h3>
-                            <div className="mt-2 flex items-baseline gap-1">
-                                <span className="text-4xl font-black">Custom</span>
-                            </div>
-                            <p className="mt-2 text-sm font-bold text-gray-600">Solusi khusus untuk franchise & chain store.</p>
-                        </div>
-                        <ul className="space-y-3 mb-8 flex-1">
-                            {[
-                                "Semua Fitur Juragan",
-                                "Multi-Cabang / Outlet",
-                                "Dedicated Account Manager",
-                                "Custom Integrasi API",
-                                "Training & Onboarding",
-                                "SLA Guarantee 99.9%",
-                                "White Label Option"
-                            ].map((feature, i) => (
-                                <li key={i} className="flex items-center gap-2 text-sm font-bold">
-                                    <span className="material-symbols-outlined text-purple-600 text-lg">stars</span>
-                                    {feature}
-                                </li>
-                            ))}
-                        </ul>
-                        <button onClick={() => window.open('https://wa.me/6285846055901?text=' + encodeURIComponent('Halo, saya tertarik dengan paket Sultan/Enterprise Omzetin. Bisa info lebih lanjut?'), '_blank')} className="w-full py-3 border-3 border-black font-bold bg-white hover:bg-purple-50 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1">
-                            Hubungi Sales
-                        </button>
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
     );
 }

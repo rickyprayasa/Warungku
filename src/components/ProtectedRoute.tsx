@@ -77,5 +77,20 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   }
 
+  // Intercept users who haven't completed onboarding yet
+  if (isAuthenticated && store && !loading) {
+    // Only redirect to onboarding if settings.onboarded is EXPLICITLY false.
+    // Old/existing stores won't have this flag (it'll be undefined/null) — they are treated as already onboarded.
+    // New stores created via Admin CMS will have onboarded: false set during creation.
+    const settings = store.settings as Record<string, any> | null;
+    const needsOnboarding = settings?.onboarded === false;
+
+    // Only redirect if they are not already on the onboarding page
+    if (needsOnboarding && location.pathname !== '/onboarding') {
+      console.log('[ProtectedRoute] User not onboarded (onboarded === false), redirecting to /onboarding');
+      return <Navigate to="/onboarding" replace />;
+    }
+  }
+
   return <>{children}</>;
 }
