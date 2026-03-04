@@ -3,8 +3,14 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|static/|public/|favicon.ico|sitemap.xml|robots.txt).*)",
+      "source": "/((?!api/|assets/|static/|public/|features/|omzetin|qris|demo-assets|screenshots|screenshoot|favicon.ico|sitemap.xml|robots.txt|.*\\.(png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|eot).*$).*)",
       "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/keep-alive",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

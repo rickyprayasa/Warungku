@@ -419,6 +419,73 @@ export interface Database {
           value?: string
         }
       }
+      cron_logs: {
+        Row: {
+          id: string
+          job_name: string
+          status: string
+          response_time_ms: number | null
+          details: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          job_name?: string
+          status?: string
+          response_time_ms?: number | null
+          details?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          job_name?: string
+          status?: string
+          response_time_ms?: number | null
+          details?: Json
+          created_at?: string
+        }
+      }
+      testimonials: {
+        Row: {
+          id: string
+          name: string
+          role: string
+          quote: string
+          initials: string
+          color: string
+          border_color: string
+          is_active: boolean
+          order_index: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          role: string
+          quote: string
+          initials?: string
+          color?: string
+          border_color?: string
+          is_active?: boolean
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          role?: string
+          quote?: string
+          initials?: string
+          color?: string
+          border_color?: string
+          is_active?: boolean
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -458,3 +525,5 @@ export type Supplier = Tables<'suppliers'>
 export type SnackRequest = Tables<'snack_requests'>
 export type Reconciliation = Tables<'reconciliations'>
 export type Setting = Tables<'settings'>
+export type CronLog = Tables<'cron_logs'>
+export type Testimonial = Tables<'testimonials'>
