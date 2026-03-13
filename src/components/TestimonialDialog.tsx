@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -19,17 +19,11 @@ export function TestimonialDialog() {
         rating: 5
     });
 
-    useEffect(() => {
-        if (open && user) {
-            fetchTestimonial();
-        }
-    }, [open, user]);
-
-    const fetchTestimonial = async () => {
+    const fetchTestimonial = useCallback(async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('testimonials')
+            const { data, error } = await (supabase
+                .from('testimonials') as any)
                 .select('*')
                 .eq('user_id', user?.id)
                 .maybeSingle();
@@ -48,7 +42,13 @@ export function TestimonialDialog() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (open && user) {
+            fetchTestimonial();
+        }
+    }, [open, user, fetchTestimonial]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,14 +68,14 @@ export function TestimonialDialog() {
             let error;
 
             if (testimonial) {
-                const { error: updateError } = await supabase
-                    .from('testimonials')
+                const { error: updateError } = await (supabase
+                    .from('testimonials') as any)
                     .update(payload)
                     .eq('id', testimonial.id);
                 error = updateError;
             } else {
-                const { error: insertError } = await supabase
-                    .from('testimonials')
+                const { error: insertError } = await (supabase
+                    .from('testimonials') as any)
                     .insert([payload]);
                 error = insertError;
             }
@@ -100,7 +100,7 @@ export function TestimonialDialog() {
                     className="relative p-0 group transition-all duration-300 hover:scale-110"
                     title="Beri Rating & Testimoni"
                 >
-                    {/* @ts-ignore */}
+                    {/* @ts-expect-error lord-icon is a custom element */}
                     <lord-icon
                         src="https://cdn.lordicon.com/uihwbzln.json"
                         trigger="morph"
@@ -148,7 +148,7 @@ export function TestimonialDialog() {
                                                 onClick={() => setFormData({ ...formData, rating: star })}
                                                 className="focus:outline-none transition-transform hover:scale-110"
                                             >
-                                                {/* @ts-ignore */}
+                                                {/* @ts-expect-error lord-icon is a custom element */}
                                                 <lord-icon
                                                     src="https://cdn.lordicon.com/uihwbzln.json"
                                                     trigger="hover"

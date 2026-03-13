@@ -26,6 +26,10 @@ export function useToast() {
         };
     });
 
+    const dismiss = useCallback((toastId: string) => {
+        dispatch(memoryToasts.filter((t) => t.id !== toastId));
+    }, []);
+
     const toast = useCallback(({ title, description, variant = 'default' }: Omit<Toast, 'id'>) => {
         const id = (toastCounter++).toString();
         const newToast: Toast = { id, title, description, variant };
@@ -38,11 +42,7 @@ export function useToast() {
         }, 5000);
 
         return { id };
-    }, []);
-
-    const dismiss = useCallback((toastId: string) => {
-        dispatch(memoryToasts.filter((t) => t.id !== toastId));
-    }, []);
+    }, [dismiss]);
 
     return {
         toast,

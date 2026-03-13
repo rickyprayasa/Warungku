@@ -82,7 +82,7 @@ export function CheckoutPage() {
         toast.error('Gagal membuat QRIS dinamis');
       }
     }
-  }, [hasQRIS, storeProfile.qrisCode, total]);
+  }, [hasQRIS, qrisCode, total]);
 
   // Countdown timer
   useEffect(() => {

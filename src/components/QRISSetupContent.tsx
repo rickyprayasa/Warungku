@@ -49,6 +49,16 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    useEffect(() => {
+        if (storeProfile.qrisCode) {
+            setQrisString(storeProfile.qrisCode);
+            validateQRISString(storeProfile.qrisCode);
+        }
+        if (storeProfile.paymentMethods) {
+            setSelectedMethods(storeProfile.paymentMethods);
+        }
+    }, [storeProfile.qrisCode, storeProfile.paymentMethods]);
+
     // Check if user can use QRIS
     if (!limits.canUseQris) {
         return (
@@ -77,15 +87,7 @@ export function QRISSetupContent({ onSaveSuccess }: { onSaveSuccess?: () => void
         );
     }
 
-    useEffect(() => {
-        if (storeProfile.qrisCode) {
-            setQrisString(storeProfile.qrisCode);
-            validateQRISString(storeProfile.qrisCode);
-        }
-        if (storeProfile.paymentMethods) {
-            setSelectedMethods(storeProfile.paymentMethods);
-        }
-    }, [storeProfile.qrisCode, storeProfile.paymentMethods]);
+
 
     const validateQRISString = (str: string) => {
         if (!str.trim()) {

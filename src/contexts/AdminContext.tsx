@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
-
-// Admin email whitelist - add more admins here
-const ADMIN_EMAILS = ['admin@rsquareidea.my.id'];
+import { permissionService } from '@/core/services/auth/PermissionService';
+import { UserRole } from '@/core/domain/entities/Role';
 
 type AdminRole = 'super_admin' | 'admin' | 'support' | null;
 
@@ -23,55 +22,53 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
 
     const checkAdminAccess = useCallback(async (): Promise<boolean> => {
-        if (!user?.email) {
+        if (!user?.id) {
             setIsAdmin(false);
             setAdminRole(null);
             return false;
         }
 
-        // Skip admin check on public store pages to prevent 406 errors and improve performance
-        // Public store URLs are usually /:slug where slug is not an admin route
+        // Skip admin check on public store pages to prevent 406 errors
         const path = window.location.pathname;
         const isPublicRoute = !path.startsWith('/admin') && !path.startsWith('/dashboard') && path !== '/' && path !== '/login';
 
         if (isPublicRoute) {
-            console.log('[AdminContext] Skipping admin check on public route');
             return false;
         }
 
-        // First check hardcoded whitelist for super admin
-        console.log('[AdminContext] Checking whitelist for:', user.email);
-        if (ADMIN_EMAILS.includes(user.email)) {
-            console.log('[AdminContext] User is super admin (whitelist)');
-            setIsAdmin(true);
-            setAdminRole('super_admin');
-            return true;
-        }
-
-        // Then check database for other admins
         try {
+            const userRole = await permissionService.getUserRole(user.id);
+            const isSuperAdmin = userRole === UserRole.SUPER_ADMIN;
+
+            if (isSuperAdmin) {
+                setIsAdmin(true);
+                setAdminRole('super_admin');
+                return true;
+            }
+
+            // Fallback: Check platform_admins table (legacy support)
             const { data, error } = await supabase
                 .from('platform_admins')
                 .select('role')
                 .eq('email', user.email)
-                .single();
+                .maybeSingle();
 
-            if (error || !data) {
-                setIsAdmin(false);
-                setAdminRole(null);
-                return false;
+            if (data && !error) {
+                setIsAdmin(true);
+                setAdminRole((data as any).role as AdminRole);
+                return true;
             }
 
-            setIsAdmin(true);
-            setAdminRole((data as any).role as AdminRole);
-            return true;
+            setIsAdmin(false);
+            setAdminRole(null);
+            return false;
         } catch (error) {
             console.error('[AdminContext] Error checking admin access:', error);
             setIsAdmin(false);
             setAdminRole(null);
             return false;
         }
-    }, [user?.email]);
+    }, [user?.id, user?.email]);
 
     useEffect(() => {
         const verifyAdmin = async () => {

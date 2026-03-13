@@ -50,15 +50,17 @@ export function ReconciliationTerpadu() {
             switch (dateFilter) {
                 case 'today':
                     return reconDay.getTime() === today.getTime();
-                case '7days':
+                case '7days': {
                     const sevenDaysAgo = new Date(today);
                     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
                     return reconDay >= sevenDaysAgo;
-                case '30days':
+                }
+                case '30days': {
                     const thirtyDaysAgo = new Date(today);
                     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                     return reconDay >= thirtyDaysAgo;
-                case 'custom':
+                }
+                case 'custom': {
                     if (!customStartDate && !customEndDate) return true;
                     const start = customStartDate ? new Date(customStartDate) : null;
                     const end = customEndDate ? new Date(customEndDate) : null;
@@ -70,6 +72,7 @@ export function ReconciliationTerpadu() {
                         return reconDay <= end;
                     }
                     return true;
+                }
                 case 'all':
                 default:
                     return true;

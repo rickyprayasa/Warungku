@@ -2,12 +2,20 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from './supabase';
+import { RepositoryContainer } from '@/infrastructure/database/repositories/RepositoryContainer';
+
+RepositoryContainer.initialize(supabase);
 import type { Product, ProductFormValues, Sale, SaleFormValues, Purchase, PurchaseFormValues, Supplier, SupplierFormValues, JajananRequest, JajananRequestFormValues, StockDetail, OpnamePayload, Reconciliation, ReconciliationPayload } from '@shared/types';
 import { DEMO_EMAIL } from './constants';
 import * as demoData from './demo-data';
 import { AuditLogger } from './audit-logger';
 import { offlineSync } from './offline-sync';
 import { sessionEvents } from './session-events';
+import { ProductController } from '@/api/controllers/ProductController';
+import { SaleController } from '@/api/controllers/SaleController';
+
+const productController = new ProductController();
+const saleController = new SaleController();
 
 // Helper to check if error is network related
 function isNetworkError(error: any): boolean {
@@ -1204,33 +1212,31 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         };
 
         try {
-          const { data, error } = await retryOperation(() =>
-            withTimeout(
-              supabase
-                .from('products' as any)
-                .insert({
-                  store_id: storeId,
-                  name: productData.name,
-                  price: productData.price,
-                  cost: productData.cost || 0,
-                  image_url: productData.imageUrl || '',
-                  category: productData.category || '',
-                  description: productData.description || '',
-                  is_promo: productData.isPromo || false,
-                  promo_price: productData.promoPrice,
-                  is_active: productData.isActive !== false,
-                  is_best_seller: productData.isBestSeller || false,
-                  min_stock_level: productData.minStockLevel || 10,
-                  qty_per_unit: productData.qtyPerUnit || 1,
-                })
-                .select()
-                .single() as any,
-              45000, // 45s timeout - increased for slow connections and large images
-              'Gagal menyimpan produk (timeout). Coba lagi dengan koneksi yang lebih stabil.'
-            )
+          const newProductData = {
+            store_id: storeId,
+            name: productData.name,
+            price: productData.price,
+            cost: productData.cost || 0,
+            image_url: productData.imageUrl || '',
+            category: productData.category || '',
+            description: productData.description || '',
+            is_promo: productData.isPromo || false,
+            promo_price: productData.promoPrice,
+            is_active: productData.isActive !== false,
+            is_best_seller: productData.isBestSeller || false,
+            total_stock: Number(productData.totalStock) || 0,
+            min_stock_level: productData.minStockLevel || 10,
+            qty_per_unit: productData.qtyPerUnit || 1,
+            unit: productData.unit || 'pcs'
+          };
+
+          const response = await retryOperation(() =>
+            productController.createProduct(newProductData as any)
           );
 
-          if (error) throw error;
+          if (!response.success) throw new Error(response.error);
+          const data = response.data!;
+
           const newProduct = toProduct(data);
           set((state) => { state.products.push(newProduct); });
 
@@ -1311,33 +1317,29 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           throw lastError;
         };
 
-        const { data, error } = await retryOperation(() =>
-          withTimeout(
-            supabase
-              .from('products' as any)
-              .update({
-                name: productData.name,
-                price: productData.price,
-                cost: productData.cost,
-                image_url: productData.imageUrl,
-                category: productData.category,
-                description: productData.description,
-                is_promo: productData.isPromo,
-                promo_price: productData.promoPrice,
-                is_active: productData.isActive,
-                is_best_seller: productData.isBestSeller,
-                min_stock_level: productData.minStockLevel,
-                qty_per_unit: productData.qtyPerUnit,
-              })
-              .eq('id', productId)
-              .select()
-              .single() as any,
-            45000, // 45s timeout - increased for slow connections and large images
-            'Gagal update produk (timeout). Coba lagi dengan koneksi yang lebih stabil.'
-          )
+        const response = await retryOperation(() =>
+          productController.updateProduct({
+            id: productId,
+            storeId: get().currentStoreId || '',
+            data: {
+              name: productData.name,
+              price: productData.price,
+              cost: productData.cost,
+              image_url: productData.imageUrl,
+              category: productData.category,
+              description: productData.description,
+              is_promo: productData.isPromo,
+              promo_price: productData.promoPrice,
+              is_active: productData.isActive,
+              is_best_seller: productData.isBestSeller,
+              min_stock_level: productData.minStockLevel,
+              qty_per_unit: productData.qtyPerUnit,
+            } as any
+          })
         );
 
-        if (error) throw error;
+        if (!response.success) throw new Error(response.error);
+        const data = response.data!;
         const updatedProduct = toProduct(data);
 
         // Get the old product for audit logging
@@ -1363,16 +1365,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           return;
         }
 
-        const { error } = await withTimeout(
-          supabase
-            .from('products' as any)
-            .delete()
-            .eq('id', productId),
-          20000,
-          'Gagal menghapus produk (timeout)'
-        );
-
-        if (error) throw error;
+        const response = await productController.deleteProduct(productId, get().currentStoreId || '');
+        if (!response.success) throw new Error(response.error);
 
         // Get the deleted product for audit logging
         const deletedProduct = get().products.find(p => p.id === productId);
@@ -1434,24 +1428,27 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           return newSale;
         }
 
-        // Calculate totals first
         const products = get().products;
-        let total = 0;
-        let profit = 0;
         const items = saleData.items.map(item => {
           const product = products.find(p => p.id === item.productId);
           const price = item.price;
           const cost = product?.cost || 0;
-          total += price * item.quantity;
-          profit += (price - cost) * item.quantity;
           return {
-            product_id: item.productId,
-            product_name: item.productName,
+            productId: item.productId,
+            productName: item.productName,
             quantity: item.quantity,
             price: price,
             cost: cost,
           };
         });
+
+        const dbItems = items.map(item => ({
+          product_id: item.productId,
+          product_name: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          cost: item.cost,
+        }));
 
         try {
           // Ensure valid session before database operations
@@ -1466,30 +1463,23 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             throw new Error('Network request failed (offline)');
           }
 
-          // Insert sale
-          const { data: saleRow, error: saleError } = await withTimeout(
-            supabase
-              .from('sales' as any)
-              .insert({
-                store_id: storeId,
-                total,
-                profit,
-                sale_type: (saleData as any).saleType || 'retail',
-                notes: saleData.notes || '',
-              })
-              .select()
-              .single() as any,
-            30000,
-            'Gagal menyimpan penjualan (timeout)'
-          ) as any;
+          // Insert sale using isolated Service
+          const response = await saleController.processSale({
+            storeId,
+            items,
+            saleType: (saleData as any).saleType || 'retail',
+            notes: saleData.notes || '',
+            createdBy: get().currentUser?.id
+          });
 
-          if (saleError) throw saleError;
+          if (!response.success) throw new Error(response.error);
+          const saleRow = response.data!;
 
           // Insert sale items
           const { error: itemsError } = await withTimeout(
             supabase
               .from('sale_items' as any)
-              .insert(items.map(item => ({ ...item, sale_id: saleRow.id }))),
+              .insert(dbItems.map(item => ({ ...item, sale_id: saleRow.id }))),
             30000,
             'Gagal menyimpan detail penjualan (timeout)'
           ) as any;
@@ -1520,7 +1510,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           const currentUser = get().currentUser;
           const cashierMap = currentUser ? new Map([[currentUser.id, currentUser.name || '']]) : undefined;
 
-          const newSale = toSale(saleRow, items.map(i => ({ ...i, sale_id: saleRow.id })), cashierMap);
+          const newSale = toSale(saleRow, dbItems.map(i => ({ ...i, sale_id: saleRow.id })), cashierMap);
           set((state) => { state.sales.unshift(newSale); });
 
           // Refresh products
@@ -2259,7 +2249,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
         // Only select returned row if we are a store member (authorized to view)
         if (shouldSelectReturn) {
-          // @ts-ignore
+          // @ts-expect-error
           query = query.select().single();
         }
 

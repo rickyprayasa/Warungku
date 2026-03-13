@@ -63,6 +63,8 @@ interface UserWithStore {
     user_id: string;
     created_at: string;
     email: string;
+    user_role: string | null;
+    is_super_admin: boolean | null;
     stores: StoreData[];
 }
 
@@ -109,6 +111,8 @@ export function AdminUsersPage() {
                         id: item.user_id,
                         user_id: item.user_id,
                         email: item.email,
+                        user_role: item.user_role || null,
+                        is_super_admin: item.is_super_admin || false,
                         created_at: item.created_at,
                         stores: []
                     });
@@ -415,9 +419,10 @@ export function AdminUsersPage() {
     };
 
     const filteredUsers = useMemo(() => {
-        // Filter out super admin AND users without stores (effectively deleted users)
+        // Filter out super admin role users AND users without stores (effectively deleted users)
         let result = users.filter(u =>
-            u.email !== 'admin@rsquareidea.my.id' &&
+            u.user_role !== 'super_admin' &&
+            !u.is_super_admin &&
             u.stores.length > 0
         );
 

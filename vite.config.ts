@@ -1,4 +1,6 @@
-import { defineConfig, loadEnv } from "vite";
+/// <reference types="vitest" />
+import { loadEnv } from "vite";
+import { defineConfig } from "vitest/config";
 import path from "path";
 import react from "@vitejs/plugin-react";
 import { exec } from "node:child_process";
@@ -190,5 +192,10 @@ export default ({ mode }: { mode: string }) => {
     },
     // Clear cache more aggressively
     cacheDir: "node_modules/.vite",
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/setupTests.ts',
+    },
   });
 };

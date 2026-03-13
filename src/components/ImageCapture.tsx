@@ -68,7 +68,7 @@ export function ProductImageCapture({ currentImage, onCapture, open, onOpenChang
             stopCamera();
             setImageSrc(null);
         }
-    }, [open, currentImage]);
+    }, [open, currentImage, isMobile]);
 
     // Camera handling
     const startCamera = async () => {
@@ -261,7 +261,7 @@ export function ProductImageCapture({ currentImage, onCapture, open, onOpenChang
     // Safe render for Cropper
     const renderCropper = () => {
         try {
-            // @ts-ignore - react-easy-crop types might be tricky
+            // @ts-expect-error - react-easy-crop types might be tricky
             const CropperComponent = Cropper.default || Cropper;
             return (
                 <CropperComponent

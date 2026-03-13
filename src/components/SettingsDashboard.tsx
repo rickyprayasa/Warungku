@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,8 @@ import {
     Save,
     Loader2,
     AlertCircle,
-    CheckCircle2
+    CheckCircle2,
+    Package, ShoppingCart, Database, Download, Trash2 as TrashIcon, AlertTriangle, Info, LogOut, KeyRound, Settings as SettingsIcon
 } from 'lucide-react';
 import {
     Dialog,
@@ -46,7 +47,7 @@ import { useWarungStore } from '@/lib/store';
 import { useCartStore } from '@/lib/cart-store';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Package, ShoppingCart, Database, Download, Trash2 as TrashIcon, AlertTriangle, Info, LogOut, KeyRound, Settings as SettingsIcon } from 'lucide-react';
+
 import { ChangePasswordDialog } from './ChangePasswordDialog';
 
 export function SettingsDashboard() {
@@ -249,13 +250,7 @@ export function SettingsDashboard() {
         }
     }, [store]);
 
-    useEffect(() => {
-        if (activeTab === 'team' && isProOrEnterprise) {
-            fetchMembers();
-        }
-    }, [activeTab, isProOrEnterprise]);
-
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         setIsLoadingMembers(true);
         try {
             const { data, error } = await supabase.rpc('get_store_members');
@@ -277,7 +272,13 @@ export function SettingsDashboard() {
         } finally {
             setIsLoadingMembers(false);
         }
-    };
+    }, [user?.email, user?.id]);
+
+    useEffect(() => {
+        if (activeTab === 'team' && isProOrEnterprise) {
+            fetchMembers();
+        }
+    }, [activeTab, isProOrEnterprise, fetchMembers]);
 
     const handleSaveDomain = async () => {
         if (!isProOrEnterprise) {
@@ -290,8 +291,8 @@ export function SettingsDashboard() {
             const currentSettings = (store?.settings as any) || {};
             const newSettings = { ...currentSettings, custom_domain: customDomain };
 
-            const { error } = await supabase
-                .from('stores')
+            const { error } = await (supabase
+                .from('stores') as any)
                 .update({ settings: newSettings })
                 .eq('id', store?.id);
 
@@ -313,7 +314,7 @@ export function SettingsDashboard() {
 
         setIsInviting(true);
         try {
-            const { data, error } = await supabase.rpc('add_store_member_by_email', {
+            const { data, error } = await (supabase.rpc as any)('add_store_member_by_email', {
                 p_email: inviteEmail,
                 p_role: inviteRole
             });
@@ -342,7 +343,7 @@ export function SettingsDashboard() {
 
         setIsDeletingMember(userId);
         try {
-            const { data, error } = await supabase.rpc('remove_store_member', {
+            const { data, error } = await (supabase.rpc as any)('remove_store_member', {
                 p_user_id: userId
             });
 

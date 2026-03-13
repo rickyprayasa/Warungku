@@ -6,7 +6,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { usePlan } from '@/contexts/PlanContext';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield, MessageCircle, Crown } from 'lucide-react';
+import { Store, LayoutDashboard, ClipboardCheck, LogOut, Settings, BarChart3, Package, DollarSign, ShoppingCart, Truck, Inbox, ArrowRightLeft, Banknote, ChevronLeft, ChevronRight, Tag, QrCode, RefreshCw, ExternalLink, Shield, MessageCircle, Crown, Clock, Calendar } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { StoreProfileDialog } from './StoreProfileDialog';
 import { QRISSetupDialog } from './QRISSetupDialog';
@@ -14,7 +14,6 @@ import { SettingsDialog } from './SettingsDialog';
 import { UpgradePlanDialog } from './UpgradePlanDialog';
 import { useState, useEffect, useMemo } from 'react';
 import { useDemoMode } from '@/hooks/useDemoMode';
-import { Clock, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import rsquareLogo from '@/assets/rsquare-logo-80.png';
 import {
@@ -60,7 +59,7 @@ export function Sidebar() {
             }, 2000);
             return () => clearTimeout(retryTimer);
         }
-    }, [currentStoreId, fetchCurrentUser]);
+    }, [currentStoreId, fetchCurrentUser, authUser]);
 
 
 
@@ -73,7 +72,7 @@ export function Sidebar() {
         if (stored === 'true') {
             setSidebarCollapsed(true);
         }
-    }, []);
+    }, [setSidebarCollapsed]);
 
     const toggleCollapsed = () => {
         const newState = !sidebarCollapsed;

@@ -5,18 +5,20 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
+import { Logger } from '@/infrastructure/logging/Logger';
+const logger = Logger.create('Supabase');
 
 // Log environment variables for debugging
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
-  console.log('Environment variables check:');
-  console.log('- VITE_SUPABASE_URL exists:', !!import.meta.env.VITE_SUPABASE_URL);
-  console.log('- VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+  logger.debug('Environment variables check');
+  logger.debug('VITE_SUPABASE_URL exists', { exists: !!import.meta.env.VITE_SUPABASE_URL });
+  logger.debug('VITE_SUPABASE_ANON_KEY exists', { exists: !!import.meta.env.VITE_SUPABASE_ANON_KEY });
 
   if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-    console.error('❌ Missing required Supabase environment variables!');
-    console.error('Make sure your .env.local file contains VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+    logger.fatal('Missing required Supabase environment variables');
+    
   } else {
-    console.log('✅ Supabase environment variables are loaded');
+    logger.info('Supabase environment variables are loaded');
   }
 }
 
@@ -25,7 +27,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   if (import.meta.env.DEV) {
-    console.warn('⚠️ Supabase credentials not configured. Some features may not work.');
+    logger.warn('Supabase credentials not configured');
   }
 }
 
@@ -46,7 +48,7 @@ export const supabase = createClient<Database>(
       fetch: (url, options = {}) => {
         // Add debugging for network requests
         if (import.meta.env.DEV) {
-          console.log('Supabase request to:', url);
+          logger.debug('Supabase request', { url });
         }
         return fetch(url, {
           ...options,
@@ -69,7 +71,7 @@ export const auth = {
       password,
     });
     if (error) {
-      console.error('Sign up error:', error);
+      logger.error('Sign up error:', {}, error);
       throw error;
     }
     return data;
@@ -81,7 +83,7 @@ export const auth = {
       password,
     });
     if (error) {
-      console.error('Sign in error:', error);
+      logger.error('Sign in error:', {}, error);
       throw error;
     }
     return data;
@@ -90,7 +92,7 @@ export const auth = {
   signOut: async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error('Sign out error:', error);
+      logger.error('Sign out error:', {}, error);
       throw error;
     }
   },
@@ -98,7 +100,7 @@ export const auth = {
   getSession: async () => {
     const { data, error } = await supabase.auth.getSession();
     if (error) {
-      console.error('Get session error:', error);
+      logger.error('Get session error:', {}, error);
       throw error;
     }
     return data.session;
@@ -107,7 +109,7 @@ export const auth = {
   getUser: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error) {
-      console.error('Get user error:', error);
+      logger.error('Get user error:', {}, error);
       throw error;
     }
     return data.user;
@@ -125,14 +127,14 @@ export const testConnection = async () => {
     const { error } = await supabase.from('stores').select('count').limit(1);
 
     if (error) {
-      console.error('❌ Supabase connection failed:', error.message);
+      logger.error('Supabase connection failed', { errorMessage: error.message });
       return { success: false, error: error.message };
     } else {
-      console.log('✅ Supabase connection successful!');
+      logger.info('Supabase connection successful!');
       return { success: true };
     }
   } catch (err) {
-    console.error('❌ Supabase connection test failed:', err);
+    logger.error('Supabase connection test failed', {}, err);
     return { success: false, error: err instanceof Error ? err.message : String(err) };
   }
 };

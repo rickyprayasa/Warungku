@@ -348,6 +348,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const internalRoutes = ['/', '/pos', '/dashboard', '/opname', '/login', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback'];
 
   // Check if path matches /:slug/checkout pattern (public store checkout)
+  // eslint-disable-next-line no-useless-escape
   const isPublicCheckout = /^\/[^\/]+\/checkout$/.test(window.location.pathname);
 
   const isInternalRoute = !isPublicCheckout && (
@@ -379,6 +380,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useStore() {
   const context = useContext(StoreContext);
   if (context === undefined) {

@@ -133,12 +133,7 @@ export function MobileBottomNav() {
         return allTabs.filter(tab => tab.isVisible);
     };
 
-    const [tabs, setTabs] = useState(getTabs());
-
-    // Update tabs when mode changes
-    useEffect(() => {
-        setTabs(getTabs());
-    }, [opnameMode]);
+    const tabs = getTabs();
 
     useEffect(() => {
         const path = location.pathname;

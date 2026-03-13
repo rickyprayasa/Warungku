@@ -57,33 +57,7 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
   const [isPurchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
   const [isProductDialogOpen, setProductDialogOpen] = useState(false);
 
-  // Check if user can access analytics
-  if (!limits.canAccessAnalytics) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 px-4">
-        <div className="w-20 h-20 bg-brand-orange/10 border-4 border-brand-black flex items-center justify-center mb-6">
-          <Lock className="w-10 h-10 text-brand-orange" />
-        </div>
-        <h2 className="text-2xl font-display font-bold text-brand-black mb-2">
-          Analytics Tidak Tersedia
-        </h2>
-        <p className="font-mono text-sm text-muted-foreground text-center max-w-md mb-6">
-          Fitur analytics dan laporan detail hanya tersedia untuk plan Pro dan Enterprise.
-        </p>
-        <Button
-          onClick={() => setUpgradeOpen(true)}
-          className="bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white border-2 border-brand-black rounded-none font-mono font-bold uppercase"
-        >
-          Upgrade ke Pro
-        </Button>
-        <PlanUpgradePrompt
-          open={upgradeOpen}
-          onClose={() => setUpgradeOpen(false)}
-          feature="analytics"
-        />
-      </div>
-    );
-  }
+
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfDay(subDays(new Date(), 29)),
@@ -98,20 +72,22 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
       case 'today':
         setDateRange({ from: startOfDay(now), to: endOfDay(now) });
         break;
-      case 'yesterday':
+      case 'yesterday': {
         const yesterday = subDays(now, 1);
         setDateRange({ from: startOfDay(yesterday), to: endOfDay(yesterday) });
         break;
+      }
       case '7days':
         setDateRange({ from: startOfDay(subDays(now, 6)), to: endOfDay(now) });
         break;
       case '30days':
         setDateRange({ from: startOfDay(subDays(now, 29)), to: endOfDay(now) });
         break;
-      case 'month':
+      case 'month': {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         setDateRange({ from: startOfDay(monthStart), to: endOfDay(now) });
         break;
+      }
     }
   };
 
@@ -375,6 +351,34 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
 
   if (isLoading) {
     return <DashboardSkeleton />;
+  }
+
+  // Check if user can access analytics
+  if (!limits.canAccessAnalytics) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4">
+        <div className="w-20 h-20 bg-brand-orange/10 border-4 border-brand-black flex items-center justify-center mb-6">
+          <Lock className="w-10 h-10 text-brand-orange" />
+        </div>
+        <h2 className="text-2xl font-display font-bold text-brand-black mb-2">
+          Analytics Tidak Tersedia
+        </h2>
+        <p className="font-mono text-sm text-muted-foreground text-center max-w-md mb-6">
+          Fitur analytics dan laporan detail hanya tersedia untuk plan Pro dan Enterprise.
+        </p>
+        <Button
+          onClick={() => setUpgradeOpen(true)}
+          className="bg-brand-orange text-brand-black hover:bg-brand-black hover:text-brand-white border-2 border-brand-black rounded-none font-mono font-bold uppercase"
+        >
+          Upgrade ke Pro
+        </Button>
+        <PlanUpgradePrompt
+          open={upgradeOpen}
+          onClose={() => setUpgradeOpen(false)}
+          feature="analytics"
+        />
+      </div>
+    );
   }
 
   return (
@@ -845,7 +849,7 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                 const multiplier = productSort.includes('asc') ? 1 : -1;
                 filteredList.sort((a, b) => {
                   switch (productSort.replace('-asc', '').replace('-desc', '')) {
-                    case 'rank':
+                    case 'rank': {
                       const categoryPriority = { bestseller: 1, fastmoving: 2, lowdsl: 3 };
                       if (categoryPriority[a.category] !== categoryPriority[b.category]) {
                         return (categoryPriority[a.category] - categoryPriority[b.category]);
@@ -854,9 +858,11 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                       if (a.category === 'fastmoving') return (b.velocity - a.velocity) * multiplier;
                       if (a.category === 'lowdsl') return (a.dsl - b.dsl) * multiplier;
                       return 0;
-                    case 'name':
+                    }
+                    case 'name': {
                       const comparison = a.product?.name.localeCompare(b.product?.name);
                       return productSort.includes('asc') ? comparison : -comparison;
+                    }
                     case 'sold':
                       return (b.quantity - a.quantity) * multiplier;
                     case 'velocity':
@@ -867,7 +873,7 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                       return ((b.product?.totalStock || 0) - (a.product?.totalStock || 0)) * multiplier;
                     case 'dsl':
                       return (a.dsl - b.dsl) * multiplier;
-                    default:
+                    default: {
                       const defaultPriority = { bestseller: 1, fastmoving: 2, lowdsl: 3 };
                       if (defaultPriority[a.category] !== defaultPriority[b.category]) {
                         return (defaultPriority[a.category] - defaultPriority[b.category]);
@@ -876,6 +882,7 @@ export function AnalyticsDashboard({ isActive }: { isActive?: boolean }) {
                       if (a.category === 'fastmoving') return (b.velocity - a.velocity) * multiplier;
                       if (a.category === 'lowdsl') return (a.dsl - b.dsl) * multiplier;
                       return 0;
+                    }
                   }
                 });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { Tabs } from "@/components/ui/tabs"
@@ -78,10 +78,10 @@ export function DashboardPage() {
     }
   }, [currentUser, activeTab, setSearchParams]);
 
-  const handleTabChange = (value: string) => {
+  const handleTabChange = useCallback((value: string) => {
     setActiveTab(value);
     setSearchParams({ tab: value });
-  };
+  }, [setSearchParams]);
 
   // Listen for tab change events from notifications (legacy support)
   useEffect(() => {
@@ -91,7 +91,7 @@ export function DashboardPage() {
 
     window.addEventListener('changeTab', handleTabChangeCustom as EventListener);
     return () => window.removeEventListener('changeTab', handleTabChangeCustom as EventListener);
-  }, []);
+  }, [handleTabChange]);
 
   const tabs = [
     { value: "analytics", label: "Analytics", icon: BarChart3, color: "orange" },

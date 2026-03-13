@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,54 +21,52 @@ interface SimplePlan {
     max_users?: number;
 }
 
+const defaultSubscriptionPlans: SimplePlan[] = [
+    {
+        type: 'free',
+        name: 'Free',
+        description: 'Mulai gratis untuk warung kecil',
+        monthly_price: 0,
+        yearly_price: 0,
+        features: [],
+        is_active: true,
+        max_products: 50,
+        max_users: 1,
+    },
+    {
+        type: 'pro',
+        name: 'Pro',
+        description: 'Untuk warung berkembang',
+        monthly_price: 50000,
+        yearly_price: 500000,
+        features: [],
+        is_active: true,
+        max_products: 500,
+        max_users: 3,
+    },
+    {
+        type: 'enterprise',
+        name: 'Enterprise',
+        description: 'Untuk bisnis skala besar',
+        monthly_price: 200000,
+        yearly_price: 2000000,
+        features: [],
+        is_active: true,
+        max_products: 999999,
+        max_users: 999999,
+    },
+];
+
 export function AdminSubscriptionPlansPage() {
-    const [plans, setPlans] = useState<SimplePlan[]>([
-        {
-            type: 'free',
-            name: 'Free',
-            description: 'Mulai gratis untuk warung kecil',
-            monthly_price: 0,
-            yearly_price: 0,
-            features: [],
-            is_active: true,
-            max_products: 50,
-            max_users: 1,
-        },
-        {
-            type: 'pro',
-            name: 'Pro',
-            description: 'Untuk warung berkembang',
-            monthly_price: 50000,
-            yearly_price: 500000,
-            features: [],
-            is_active: true,
-            max_products: 500,
-            max_users: 3,
-        },
-        {
-            type: 'enterprise',
-            name: 'Enterprise',
-            description: 'Untuk bisnis skala besar',
-            monthly_price: 200000,
-            yearly_price: 2000000,
-            features: [],
-            is_active: true,
-            max_products: 999999,
-            max_users: 999999,
-        },
-    ]);
+    const [plans, setPlans] = useState<SimplePlan[]>(defaultSubscriptionPlans);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => {
-        fetchPlans();
-    }, []);
-
-    const fetchPlans = async () => {
+    const fetchPlans = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('subscription_plans')
+            const { data, error } = await (supabase
+                .from('subscription_plans') as any)
                 .select('*')
                 .in('name', ['Free', 'Pro', 'Enterprise']);
 
@@ -83,7 +81,7 @@ export function AdminSubscriptionPlansPage() {
                 // Map database plans to simple format
                 const fetchedPlans: SimplePlan[] = ['free', 'pro', 'enterprise'].map((type: string) => {
                     const dbPlan = data.find((p: any) => p.name.toLowerCase() === type);
-                    const defaultPlan = plans.find(p => p.type === type)!;
+                    const defaultPlan = defaultSubscriptionPlans.find(p => p.type === type)!;
 
                     if (!defaultPlan) {
                         console.warn('[AdminSubscriptionPlans] Default plan not found for type:', type);
@@ -116,7 +114,11 @@ export function AdminSubscriptionPlansPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchPlans();
+    }, [fetchPlans]);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -125,8 +127,8 @@ export function AdminSubscriptionPlansPage() {
                 console.log('[AdminSubscriptionPlans] Saving plan:', plan.type, plan.name);
 
                 // Check if plan exists
-                const { data: existing, error: findError } = await supabase
-                    .from('subscription_plans')
+                const { data: existing, error: findError } = await (supabase
+                    .from('subscription_plans') as any)
                     .select('id')
                     .eq('name', plan.name)
                     .maybeSingle();
@@ -154,15 +156,15 @@ export function AdminSubscriptionPlansPage() {
                 let error;
                 if (existing) {
                     console.log('[AdminSubscriptionPlans] Updating existing plan:', existing.id);
-                    const { error: updateError } = await supabase
-                        .from('subscription_plans')
+                    const { error: updateError } = await (supabase
+                        .from('subscription_plans') as any)
                         .update(planData)
                         .eq('id', existing.id);
                     error = updateError;
                 } else {
                     console.log('[AdminSubscriptionPlans] Inserting new plan');
-                    const { error: insertError } = await supabase
-                        .from('subscription_plans')
+                    const { error: insertError } = await (supabase
+                        .from('subscription_plans') as any)
                         .insert([planData]);
                     error = insertError;
                 }

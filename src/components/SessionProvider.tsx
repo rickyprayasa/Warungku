@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,9 @@ import { LogIn, RefreshCw, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { offlineSync } from '@/lib/offline-sync';
 import { useWarungStore } from '@/lib/store-supabase';
 import { sessionEvents } from '@/lib/session-events';
+import { Logger } from '@/infrastructure/logging/Logger';
+
+const logger = Logger.create('Session');
 
 interface SessionContextType {
     showReLoginModal: () => void;
@@ -54,7 +58,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     // Listen for global session expired events (from store-supabase.ts)
     useEffect(() => {
         const unsubscribe = sessionEvents.onSessionExpired(() => {
-            console.warn('[SessionProvider] Received session expired event from store');
+            logger.warn('Received session expired event from store');
 
             // Only show modal on explicitly protected routes
             const path = window.location.pathname;
@@ -73,14 +77,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const handleVisibilityChange = async () => {
             if (document.visibilityState === 'visible') {
-                console.log('[SessionProvider] Tab became visible, checking session...');
+                logger.debug('Tab became visible, checking session...');
                 try {
                     const { data: { session } } = await supabase.auth.getSession();
                     if (!session) {
                         // Try refresh before showing modal
                         const { data, error } = await supabase.auth.refreshSession();
                         if (error || !data.session) {
-                            console.warn('[SessionProvider] Session invalid on tab return');
+                            logger.warn('Session invalid on tab return');
                             const path = window.location.pathname;
                             const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
                             setIsSessionValid(false);
@@ -100,7 +104,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                         setIsSessionValid(true);
                     }
                 } catch (err) {
-                    console.error('[SessionProvider] Error checking session on visibility:', err);
+                    logger.error('Error checking session on visibility', {}, err);
                     const path = window.location.pathname;
                     const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
                     setIsSessionValid(false);
@@ -140,9 +144,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                     // Try to refresh token
                     const { error } = await supabase.auth.refreshSession();
                     if (error) {
-                        console.warn('[Session] Failed to refresh session:', error);
+                        logger.warn('Failed to refresh session', {}, error);
                     } else {
-                        console.log('[Session] Session refreshed successfully');
+                        logger.info('Session refreshed successfully');
                     }
                 }
             }
@@ -167,7 +171,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                 try {
                     await supabase.auth.refreshSession();
                 } catch (err) {
-                    console.warn('[Session] Auto-refresh failed:', err);
+                    logger.warn('Auto-refresh failed', {}, err);
                 }
             }
         };
@@ -179,7 +183,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     // Offline Sync - Listen for online events and sync queue
     useEffect(() => {
         const handleOnline = async () => {
-            console.log('[OfflineSync] Online detected, checking for pending items...');
+            logger.info('Online detected, checking for pending items...');
             const pendingCount = offlineSync.getPendingCount();
 
             if (pendingCount > 0) {
@@ -197,14 +201,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                         icon: <Wifi className="w-4 h-4" />,
                     });
                 } catch (error) {
-                    console.error('[OfflineSync] Sync failed:', error);
+                    logger.error('Offline sync failed', {}, error);
                     toast.error('Gagal menyinkronkan data offline. Coba lagi nanti.');
                 }
             }
         };
 
         const handleOffline = () => {
-            console.log('[OfflineSync] Offline detected');
+            logger.info('Offline detected');
             toast.warning('Anda sedang offline. Data akan disimpan secara lokal.', {
                 icon: <WifiOff className="w-4 h-4" />,
                 duration: 3000
@@ -219,7 +223,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const checkPendingOnMount = async () => {
             const pendingCount = offlineSync.getPendingCount();
             if (pendingCount > 0 && navigator.onLine) {
-                console.log('[OfflineSync] Found pending items on mount, syncing...');
+                logger.info('Found pending items on mount, syncing...');
                 await handleOnline();
             }
         };

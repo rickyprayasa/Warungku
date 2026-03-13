@@ -36,6 +36,7 @@ export const productSchema = z.object({
   isBestSeller: z.boolean().optional(),
   minStockLevel: z.number().min(0, "Minimum stock level tidak boleh negatif").optional(),
   qtyPerUnit: z.number().min(1, "Qty per unit minimal 1").optional(),
+  totalStock: z.union([z.number(), z.string()]).optional(),
   unit: z.string().optional(),
 });
 export type ProductFormValues = z.infer<typeof productSchema>;

@@ -1,11 +1,13 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useWarungStore } from '@/lib/store';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Store } from '@/types/supabase';
+import { permissionService } from '@/core/services/auth/PermissionService';
+import { UserRole } from '@/core/domain/entities/Role';
+import { Logger } from '@/infrastructure/logging/Logger';
 
-// Admin email whitelist - sync with AdminContext
-const ADMIN_EMAILS = ['admin@rsquareidea.my.id'];
+const logger = Logger.create('Auth');
 
 interface AuthContextType {
   user: User | null;
@@ -33,19 +35,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const storeCreationAttemptedFor = useRef<Record<string, boolean>>({});
 
   // Auto-create store for users who don't have one
   const createStoreForUser = useCallback(async (userId: string, userEmail?: string, userMetadata?: any): Promise<Store | null> => {
     try {
-      console.log('[AuthContext] Creating store for user:', userId);
+      logger.debug('Creating store for user', { userId });
 
-      // Check if user is admin - admins don't need stores
-      if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
-        console.log('[AuthContext] User is admin, skipping store creation');
+      // Check if user is admin using PermissionService - admins don't need stores
+      const userRole = await permissionService.getUserRole(userId);
+      const isSuperAdmin = userRole === UserRole.SUPER_ADMIN;
+
+      if (isSuperAdmin) {
+        logger.debug('User is super admin, skipping store creation');
         return null;
       }
 
-      // Check if user is a platform admin in the database
+      // Check if user is a platform admin in the database (legacy support)
       const { data: adminData } = await supabase
         .from('platform_admins')
         .select('*')
@@ -53,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (adminData) {
-        console.log('[AuthContext] User is platform admin, skipping store creation');
+        logger.debug('User is platform admin, skipping store creation');
         return null;
       }
 
@@ -66,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (existingMember?.store_id) {
-        console.log('[AuthContext] User already has a store, fetching it instead of creating new:', existingMember.store_id);
+        logger.debug('User already has a store, fetching it instead of creating new', { storeId: existingMember.store_id });
         const { data: existingStore } = await supabase
           .from('stores')
           .select('*')
@@ -101,11 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (storeError) {
-        console.error('[AuthContext] Failed to create store:', storeError);
+        logger.error('Failed to create store', { storeError });
         return null;
       }
 
-      console.log('[AuthContext] Store created:', storeData.id);
+      logger.debug('Store created', { storeId: storeData.id });
 
       // Add user as owner
       const { error: memberError } = await supabase
@@ -118,13 +124,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
       if (memberError) {
-        console.error('[AuthContext] Failed to add user as owner:', memberError);
+        logger.error('Failed to add user as owner', { memberError });
         // Cleanup: delete the store if we can't add the owner
         await supabase.from('stores').delete().eq('id', storeData.id);
         return null;
       }
 
-      console.log('[AuthContext] User added as store owner');
+      logger.debug('User added as store owner');
 
       // Start 14-day trial for Free plan stores
       try {
@@ -133,29 +139,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (trialError) {
-          console.error('[AuthContext] Failed to start trial period:', trialError);
+          logger.error('Failed to start trial period', { trialError });
           // Don't fail store creation if trial fails, just log the error
         } else {
-          console.log('[AuthContext] Trial period started for store:', storeData.id, trialData);
+          logger.debug('Trial period started for store', { storeId: storeData.id, trialData });
         }
       } catch (trialErr) {
-        console.error('[AuthContext] Exception starting trial period:', trialErr);
+        logger.error('Exception starting trial period', { trialErr });
       }
 
       return storeData as Store;
     } catch (err) {
-      console.error('[AuthContext] Failed to create store for user:', err);
+      logger.error('Failed to create store for user', { err });
       return null;
     }
   }, []);
 
   const fetchUserStore = useCallback(async (userId: string, userEmail?: string): Promise<Store | null> => {
     try {
-      console.log('[AuthContext] Fetching store for user:', userId, 'email:', userEmail);
+      logger.debug('Fetching store for user', { userId, email: userEmail });
 
-      // Check if user is admin - admins don't need stores
-      if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
-        console.log('[AuthContext] User is admin, skipping store fetch');
+      // Check if user is admin using PermissionService - admins don't need stores
+      const userRole = await permissionService.getUserRole(userId);
+      const isSuperAdmin = userRole === UserRole.SUPER_ADMIN;
+
+      if (isSuperAdmin) {
+        logger.debug('User is super admin, skipping store fetch');
         setStore(null);
         return null;
       }
@@ -165,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const internalRoutes = ['/pos', '/dashboard', '/opname', '/login', '/checkout', '/upgrade', '/forgot-password', '/update-password', '/auth/callback', '/onboarding'];
         const isInternalRoute = internalRoutes.some(route => window.location.pathname.startsWith(route)) || window.location.pathname.startsWith('/admin') || window.location.pathname === '/';
         if (!isInternalRoute && window.location.pathname !== '/') {
-          console.log('[AuthContext] Skipping user store fetch in public mode');
+          logger.debug('Skipping user store fetch in public mode');
           return null;
         }
       }
@@ -198,18 +207,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         memberError = result.error;
       } catch (timeoutErr: any) {
         if (timeoutErr.message === 'Request timeout') {
-          console.warn('[AuthContext] Store fetch timeout - will retry on next auth check');
+          logger.warn('Store fetch timeout - will retry on next auth check');
           return null;
         }
         throw timeoutErr;
       }
 
-      console.warn('[AuthContext] Store member+store query result:', JSON.stringify({ memberData, memberError }));
+      logger.warn('Store member+store query result', { memberData, memberError });
 
       if (memberError) {
-        console.error('[AuthContext] Error fetching store member:', memberError);
+        logger.error('Error fetching store member', { memberError });
         if (memberError.code === 'PGRST116') {
-          console.log('[AuthContext] User has no store, auto-creating store...');
+          logger.debug('User has no store, auto-creating store...');
+
+          if (storeCreationAttemptedFor.current[userId]) {
+            logger.warn('Store creation already attempted for this user, preventing infinite loop.');
+            setStore(null);
+            useWarungStore.getState().setCurrentStoreId(null);
+            return null;
+          }
+          storeCreationAttemptedFor.current[userId] = true;
+
           const { data: { user: currentUser } } = await supabase.auth.getUser();
           const newStore = await createStoreForUser(userId, userEmail, currentUser?.user_metadata);
           if (newStore) {
@@ -228,7 +246,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!memberData?.store_id) {
-        console.warn('[AuthContext] No store_id found in member data, auto-creating store...');
+        logger.warn('No store_id found in member data, auto-creating store...');
+
+        if (storeCreationAttemptedFor.current[userId]) {
+          logger.warn('Store creation already attempted for this user, preventing infinite loop.');
+          setStore(null);
+          useWarungStore.getState().setCurrentStoreId(null);
+          return null;
+        }
+        storeCreationAttemptedFor.current[userId] = true;
+
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         const newStore = await createStoreForUser(userId, userEmail, currentUser?.user_metadata);
         if (newStore) {
@@ -255,7 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storeData = memberData.stores;
 
       if (storeData) {
-        console.warn('[AuthContext] Setting store from JOIN:', storeData.name);
+        logger.warn('Setting store from JOIN', { storeName: storeData.name });
         setStore(storeData as Store);
         useWarungStore.getState().setCurrentStoreId(storeData.id);
         return storeData as Store;
@@ -263,12 +290,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Fallback: If JOIN didn't return store data (e.g., RLS issue on relation),
       // try fetching stores directly
-      console.warn('[AuthContext] JOIN did not return store data, trying direct fetch...');
+      logger.warn('JOIN did not return store data, trying direct fetch...');
       let directStoreData, directStoreError;
       try {
         const storeResult = await withTimeout(
-          supabase
-            .from('stores')
+          (supabase
+            .from('stores') as any)
             .select('*')
             .eq('id', memberData.store_id)
             .single(),
@@ -278,19 +305,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         directStoreError = storeResult.error;
       } catch (timeoutErr: any) {
         if (timeoutErr.message === 'Request timeout') {
-          console.warn('[AuthContext] Store data fetch timeout');
+          logger.warn('Store data fetch timeout');
           return null;
         }
         throw timeoutErr;
       }
 
       if (directStoreError) {
-        console.error('[AuthContext] Direct store fetch also failed:', directStoreError);
+        logger.error('Direct store fetch also failed', { directStoreError });
         return null;
       }
 
       if (directStoreData) {
-        console.warn('[AuthContext] Setting store from direct fetch:', directStoreData.name);
+        logger.warn('Setting store from direct fetch', { storeName: directStoreData.name });
         setStore(directStoreData as Store);
         useWarungStore.getState().setCurrentStoreId(directStoreData.id);
         return directStoreData as Store;
@@ -301,10 +328,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // CRITICAL FIX: Don't throw error - just log and return null
       // This prevents errorReporter from trying to log to a non-existent endpoint
       if (err.message === 'Request timeout') {
-        console.warn('[AuthContext] Store fetch timeout handled gracefully');
+        logger.warn('Store fetch timeout handled gracefully');
         return null;
       }
-      console.error('[AuthContext] Failed to fetch user store:', err);
+      logger.error('Failed to fetch user store', { err });
       return null;
     }
   }, [createStoreForUser]);
@@ -319,17 +346,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('[AuthContext] Initial session check:', !!session, 'for user:', session?.user?.id);
+      logger.debug('Initial session check', { hasSession: !!session, userId: session?.user?.id });
       if (!isMounted) return;
 
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        // Clear permission cache on initial session load to ensure fresh role data
+        logger.debug('Initial session - clearing permission service cache');
+        permissionService.clearCache();
         try {
           await fetchUserStore(session.user.id, session.user.email);
         } catch (err) {
-          console.error('Error in initial store fetch:', err);
+          logger.error('Error in initial store fetch', { err });
         }
       }
 
@@ -340,26 +370,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[AuthContext] Auth state change event:', event, 'session:', !!session, 'user:', session?.user?.id);
+        logger.debug('Auth state change event', { event, hasSession: !!session, userId: session?.user?.id });
         if (!isMounted) return;
 
         setSession(session);
         setUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session?.user) {
+          // Clear permission cache on sign in to ensure fresh role data
+          logger.debug('SIGNED_IN - clearing permission service cache');
+          permissionService.clearCache();
           try {
             await fetchUserStore(session.user.id, session.user.email);
             // After store is loaded, fetch products and other data
             const storeState = useWarungStore.getState();
             if (storeState.currentStoreId) {
-              console.log('[AuthContext] SIGNED_IN: Fetching products for store:', storeState.currentStoreId);
+              logger.debug('SIGNED_IN: Fetching products for store', { storeId: storeState.currentStoreId });
               await Promise.all([
                 storeState.fetchProducts(),
                 storeState.fetchStoreProfile(),
               ]);
             }
           } catch (err) {
-            console.error('Error fetching store on sign in:', err);
+            logger.error('Error fetching store on sign in', { err });
           }
         } else if (event === 'SIGNED_OUT') {
           setStore(null);
@@ -373,23 +406,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const hasStore = store !== null && currentStoreId !== null;
 
               if (!hasStore) {
-                console.log('[AuthContext] TOKEN_REFRESHED: No store, fetching...');
+                logger.debug('TOKEN_REFRESHED: No store, fetching...');
                 await fetchUserStore(session.user.id, session.user.email);
               } else {
-                console.log('[AuthContext] TOKEN_REFRESHED: Store already loaded, skipping fetch');
+                logger.debug('TOKEN_REFRESHED: Store already loaded, skipping fetch');
               }
 
               // After store is loaded, fetch products and other data if needed
               const storeState = useWarungStore.getState();
               if (storeState.currentStoreId && storeState.products.length === 0) {
-                console.log('[AuthContext] TOKEN_REFRESHED: Products empty, refetching for store:', storeState.currentStoreId);
+                logger.debug('TOKEN_REFRESHED: Products empty, refetching for store', { storeId: storeState.currentStoreId });
                 await Promise.all([
                   storeState.fetchProducts(),
                   storeState.fetchStoreProfile(),
                 ]);
               }
             } catch (err) {
-              console.error('Error refetching store on token refresh:', err);
+              logger.error('Error refetching store on token refresh', { err });
             }
           }
         }
@@ -404,16 +437,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storeId = useWarungStore.getState().currentStoreId;
 
         if (currentUser && storeId) {
-          console.log('[AuthContext] Tab became visible, currentStoreId:', storeId);
+          logger.debug('Tab became visible', { storeId });
           // Refetch data when user returns to the tab
           const storeState = useWarungStore.getState();
           if (storeState.products.length === 0) {
-            console.log('[AuthContext] Refetching data after tab switch');
+            logger.debug('Refetching data after tab switch');
             Promise.all([
               storeState.fetchProducts(),
               storeState.fetchStoreProfile(),
             ]).catch(err => {
-              console.error('[AuthContext] Error refetching data:', err);
+              logger.error('Error refetching data', { err });
             });
           }
         }
@@ -427,15 +460,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storeId = useWarungStore.getState().currentStoreId;
 
       if (currentUser && storeId) {
-        console.log('[AuthContext] Window focused, currentStoreId:', storeId);
+        logger.debug('Window focused', { storeId });
         const storeState = useWarungStore.getState();
         if (storeState.products.length === 0) {
-          console.log('[AuthContext] Refetching data after window focus');
+          logger.debug('Refetching data after window focus');
           Promise.all([
             storeState.fetchProducts(),
             storeState.fetchStoreProfile(),
           ]).catch(err => {
-            console.error('[AuthContext] Error refetching data:', err);
+            logger.error('Error refetching data', { err });
           });
         }
       }
@@ -450,14 +483,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [fetchUserStore]);
+  }, [fetchUserStore, store, user]);
 
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
 
       // CRITICAL: Clear all previous user data immediately to prevent data leakage
-      console.log('[AuthContext] signIn - clearing previous user data');
+      logger.debug('signIn - clearing previous user data');
       useWarungStore.getState().resetStore();
       useWarungStore.getState().setCurrentStoreId(null);
       setStore(null);
@@ -495,17 +528,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.user) {
         setUser(data.user);
         setSession(data.session);
+        // Clear permission cache on sign in to ensure fresh role data
+        logger.debug('Clearing permission service cache on sign in');
+        permissionService.clearCache();
         try {
           await fetchUserStore(data.user.id, data.user.email);
         } catch (err) {
-          console.error('Error fetching store after sign in:', err);
+          logger.error('Error fetching store after sign in', { err });
         }
       }
 
       setLoading(false);
       return {};
     } catch (err: any) {
-      console.error('SignIn error:', err);
+      logger.error('SignIn error', {}, err);
       setLoading(false);
       return { error: err.message || 'Login failed' };
     }
@@ -516,7 +552,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
 
       // CRITICAL: Clear all previous user data immediately to prevent data leakage
-      console.log('[AuthContext] signInWithGoogle - clearing previous user data');
+      logger.debug('signInWithGoogle - clearing previous user data');
       useWarungStore.getState().resetStore();
       useWarungStore.getState().setCurrentStoreId(null);
       setStore(null);
@@ -535,7 +571,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return {};
     } catch (err: any) {
-      console.error('Google SignIn error:', err);
+      logger.error('Google SignIn error', {}, err);
       setLoading(false);
       return { error: err.message || 'Google login failed' };
     }
@@ -543,12 +579,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, storeName: string) => {
     try {
-      console.log('[AuthContext] Starting signup for:', email);
+      logger.debug('Starting signup for', { email });
 
-      // Check if email is in admin whitelist - admins should not register normally
-      if (ADMIN_EMAILS.includes(email)) {
-        console.log('[AuthContext] Admin email detected, blocking normal registration');
-        return { error: 'Email ini digunakan untuk admin. Silakan login langsung.' };
+      // Note: PermissionService requires a user ID which we don't have yet during signup
+      // We'll check for existing super admin emails directly in the database instead
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id, role')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (existingUser?.role === 'super_admin') {
+        logger.debug('Super admin email detected, blocking normal registration');
+        return { error: 'Email ini digunakan untuk super admin. Silakan login langsung.' };
       }
 
       // 1. Create user (Supabase may send email confirmation if enabled)
@@ -563,7 +606,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
 
-      console.log('[AuthContext] SignUp response:', {
+      logger.debug('SignUp response:', {
         user: authData?.user?.id,
         session: !!authData?.session,
         identities: authData?.user?.identities?.length,
@@ -572,7 +615,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (authError) {
-        console.error('[AuthContext] Auth error:', authError);
+        logger.error('Auth error', { authError });
 
         // Handle specific error cases
         if (authError.message.includes('already registered')) {
@@ -580,7 +623,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         // Don't block on email sending errors - we'll handle verification later
         if (authError.message.includes('SMTP') || authError.message.includes('email')) {
-          console.warn('[AuthContext] Email sending failed, but continuing with signup');
+          logger.warn('Email sending failed, but continuing with signup');
           // Continue with signup even if email fails
         } else {
           return { error: authError.message };
@@ -593,11 +636,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Check if user already exists (identities array will be empty for existing unconfirmed users)
       if (authData.user.identities && authData.user.identities.length === 0) {
-        console.log('[AuthContext] User already exists (empty identities)');
+        logger.debug('User already exists (empty identities)');
         return { error: 'Email sudah terdaftar. Silakan cek email untuk konfirmasi atau login.' };
       }
 
-      console.log('[AuthContext] User created:', authData.user.id, 'confirmed:', authData.user.email_confirmed_at);
+      logger.debug('User created', { userId: authData.user.id, confirmed: authData.user.email_confirmed_at });
 
       // 2. Create store immediately (regardless of email confirmation status)
       const slug = storeName
@@ -616,11 +659,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (storeError) {
-        console.error('[AuthContext] Store error:', storeError);
+        logger.error('Store error', { storeError });
         return { error: storeError.message };
       }
 
-      console.log('[AuthContext] Store created:', storeData.id);
+      logger.debug('Store created', { storeId: storeData.id });
 
       // 3. Add user as owner
       const { error: memberError } = await (supabase
@@ -632,7 +675,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
       if (memberError) {
-        console.error('[AuthContext] Member error:', memberError);
+        logger.error('Member error', { memberError });
         return { error: memberError.message };
       }
 
@@ -645,14 +688,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         needsEmailVerification: !authData.user.email_confirmed_at
       };
     } catch (err: any) {
-      console.error('[AuthContext] Signup error:', err);
+      logger.error('Signup error', { err });
       return { error: err.message || 'Signup failed' };
     }
   };
 
   const updateStorePlan = async (newPlan: string) => {
     if (!store?.id) {
-      console.error('No store available to update plan');
+      logger.error('No store available to update plan');
       return;
     }
 
@@ -664,15 +707,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', store.id);
 
       if (error) {
-        console.error('Error updating store plan:', error);
+        logger.error('Error updating store plan', { error });
         throw error;
       }
 
       // Update the local store state with the new plan
       setStore(prev => prev ? { ...prev, plan: newPlan } : null);
-      console.log(`Store plan updated to ${newPlan}`);
+      logger.debug(`Store plan updated to ${newPlan}`);
     } catch (error) {
-      console.error('Failed to update store plan:', error);
+      logger.error('Failed to update store plan', {}, error);
       throw error;
     }
   };
@@ -706,16 +749,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', storeId);
 
       if (error) {
-        console.error('Error updating store slug:', error);
+        logger.error('Error updating store slug', { error });
         throw error;
       }
 
       // Update the local store state with the new slug
       setStore(prev => prev ? { ...prev, slug: finalSlug } : null);
-      console.log(`Store slug updated to ${finalSlug}`);
+      logger.debug(`Store slug updated to ${finalSlug}`);
       return finalSlug;
     } catch (error) {
-      console.error('Failed to update store slug:', error);
+      logger.error('Failed to update store slug', {}, error);
       throw error;
     }
   };
@@ -741,7 +784,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (!storeError && storeData) {
-          console.log('[AuthContext] Demo mode: Loaded demo store by ID', storeData.name);
+          logger.debug('Demo mode: Loaded demo store by ID', { storeName: storeData.name });
           return storeData as Store;
         }
       }
@@ -755,7 +798,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (!storeError && storeData) {
-          console.log('[AuthContext] Demo mode: Loaded demo store by slug', storeData.name);
+          logger.debug('Demo mode: Loaded demo store by slug', { storeName: storeData.name });
           return storeData as Store;
         }
       }
@@ -769,7 +812,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (!slugError && storeBySlug) {
-        console.log('[AuthContext] Demo mode: Loaded store by email slug', storeBySlug.name);
+        logger.debug('Demo mode: Loaded store by email slug', { storeName: storeBySlug.name });
         return storeBySlug as Store;
       }
 
@@ -782,24 +825,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (!omzetinError && omzetinStore) {
-        console.log('[AuthContext] Demo mode: Loaded omzetin store', omzetinStore.name);
+        logger.debug('Demo mode: Loaded omzetin store', { storeName: omzetinStore.name });
         return omzetinStore as Store;
       }
 
-      console.error('[AuthContext] Demo mode: Could not find any demo store');
-      console.error('[AuthContext] Tried: ID="' + DEMO_STORE_ID + '", Slug="' + DEMO_STORE_SLUG + '", Email Slug="' + emailSlug + '"');
+      logger.error('Demo mode: Could not find any demo store');
+      logger.error('Tried demo store IDs', { demoStoreId: DEMO_STORE_ID, demoStoreSlug: DEMO_STORE_SLUG, emailSlug });
       return null;
     } catch (error) {
-      console.error('[AuthContext] Failed to fetch store by email:', error);
+      logger.error('Failed to fetch store by email', { error });
       return null;
     }
   };
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Error signing out from Supabase:', error);
+      logger.error('Error signing out from Supabase', { error });
     } finally {
       // Always clear local state
       useWarungStore.getState().resetStore();
@@ -834,7 +877,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Force reload to clear in-memory state and React Query cache
       window.location.href = '/login';
     }
-  };
+  }, []);
 
   // Session timeout functionality
   useEffect(() => {
@@ -857,7 +900,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (lastActivity && (now - lastActivity > maxInactiveTime)) {
         // Session expired due to inactivity
-        console.log('[AuthContext] Session expired due to inactivity');
+        logger.debug('Session expired due to inactivity');
         signOut();
       }
     }, 60000); // Check every minute
@@ -880,7 +923,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const storeIsAuthenticated = !!user && !!store;
 
   // Log for debugging auth state
-  console.log('[AuthContext] Current auth state - user:', !!user, 'session:', !!session, 'store:', !!store, 'generalIsAuthenticated:', generalIsAuthenticated, 'storeIsAuthenticated:', storeIsAuthenticated, 'loading:', loading);
+  logger.debug('Current auth state', { user: !!user, session: !!session, store: !!store, generalIsAuthenticated, storeIsAuthenticated, loading });
 
   const value: AuthContextType = {
     user,
@@ -907,6 +950,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

@@ -62,9 +62,9 @@ export function LoginPage() {
           const { data: { user } } = await supabase.auth.getUser();
 
           if (user) {
-            const { data: membership } = await supabase
-              .from('store_members')
-              .select('store_id, role, stores(slug, name)')
+            const { data: membership } = await (supabase
+              .from('store_members') as any)
+              .select('store_id, role, stores(name, slug)')
               .eq('user_id', user.id)
               .limit(1)
               .maybeSingle();
@@ -84,9 +84,9 @@ export function LoginPage() {
               // Is Staff. Block access.
               await supabase.auth.signOut();
 
-              // @ts-ignore
+              // @ts-expect-error related store is joined in query
               const storeName = membership.stores?.name || 'Toko Anda';
-              // @ts-ignore
+              // @ts-expect-error related store is joined in query
               const storeSlug = membership.stores?.slug || '';
 
               // Show modal dialog instead of error text

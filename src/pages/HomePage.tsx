@@ -127,7 +127,7 @@ export function HomePage() {
         }
       });
     }
-  }, [authLoading, isAuthenticated, store?.id, user?.id]); // Use IDs instead of objects to prevent infinite loops
+  }, [authLoading, isAuthenticated, store, user?.id, user?.email]);
 
   // Setup realtime sync only for authenticated users
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Users, Store, ShoppingCart, Package, TrendingUp, Activity, Calendar, DollarSign, RefreshCw } from 'lucide-react';
@@ -27,23 +27,19 @@ interface AnalyticsData {
     signups_trend: any[];
 }
 
+const timeRanges: TimeRange[] = [
+    { value: '7d', label: '7 Hari', days: 7 },
+    { value: '30d', label: '30 Hari', days: 30 },
+    { value: '90d', label: '90 Hari', days: 90 },
+];
+
 export function AdminAnalyticsPage() {
     const { data: stats, isLoading: statsLoading, refetch } = useAdminStats();
     const [timeRange, setTimeRange] = useState<TimeRange['value']>('30d');
     const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const timeRanges: TimeRange[] = [
-        { value: '7d', label: '7 Hari', days: 7 },
-        { value: '30d', label: '30 Hari', days: 30 },
-        { value: '90d', label: '90 Hari', days: 90 },
-    ];
-
-    useEffect(() => {
-        fetchAnalytics();
-    }, [timeRange]);
-
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async () => {
         setIsLoading(true);
         try {
             const days = timeRanges.find(tr => tr.value === timeRange)?.days || 30;
@@ -62,7 +58,11 @@ export function AdminAnalyticsPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [timeRange]);
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, [fetchAnalytics]);
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
@@ -85,32 +85,32 @@ export function AdminAnalyticsPage() {
                         Statistik dan analitik platform OMZETIN
                     </p>
                 </div>
-            <div className="flex gap-2">
-                {timeRanges.map((range) => (
+                <div className="flex gap-2">
+                    {timeRanges.map((range) => (
+                        <Button
+                            key={range.value}
+                            variant={timeRange === range.value ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setTimeRange(range.value)}
+                            className={timeRange === range.value ? 'bg-brand-orange text-brand-black border-2 border-brand-black' : 'border-2 border-brand-black'}
+                        >
+                            {range.label}
+                        </Button>
+                    ))}
                     <Button
-                        key={range.value}
-                        variant={timeRange === range.value ? 'default' : 'outline'}
+                        variant="outline"
                         size="sm"
-                        onClick={() => setTimeRange(range.value)}
-                        className={timeRange === range.value ? 'bg-brand-orange text-brand-black border-2 border-brand-black' : 'border-2 border-brand-black'}
+                        onClick={() => {
+                            refetch();
+                            fetchAnalytics();
+                        }}
+                        disabled={isLoading || statsLoading}
+                        className="border-2 border-brand-black"
                     >
-                        {range.label}
+                        <RefreshCw className={`w-4 h-4 mr-2 ${isLoading || statsLoading ? 'animate-spin' : ''}`} />
+                        Refresh
                     </Button>
-                ))}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        refetch();
-                        fetchAnalytics();
-                    }}
-                    disabled={isLoading || statsLoading}
-                    className="border-2 border-brand-black"
-                >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isLoading || statsLoading ? 'animate-spin' : ''}`} />
-                    Refresh
-                </Button>
-            </div>
+                </div>
             </div>
 
             {/* Key Metrics */}

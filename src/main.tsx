@@ -1,4 +1,6 @@
 import '@/lib/errorReporter';
+import { initLogging } from '@/infrastructure/logging/config';
+initLogging();
 import { enableMapSet } from "immer";
 enableMapSet();
 import { StrictMode, lazy, Suspense } from 'react'
@@ -17,7 +19,7 @@ import { SessionProvider } from '@/components/SessionProvider';
 import { OfflineStatusIndicator } from '@/components/OfflineStatusIndicator';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { shouldRetryQuery, getRetryDelay } from '@/lib/query-utils';
-import { AnimatedLogo } from '@/components/AnimatedLogo';
+import { PageLoader } from '@/components/PageLoader';
 import '@/index.css'
 
 // App version check - clear stale cached data when version changes
@@ -103,52 +105,7 @@ const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ defaul
 const StoreLoginPage = lazy(() => import('@/pages/StoreLoginPage').then(m => ({ default: m.StoreLoginPage })));
 const OnboardingPage = lazy(() => import('@/pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
 
-// Loading animation
-const PageLoader = () => {
-  return (
-    <div className="fixed inset-0 bg-white flex flex-col items-center justify-center overflow-hidden z-[9999]">
-      {/* OMZETIN Logo */}
-      <div className="mb-8 scale-110">
-        <AnimatedLogo isActive={true} showText={false} />
-      </div>
 
-      {/* Loading Bar */}
-      <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-brand-orange animate-pulse"
-          style={{
-            animation: 'loadingBar 1.5s ease-in-out infinite',
-            width: '50%',
-            transformOrigin: 'left'
-          }}
-        />
-      </div>
-
-      {/* Loading text */}
-      <div style={{
-        marginTop: '20px',
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        fontWeight: 'bold',
-        color: '#1A1A1A',
-        textTransform: 'uppercase',
-        letterSpacing: '1px',
-      }}>
-        Memuat komponen...
-      </div>
-
-      {/* CSS animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes loadingBar {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
-          }
-        `
-      }} />
-    </div>
-  );
-};
 const router = createBrowserRouter([
   {
     path: "/",

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -84,9 +84,9 @@ export function AdminAuditLogPage() {
     useEffect(() => {
         fetchAuditLogs();
         fetchCronLogs();
-    }, []);
+    }, [fetchAuditLogs, fetchCronLogs]);
 
-    const fetchAuditLogs = async () => {
+    const fetchAuditLogs = useCallback(async () => {
         setIsLoadingAudit(true);
         try {
             // Note: Using mock data for audit logs
@@ -167,9 +167,9 @@ export function AdminAuditLogPage() {
         } finally {
             setIsLoadingAudit(false);
         }
-    };
+    }, [user?.id, user?.email]);
 
-    const fetchCronLogs = async () => {
+    const fetchCronLogs = useCallback(async () => {
         setIsLoadingCron(true);
         try {
             const { data, error } = await supabase
@@ -202,7 +202,7 @@ export function AdminAuditLogPage() {
         } finally {
             setIsLoadingCron(false);
         }
-    };
+    }, []);
 
     const filteredAuditLogs = useMemo(() => {
         if (!searchQuery || activeTab !== 'audit') return auditLogs;
@@ -584,9 +584,8 @@ export function AdminAuditLogPage() {
                     )}
 
                     {/* Health Status Card */}
-                    <Card className={`border-4 border-brand-black rounded-none shadow-hard ${
-                        cronStats && cronStats.failedPings === 0 ? 'bg-green-50' : 'bg-red-50'
-                    }`}>
+                    <Card className={`border-4 border-brand-black rounded-none shadow-hard ${cronStats && cronStats.failedPings === 0 ? 'bg-green-50' : 'bg-red-50'
+                        }`}>
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -598,9 +597,8 @@ export function AdminAuditLogPage() {
                                         }
                                     </p>
                                 </div>
-                                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                                    cronStats && cronStats.failedPings === 0 ? 'bg-green-500' : 'bg-red-500'
-                                }`}>
+                                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${cronStats && cronStats.failedPings === 0 ? 'bg-green-500' : 'bg-red-500'
+                                    }`}>
                                     <Server className="w-8 h-8 text-white" />
                                 </div>
                             </div>

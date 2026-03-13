@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -56,7 +56,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('system');
     const [isResetting, setIsResetting] = useState(false);
-    const { store, user } = useAuth();
+    const { user, store, storeId: authStoreId, signOut } = useAuth();
     const { isDemo } = useDemoMode();
 
     // Team Settings State
@@ -98,13 +98,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
         }
     }, [isOpen, fetchOpnameMode]);
 
-    useEffect(() => {
-        if (activeTab === 'team' && isProOrEnterprise && isOpen) {
-            fetchMembers();
-        }
-    }, [activeTab, isProOrEnterprise, isOpen]);
-
-    const fetchMembers = async () => {
+    const fetchMembers = useCallback(async () => {
         setIsLoadingMembers(true);
         try {
             const { data, error } = await (supabase.rpc as any)('get_store_members');
@@ -146,7 +140,13 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
         } finally {
             setIsLoadingMembers(false);
         }
-    };
+    }, [store?.id, user?.email, user?.id]);
+
+    useEffect(() => {
+        if (activeTab === 'team' && isProOrEnterprise && isOpen) {
+            fetchMembers();
+        }
+    }, [activeTab, isProOrEnterprise, isOpen, fetchMembers]);
 
     const handleRemoveMember = async (userId: string) => {
         if (isDemo) {
@@ -721,7 +721,7 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                             <Button
                                 onClick={async () => {
                                     if (window.confirm('Apakah Anda yakin ingin keluar?')) {
-                                        await useAuth().signOut();
+                                        await signOut();
                                         window.location.href = '/login';
                                     }
                                 }}

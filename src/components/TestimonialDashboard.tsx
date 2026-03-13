@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -18,17 +18,11 @@ export function TestimonialDashboard() {
         rating: 5
     });
 
-    useEffect(() => {
-        if (user) {
-            fetchTestimonial();
-        }
-    }, [user]);
-
-    const fetchTestimonial = async () => {
+    const fetchTestimonial = useCallback(async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('testimonials')
+            const { data, error } = await (supabase
+                .from('testimonials') as any)
                 .select('*')
                 .eq('user_id', user?.id)
                 .maybeSingle();
@@ -47,7 +41,13 @@ export function TestimonialDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (user) {
+            fetchTestimonial();
+        }
+    }, [user, fetchTestimonial]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,15 +68,15 @@ export function TestimonialDashboard() {
 
             if (testimonial) {
                 // Update existing
-                const { error: updateError } = await supabase
-                    .from('testimonials')
+                const { error: updateError } = await (supabase
+                    .from('testimonials') as any)
                     .update(payload)
                     .eq('id', testimonial.id);
                 error = updateError;
             } else {
                 // Create new
-                const { error: insertError } = await supabase
-                    .from('testimonials')
+                const { error: insertError } = await (supabase
+                    .from('testimonials') as any)
                     .insert([payload]);
                 error = insertError;
             }
@@ -98,8 +98,8 @@ export function TestimonialDashboard() {
 
         try {
             setSubmitting(true);
-            const { error } = await supabase
-                .from('testimonials')
+            const { error } = await (supabase
+                .from('testimonials') as any)
                 .delete()
                 .eq('id', testimonial.id);
 
@@ -136,7 +136,7 @@ export function TestimonialDashboard() {
 
                 {testimonial && (
                     <div className={`mb-6 p-4 border-2 border-black ${testimonial.status === 'approved' ? 'bg-green-50' :
-                            testimonial.status === 'rejected' ? 'bg-red-50' : 'bg-yellow-50'
+                        testimonial.status === 'rejected' ? 'bg-red-50' : 'bg-yellow-50'
                         }`}>
                         <div className="flex items-center gap-2 font-bold mb-2">
                             {testimonial.status === 'approved' && <><CheckCircle className="text-green-600 w-5 h-5" /> Disetujui</>}
@@ -166,8 +166,8 @@ export function TestimonialDashboard() {
                                 >
                                     <Star
                                         className={`w-8 h-8 ${star <= formData.rating
-                                                ? 'fill-brand-yellow text-brand-black'
-                                                : 'text-gray-300'
+                                            ? 'fill-brand-yellow text-brand-black'
+                                            : 'text-gray-300'
                                             }`}
                                     />
                                 </button>

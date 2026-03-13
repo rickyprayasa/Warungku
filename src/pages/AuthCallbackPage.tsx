@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWarungStore } from '@/lib/store';
+import { useAdmin } from '@/contexts/AdminContext';
 import { Loader2, CheckCircle2, Store, KeyRound, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,7 @@ export function AuthCallbackPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const { checkAdminAccess } = useAdmin();
   const setCurrentStoreId = useWarungStore((state) => state.setCurrentStoreId);
   const [status, setStatus] = useState<'loading' | 'success' | 'needs_store' | 'error' | 'email_sent'>('loading');
   const [storeName, setStoreName] = useState('');
@@ -88,12 +90,31 @@ export function AuthCallbackPage() {
               setCurrentStoreId(store.id);
               toast.success('Email berhasil dikonfirmasi!');
               setStatus('success');
-              setTimeout(() => navigate('/dashboard'), 2000);
+              // Check if user is super admin before redirecting
+              const isAdminUser = await checkAdminAccess();
+              console.log('[AuthCallback] Is Admin result:', isAdminUser);
+              setTimeout(() => {
+                if (isAdminUser) {
+                  console.log('[AuthCallback] Redirecting to /admin');
+                  navigate('/admin');
+                } else {
+                  console.log('[AuthCallback] Redirecting to /dashboard');
+                  navigate('/dashboard');
+                }
+              }, 2000);
             }
           }
         } else if (isAuthenticated) {
-          // Already logged in, just redirect
-          navigate('/dashboard');
+          // Already logged in, check admin status before redirect
+          const isAdminUser = await checkAdminAccess();
+          console.log('[AuthCallback] Already authenticated, is admin:', isAdminUser);
+          if (isAdminUser) {
+            console.log('[AuthCallback] Redirecting to /admin');
+            navigate('/admin');
+          } else {
+            console.log('[AuthCallback] Redirecting to /dashboard');
+            navigate('/dashboard');
+          }
         } else {
           // No access token and not authenticated
           navigate('/login');
@@ -106,7 +127,7 @@ export function AuthCallbackPage() {
     };
 
     handleAuthCallback();
-  }, [isAuthenticated, navigate, setCurrentStoreId, location.state]);
+  }, [isAuthenticated, navigate, setCurrentStoreId, location.state, checkAdminAccess]);
 
   const handleCreateStore = async () => {
     if (!storeName || isCreating) return;
@@ -122,8 +143,8 @@ export function AuthCallbackPage() {
       }
 
       // CRITICAL FIX: Check if user already has a store to prevent duplicates
-      const { data: existingMember } = await supabase
-        .from('store_members')
+      const { data: existingMember } = await (supabase
+        .from('store_members') as any)
         .select('store_id')
         .eq('user_id', user.id)
         .limit(1)
@@ -133,7 +154,16 @@ export function AuthCallbackPage() {
         console.log('[AuthCallback] User already has store, redirecting:', existingMember.store_id);
         setCurrentStoreId(existingMember.store_id);
         toast.success('Toko Anda sudah tersedia!');
-        navigate('/dashboard');
+        // Check if user is super admin before redirecting
+        const isAdminUser = await checkAdminAccess();
+        console.log('[AuthCallback] Is admin during store creation:', isAdminUser);
+        if (isAdminUser) {
+          console.log('[AuthCallback] Redirecting to /admin');
+          navigate('/admin');
+        } else {
+          console.log('[AuthCallback] Redirecting to /dashboard');
+          navigate('/dashboard');
+        }
         return;
       }
 
@@ -179,7 +209,16 @@ export function AuthCallbackPage() {
 
       setCurrentStoreId(storeData.id);
       toast.success('Toko berhasil dibuat! Selamat datang!');
-      navigate('/dashboard');
+      // Check if user is super admin before redirecting
+      const isAdminUser = await checkAdminAccess();
+      console.log('[AuthCallback] Is admin after store creation:', isAdminUser);
+      if (isAdminUser) {
+        console.log('[AuthCallback] Redirecting to /admin');
+        navigate('/admin');
+      } else {
+        console.log('[AuthCallback] Redirecting to /dashboard');
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       console.error('[AuthCallback] Error creating store:', error);
       toast.error(error.message || 'Gagal membuat toko');

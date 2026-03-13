@@ -1,7 +1,9 @@
 import { useRouteError, isRouteErrorResponse } from 'react-router-dom';
 import { useEffect } from 'react';
-import { errorReporter } from '@/lib/errorReporter';
+import { Logger } from '@/infrastructure/logging/Logger';
 import { ErrorFallback } from './ErrorFallback';
+
+const logger = Logger.create('Router');
 
 export function RouteErrorBoundary() {
   const error = useRouteError();
@@ -26,15 +28,10 @@ export function RouteErrorBoundary() {
         errorMessage = JSON.stringify(error);
       }
 
-      errorReporter.report({
-        message: errorMessage,
-        stack: errorStack,
-        url: window.location.href,
-        timestamp: new Date().toISOString(),
+      logger.error(errorMessage, {
         source: 'react-router',
-        error: error,
-        level: "error",
-      });
+        url: window.location.href,
+      }, error instanceof Error ? error : undefined);
     }
   }, [error]);
 

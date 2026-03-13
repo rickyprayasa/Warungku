@@ -1,6 +1,6 @@
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { saleSchema, type SaleFormValues } from '@shared/types';
+import { saleSchema, type SaleFormValues, type Sale } from '@shared/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -18,7 +18,6 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReceiptTemplate, handleWhatsAppShare, handlePrintReceipt } from './ReceiptTemplate';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import type { Sale } from '@shared/types';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface SaleFormProps {

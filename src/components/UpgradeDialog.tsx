@@ -173,7 +173,7 @@ Informasi akun:
 Mohon informasi lebih lanjut mengenai paket yang tersedia.
 
 Terima kasih.`);
-    
+
     window.open(`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`, '_blank');
   };
 
@@ -185,7 +185,7 @@ Jumlah produk: ${currentProductCount}
 Transaksi bulan ini: ${currentMonthTransactionCount}
 
 Mohon info lebih lanjut.`);
-    
+
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
   };
 
@@ -244,45 +244,44 @@ Mohon info lebih lanjut.`);
           ) : (
             <div className="grid md:grid-cols-3 gap-4 mb-6">
               {plans.map((p) => (
-              <div
-                key={p.name}
-                className={`relative p-4 border-2 border-brand-black ${
-                  p.recommended ? 'bg-brand-orange/10 shadow-hard-sm' : 'bg-white'
-                }`}
-              >
-                {p.recommended && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-mono text-xs">
-                    RECOMMENDED
-                  </Badge>
-                )}
-                <h3 className="font-display font-bold text-lg mb-1">{p.name}</h3>
-                <div className="mb-4">
-                  {p.name === 'Enterprise' ? (
-                    <span className="font-bold text-2xl">Custom</span>
-                  ) : p.monthlyPrice === 0 ? (
-                    <span className="font-bold text-2xl">Gratis</span>
-                  ) : pricePeriod === 'monthly' ? (
-                    <>
-                      <span className="font-bold text-2xl">{formatCurrency(p.monthlyPrice)}</span>
-                      <span className="font-mono text-sm text-muted-foreground">/bulan</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-bold text-2xl">{formatCurrency(p.yearlyPrice)}</span>
-                      <span className="font-mono text-sm text-muted-foreground">/tahun</span>
-                    </>
+                <div
+                  key={p.name}
+                  className={`relative p-4 border-2 border-brand-black ${p.recommended ? 'bg-brand-orange/10 shadow-hard-sm' : 'bg-white'
+                    }`}
+                >
+                  {p.recommended && (
+                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-mono text-xs">
+                      RECOMMENDED
+                    </Badge>
                   )}
+                  <h3 className="font-display font-bold text-lg mb-1">{p.name}</h3>
+                  <div className="mb-4">
+                    {p.name === 'Enterprise' ? (
+                      <span className="font-bold text-2xl">Custom</span>
+                    ) : p.monthlyPrice === 0 ? (
+                      <span className="font-bold text-2xl">Gratis</span>
+                    ) : pricePeriod === 'monthly' ? (
+                      <>
+                        <span className="font-bold text-2xl">{formatCurrency(p.monthlyPrice)}</span>
+                        <span className="font-mono text-sm text-muted-foreground">/bulan</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-bold text-2xl">{formatCurrency(p.yearlyPrice)}</span>
+                        <span className="font-mono text-sm text-muted-foreground">/tahun</span>
+                      </>
+                    )}
+                  </div>
+                  <ul className="space-y-2">
+                    {p.features.map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm font-mono">
+                        <Check className="w-4 h-4 text-green-600 shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-2">
-                  {p.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm font-mono">
-                      <Check className="w-4 h-4 text-green-600 shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+              ))}
             </div>
           )}
 
@@ -338,6 +337,7 @@ Mohon info lebih lanjut.`);
 }
 
 // Hook untuk mudah trigger upgrade dialog
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUpgradeDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [trigger, setTrigger] = useState<UpgradeDialogProps['trigger']>('general');

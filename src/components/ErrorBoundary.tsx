@@ -1,6 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
-import { errorReporter } from "@/lib/errorReporter";
+import { Logger } from "@/infrastructure/logging/Logger";
 import { ErrorFallback } from "./ErrorFallback";
+
+const logger = Logger.create('ErrorBoundary');
 
 interface Props {
   children: ReactNode;
@@ -32,19 +34,11 @@ export class ErrorBoundary extends Component<Props, State> {
     // Update state with error info
     this.setState({ errorInfo });
 
-    // Report error to backend
-    errorReporter.report({
-      message: error.message,
-      stack: error.stack || "",
-      componentStack: errorInfo.componentStack,
-      errorBoundary: true,
-      errorBoundaryProps: {
-        componentName: this.constructor.name,
-      },
+    // Report error via structured logger
+    logger.error('Uncaught component error', {
+      componentStack: errorInfo.componentStack || undefined,
       url: window.location.href,
-      timestamp: new Date().toISOString(),
-      level: "error",
-    });
+    }, error);
   }
 
   private retry = () => {

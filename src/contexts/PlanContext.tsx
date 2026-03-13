@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useWarungStore } from '@/lib/store-supabase';
 import { supabase } from '@/lib/supabase';
@@ -130,6 +130,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
 
     // No plan set - default to free for new stores
     return 'free';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, store, refreshTrigger, isDemo]);
 
   // Calculate effective plan (pro during trial)
@@ -143,9 +144,9 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     return plan;
   }, [plan, trialStatus.isTrialActive, trialStatus.daysRemainingInTrial]);
 
-  const refreshPlan = () => {
+  const refreshPlan = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
-  };
+  }, []);
 
   // Optional: Add polling to check for plan changes
   // This checks if the plan has changed in the database and refreshes if needed
@@ -304,6 +305,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePlan() {
   const context = useContext(PlanContext);
   if (context === undefined) {
