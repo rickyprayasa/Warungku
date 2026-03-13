@@ -28,6 +28,10 @@ tsconfig.tsbuildinfo
 *.png
 screenshot/
 
+# But keep public assets (feature previews, logos, etc.)
+!public/**/*.png
+!public/*.png
+
 # Documentation with potential secrets
 CHANGELOG-REALTIME-SYNC.md
 SETUP-SUPABASE.md
