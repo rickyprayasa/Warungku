@@ -249,23 +249,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       console.log('[StoreContext] Starting normal store lookup for slug:', slug);
 
+      // Helper to prevent infinite hangs when Supabase Auth LockManager deadlocks across tabs
+      const withTimeout = (promise: Promise<any>, ms: number) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Koneksi timeout, silakan refresh halaman')), ms))
+        ]);
+      };
+
       // Use the same approach as demo mode - simpler and proven to work
-      const { data, error } = await (supabase
-        .from('stores')
-        .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
-        .eq('slug', slug)
-        .maybeSingle() as any);
+      const { data, error } = await withTimeout(
+        supabase
+          .from('stores')
+          .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+          .eq('slug', slug)
+          .maybeSingle() as any,
+        10000 // 10s timeout
+      );
 
       console.log('[StoreContext] Query result - data:', data, 'error:', error);
 
       // If exact match failed, try case-insensitive
       if (!data && !error) {
         console.log('[StoreContext] Exact match failed, trying case-insensitive for:', slug);
-        const { data: ilikData, error: ilikError } = await (supabase
-          .from('stores')
-          .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
-          .ilike('slug', slug)
-          .maybeSingle() as any);
+        const { data: ilikData, error: ilikError } = await withTimeout(
+          supabase
+            .from('stores')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .ilike('slug', slug)
+            .maybeSingle() as any,
+          10000 // 10s timeout
+        );
 
         console.log('[StoreContext] Case-insensitive result - data:', ilikData, 'error:', ilikError);
 

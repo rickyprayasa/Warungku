@@ -64,8 +64,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             return false;
         } catch (error) {
             console.error('[AdminContext] Error checking admin access:', error);
-            setIsAdmin(false);
-            setAdminRole(null);
+            // CRITICAL FIX: Do NOT set isAdmin to false on error (like network timeout or lock timeout).
+            // If they were already admin, preserve their state so they don't get kicked out randomly.
+            // Just return false so the caller knows the check failed.
             return false;
         }
     }, [user?.id, user?.email]);
@@ -77,14 +78,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             setIsCheckingAdmin(false);
         };
 
-        if (isAuthenticated && user) {
+        if (isAuthenticated && user?.id) {
             verifyAdmin();
         } else {
             setIsAdmin(false);
             setAdminRole(null);
             setIsCheckingAdmin(false);
         }
-    }, [isAuthenticated, user, checkAdminAccess]);
+    }, [isAuthenticated, user?.id, checkAdminAccess]);
 
     const value: AdminContextType = {
         isAdmin,
