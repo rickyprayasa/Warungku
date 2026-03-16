@@ -276,11 +276,23 @@ async function withTimeout<T>(
     clearTimeout(timeoutId!);
     // If auth error, try to refresh session
     if (sessionEvents.isAuthError(error)) {
-      console.warn('[withTimeout] Auth error detected, refreshing session...');
-      const refreshed = await ensureSession();
-      if (!refreshed) {
-        sessionEvents.emitSessionExpired();
-        throw new Error('Session expired. Please login again.');
+      console.warn('[withTimeout] Auth error detected inside timeout wrapper');
+      // For public store visitors, we don't have a session to refresh, so we shouldn't emitSessionExpired and force a login modal.
+      // We only do that if they are actually supposed to be logged in.
+      const isPublicRoute = typeof window !== 'undefined' &&
+        window.location.pathname !== '/' &&
+        !window.location.pathname.startsWith('/admin') &&
+        !window.location.pathname.startsWith('/dashboard') &&
+        !window.location.pathname.startsWith('/pos');
+
+      if (!isPublicRoute) {
+        const refreshed = await ensureSession();
+        if (!refreshed) {
+          sessionEvents.emitSessionExpired();
+          throw new Error('Session expired. Please login again.');
+        }
+      } else {
+        console.warn('[withTimeout] Auth error on public route, ignoring session refresh');
       }
     }
     throw error;
@@ -502,8 +514,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           opnameMode: 'retail',
           isLoading: false,
           error: null,
-          currentStoreId: null,
-          currentUser: null, // CRITICAL FIX: explicit null to prevent stale user state
+          // Do NOT clear currentStoreId or currentUser here because this state is synced via localStorage!
+          // If we clear it, it logs out the admin user who opened the public store in a new tab.
         });
       },
 

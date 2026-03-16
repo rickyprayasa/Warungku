@@ -36,6 +36,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const storeCreationAttemptedFor = useRef<Record<string, boolean>>({});
+  const storeRef = useRef<Store | null>(null);
+  const isFetchingStoreRef = useRef(false);
+  const userRef = useRef<User | null>(null);
+  const fetchUserStoreRef = useRef<typeof fetchUserStore>(null as any);
+
+  // Keep user ref in sync
+  useEffect(() => { userRef.current = user; }, [user]);
+
+  // Wrapper: always keep storeRef in sync with state
+  const updateStore = useCallback((value: Store | null | ((prev: Store | null) => Store | null)) => {
+    if (typeof value === 'function') {
+      updateStore(prev => {
+        const next = value(prev);
+        storeRef.current = next;
+        return next;
+      });
+    } else {
+      storeRef.current = value;
+      setStore(value);
+    }
+  }, []);
 
   // Auto-create store for users who don't have one
   const createStoreForUser = useCallback(async (userId: string, userEmail?: string, userMetadata?: any): Promise<Store | null> => {
@@ -165,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (isSuperAdmin) {
         logger.debug('User is super admin, skipping store fetch');
-        setStore(null);
+        updateStore(null);
         return null;
       }
 
@@ -222,7 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           if (storeCreationAttemptedFor.current[userId]) {
             logger.warn('Store creation already attempted for this user, preventing infinite loop.');
-            setStore(null);
+            updateStore(null);
             useWarungStore.getState().setCurrentStoreId(null);
             return null;
           }
@@ -231,13 +252,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data: { user: currentUser } } = await supabase.auth.getUser();
           const newStore = await createStoreForUser(userId, userEmail, currentUser?.user_metadata);
           if (newStore) {
-            setStore(newStore);
+            updateStore(newStore);
             useWarungStore.getState().setCurrentStoreId(newStore.id);
             setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
             return newStore;
           }
           // If auto-create returned null (e.g. they are an admin), resolve gracefully
-          setStore(null);
+          updateStore(null);
           useWarungStore.getState().setCurrentStoreId(null);
           setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
           return null;
@@ -250,7 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (storeCreationAttemptedFor.current[userId]) {
           logger.warn('Store creation already attempted for this user, preventing infinite loop.');
-          setStore(null);
+          updateStore(null);
           useWarungStore.getState().setCurrentStoreId(null);
           return null;
         }
@@ -259,13 +280,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         const newStore = await createStoreForUser(userId, userEmail, currentUser?.user_metadata);
         if (newStore) {
-          setStore(newStore);
+          updateStore(newStore);
           useWarungStore.getState().setCurrentStoreId(newStore.id);
           setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
           return newStore;
         }
         // If auto-create returned null (e.g. they are an admin), resolve gracefully
-        setStore(null);
+        updateStore(null);
         useWarungStore.getState().setCurrentStoreId(null);
         setMustChangePassword(currentUser?.user_metadata?.must_change_password || false);
         return null;
@@ -283,7 +304,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (storeData) {
         logger.warn('Setting store from JOIN', { storeName: storeData.name });
-        setStore(storeData as Store);
+        updateStore(storeData as Store);
+        storeRef.current = storeData as Store;
         useWarungStore.getState().setCurrentStoreId(storeData.id);
         return storeData as Store;
       }
@@ -318,7 +340,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (directStoreData) {
         logger.warn('Setting store from direct fetch', { storeName: directStoreData.name });
-        setStore(directStoreData as Store);
+        updateStore(directStoreData as Store);
+        storeRef.current = directStoreData as Store;
         useWarungStore.getState().setCurrentStoreId(directStoreData.id);
         return directStoreData as Store;
       }
@@ -335,6 +358,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
   }, [createStoreForUser]);
+
+  // Keep fetchUserStore ref in sync (declared after fetchUserStore)
+  useEffect(() => { fetchUserStoreRef.current = fetchUserStore; }, [fetchUserStore]);
 
   const refreshStore = useCallback(async () => {
     if (user?.id) {
@@ -356,10 +382,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Clear permission cache on initial session load to ensure fresh role data
         logger.debug('Initial session - clearing permission service cache');
         permissionService.clearCache();
-        try {
-          await fetchUserStore(session.user.id, session.user.email);
-        } catch (err) {
-          logger.error('Error in initial store fetch', { err });
+        if (!isFetchingStoreRef.current) {
+          isFetchingStoreRef.current = true;
+          try {
+            await fetchUserStoreRef.current(session.user.id, session.user.email);
+          } catch (err) {
+            logger.error('Error in initial store fetch', { err });
+          } finally {
+            isFetchingStoreRef.current = false;
+          }
         }
       }
 
@@ -381,7 +412,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           logger.debug('SIGNED_IN - clearing permission service cache');
           permissionService.clearCache();
           try {
-            await fetchUserStore(session.user.id, session.user.email);
+            await fetchUserStoreRef.current(session.user.id, session.user.email);
             // After store is loaded, fetch products and other data
             const storeState = useWarungStore.getState();
             if (storeState.currentStoreId) {
@@ -395,19 +426,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.error('Error fetching store on sign in', { err });
           }
         } else if (event === 'SIGNED_OUT') {
-          setStore(null);
+          updateStore(null);
           useWarungStore.getState().setCurrentStoreId(null);
         } else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           // Make sure store is still associated with user
           if (session?.user) {
             try {
-              // Only fetch store if we don't have one or if the user ID changed
+              // Use ref to check store state — avoids re-render dependency
               const currentStoreId = useWarungStore.getState().currentStoreId;
-              const hasStore = store !== null && currentStoreId !== null;
+              const hasStore = storeRef.current !== null && currentStoreId !== null;
 
-              if (!hasStore) {
+              if (!hasStore && !isFetchingStoreRef.current) {
                 logger.debug('TOKEN_REFRESHED: No store, fetching...');
-                await fetchUserStore(session.user.id, session.user.email);
+                isFetchingStoreRef.current = true;
+                try {
+                  await fetchUserStoreRef.current(session.user.id, session.user.email);
+                } finally {
+                  isFetchingStoreRef.current = false;
+                }
               } else {
                 logger.debug('TOKEN_REFRESHED: Store already loaded, skipping fetch');
               }
@@ -432,13 +468,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Handle tab visibility change - when user returns to the tab
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // Get latest state
-        const currentUser = user; // Use closure value but check if user exists
         const storeId = useWarungStore.getState().currentStoreId;
-
-        if (currentUser && storeId) {
+        if (userRef.current && storeId) {
           logger.debug('Tab became visible', { storeId });
-          // Refetch data when user returns to the tab
           const storeState = useWarungStore.getState();
           if (storeState.products.length === 0) {
             logger.debug('Refetching data after tab switch');
@@ -455,11 +487,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Handle window focus
     const handleFocus = () => {
-      // Get latest state
-      const currentUser = user; // Use closure value but check if user exists
       const storeId = useWarungStore.getState().currentStoreId;
-
-      if (currentUser && storeId) {
+      if (userRef.current && storeId) {
         logger.debug('Window focused', { storeId });
         const storeState = useWarungStore.getState();
         if (storeState.products.length === 0) {
@@ -483,7 +512,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [fetchUserStore, store, user]);
+    // CRITICAL: Empty deps — this effect must run ONLY ONCE on mount.
+    // All state is accessed via refs (storeRef, userRef, fetchUserStoreRef).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -493,7 +525,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.debug('signIn - clearing previous user data');
       useWarungStore.getState().resetStore();
       useWarungStore.getState().setCurrentStoreId(null);
-      setStore(null);
+      updateStore(null);
 
       // Implement rate limiting client-side by tracking failed attempts
       const failedAttempts = parseInt(localStorage.getItem('login_failed_attempts') || '0');
@@ -555,7 +587,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.debug('signInWithGoogle - clearing previous user data');
       useWarungStore.getState().resetStore();
       useWarungStore.getState().setCurrentStoreId(null);
-      setStore(null);
+      updateStore(null);
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -679,7 +711,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: memberError.message };
       }
 
-      setStore(storeData as Store);
+      updateStore(storeData as Store);
       useWarungStore.getState().setCurrentStoreId(storeData.id);
 
       // Return success - email verification will be handled in dashboard
@@ -712,7 +744,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Update the local store state with the new plan
-      setStore(prev => prev ? { ...prev, plan: newPlan } : null);
+      updateStore(prev => prev ? { ...prev, plan: newPlan } : null);
       logger.debug(`Store plan updated to ${newPlan}`);
     } catch (error) {
       logger.error('Failed to update store plan', {}, error);
@@ -754,7 +786,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Update the local store state with the new slug
-      setStore(prev => prev ? { ...prev, slug: finalSlug } : null);
+      updateStore(prev => prev ? { ...prev, slug: finalSlug } : null);
       logger.debug(`Store slug updated to ${finalSlug}`);
       return finalSlug;
     } catch (error) {
@@ -849,7 +881,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       useWarungStore.getState().setCurrentStoreId(null);
       setUser(null);
       setSession(null);
-      setStore(null);
+      updateStore(null);
       setMustChangePassword(false);
 
       // Clear ALL storage to prevent data leakage, BUT preserve tour history

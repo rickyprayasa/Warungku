@@ -103,13 +103,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                         }
                         setIsSessionValid(true);
                     }
-                } catch (err) {
+                } catch (err: any) {
                     logger.error('Error checking session on visibility', {}, err);
-                    const path = window.location.pathname;
-                    const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
-                    setIsSessionValid(false);
-                    if (isProtectedRoute) {
-                        setIsModalOpen(true);
+
+                    // Supabase gotrue-js can throw Navigator LockManager timeouts if another tab is doing auth stuff.
+                    // This doesn't mean the session is expired, it just means we couldn't check it right now.
+                    const isLockTimeout = err?.message?.includes('LockManager') || err?.message?.includes('timed out');
+
+                    if (!isLockTimeout) {
+                        const path = window.location.pathname;
+                        const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
+                        setIsSessionValid(false);
+                        if (isProtectedRoute) {
+                            setIsModalOpen(true);
+                        }
+                    } else {
+                        logger.warn('Ignoring LockManager timeout error - session is likely still valid');
                     }
                 }
             }

@@ -99,9 +99,88 @@ export function AdminUsersPage() {
     const { data: users = [], isLoading, refetch: refetchUsers } = useQuery({
         queryKey: ['admin', 'users'],
         queryFn: async () => {
-            const { data, error } = await supabase.rpc('get_all_users_for_admin');
+            // Try RPC first
+            let data: any[] | null = null;
+            let rpcFailed = false;
 
-            if (error) throw error;
+            try {
+                const result = await supabase.rpc('get_all_users_for_admin');
+                if (result.error) {
+                    console.warn('RPC get_all_users_for_admin failed:', result.error.message);
+                    rpcFailed = true;
+                } else {
+                    data = result.data;
+                }
+            } catch (err) {
+                console.warn('RPC call failed, using fallback:', err);
+                rpcFailed = true;
+            }
+
+            // Fallback: query store_members + stores natively, and users_view
+            if (rpcFailed || !data || data.length === 0) {
+                console.log('Using fallback direct query for users (js merge)');
+
+                // 1. Fetch store_members and their stores
+                const { data: members, error: membersError } = await (supabase
+                    .from('store_members') as any)
+                    .select(`
+                        user_id,
+                        role,
+                        created_at,
+                        stores (
+                            id,
+                            name,
+                            slug,
+                            plan,
+                            plan_expires_at,
+                            created_at
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (membersError) {
+                    console.error('Fallback query store_members failed:', membersError);
+                    throw membersError;
+                }
+
+                // 2. Fetch all users from users_view to get their emails
+                const { data: usersData, error: usersError } = await (supabase
+                    .from('users_view') as any)
+                    .select('id, email, role, is_super_admin');
+
+                if (usersError) {
+                    console.error('Fallback query users_view failed:', usersError);
+                    // Continue without emails if this fails
+                }
+
+                // Map users for fast lookup
+                const emailMap: Record<string, any> = {};
+                (usersData || []).forEach((u: any) => {
+                    emailMap[u.id] = {
+                        email: u.email,
+                        role: u.role,
+                        is_super_admin: u.is_super_admin
+                    };
+                });
+
+                // Transform fallback data to match RPC format
+                data = (members || []).map((m: any) => {
+                    const uInfo = emailMap[m.user_id] || {};
+                    return {
+                        user_id: m.user_id,
+                        email: uInfo.email || 'Unknown',
+                        user_role: uInfo.role || null,
+                        is_super_admin: uInfo.is_super_admin === true,
+                        created_at: m.created_at,
+                        store_id: m.stores?.id,
+                        store_name: m.stores?.name,
+                        store_slug: m.stores?.slug,
+                        store_plan: m.stores?.plan,
+                        plan_expires_at: m.stores?.plan_expires_at,
+                        store_created_at: m.stores?.created_at,
+                    };
+                });
+            }
 
             const usersMap = new Map<string, UserWithStore>();
 
@@ -136,7 +215,7 @@ export function AdminUsersPage() {
 
             return Array.from(usersMap.values());
         },
-        staleTime: 0, // Always consider data stale - refetch on every mount/window focus
+        staleTime: 0,
         gcTime: 1000 * 60 * 5,
         retry: 2,
         refetchOnMount: 'always',
