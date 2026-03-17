@@ -531,14 +531,24 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           return;
         }
 
+        const isPublicRoute = typeof window !== 'undefined' &&
+          window.location.pathname !== '/' &&
+          !window.location.pathname.startsWith('/admin') &&
+          !window.location.pathname.startsWith('/dashboard') &&
+          !window.location.pathname.startsWith('/pos') &&
+          !window.location.pathname.startsWith('/opname');
+        const client = isPublicRoute ? supabasePublic : supabase;
+
+        set({ isLoading: true, error: null });
         try {
+          console.log(`[STORE] Fetching products for store: ${storeId} using ${isPublicRoute ? 'public' : 'auth'} client`);
           // Use withTimeout to prevent hanging indefinitely
           const { data, error } = await withTimeout(
-            supabase
+            client
               .from('products' as any)
               .select('*')
               .eq('store_id', storeId)
-              .order('created_at', { ascending: false }) as any,
+              .order('name') as any, // Order by name
             15000, // 15s timeout
             'Gagal memuat produk'
           ) as any;
@@ -568,6 +578,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         } catch (error) {
           console.error('[FETCH PRODUCTS ERROR]', error);
           // Don't set global error state to prevent UI blocking
+        } finally {
+          set({ isLoading: false });
         }
       },
 

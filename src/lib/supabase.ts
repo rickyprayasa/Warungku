@@ -16,7 +16,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
 
   if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
     logger.fatal('Missing required Supabase environment variables');
-    
+
   } else {
     logger.info('Supabase environment variables are loaded');
   }
@@ -30,6 +30,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
     logger.warn('Supabase credentials not configured');
   }
 }
+
+// Use memory storage to prevent persisting session across tabs for specific clients
+const memoryStorage = {
+  getItem: (key: string) => null,
+  setItem: (key: string, value: string) => { },
+  removeItem: (key: string) => { },
+};
 
 // Initialize Supabase client with additional configuration to handle potential connection issues
 export const supabase = createClient<Database>(
@@ -59,6 +66,23 @@ export const supabase = createClient<Database>(
     },
     db: {
       schema: 'public'
+    }
+  }
+);
+
+// A dedicated, unauthenticated client for public store queries to bypass LockManager deadlocks
+export const supabasePublic = createClient<Database>(
+  supabaseUrl || '',
+  supabaseAnonKey || '',
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storage: memoryStorage,
+    },
+    global: {
+      headers: { 'X-Client-Info': 'omzetin-public' },
     }
   }
 );

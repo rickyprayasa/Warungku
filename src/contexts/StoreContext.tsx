@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabasePublic } from '@/lib/supabase';
 import { useWarungStore } from '@/lib/store-supabase';
 import { useAuth } from './AuthContext';
 import { useLocation } from 'react-router-dom';
@@ -63,7 +63,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (rpcError) {
         console.warn('[StoreContext] RPC get_public_store_settings failed, falling back to direct query:', rpcError);
         // Fallback to direct query (might fail due to RLS if not authenticated)
-        const { data: directData, error: directError } = await (supabase
+        const { data: directData, error: directError } = await (supabasePublic
           .from('settings')
           .select('key, value')
           .eq('store_id', storeId) as any);
@@ -259,7 +259,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       // Use the same approach as demo mode - simpler and proven to work
       const { data, error } = await withTimeout(
-        supabase
+        supabasePublic
           .from('stores')
           .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
           .eq('slug', slug)
@@ -273,7 +273,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!data && !error) {
         console.log('[StoreContext] Exact match failed, trying case-insensitive for:', slug);
         const { data: ilikData, error: ilikError } = await withTimeout(
-          supabase
+          supabasePublic
             .from('stores')
             .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
             .ilike('slug', slug)
