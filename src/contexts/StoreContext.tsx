@@ -139,18 +139,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     // Special handling for demo mode - /warungku
     if (slug === 'warungku') {
-      console.log('[StoreContext] Demo mode detected, loading ricky.yusar store...');
-
+      console.log('[StoreContext] Demo mode detected, finding best available store');
       try {
-        // For demo mode, try multiple methods to find ricky.yusar's store
         let demoStore = null;
 
-        // Method 1: Try environment variable
+        // Method 1: Try environment variable IDs first
         const demoStoreId = import.meta.env.VITE_DEMO_STORE_ID || '';
         const demoStoreSlug = import.meta.env.VITE_DEMO_STORE_SLUG || '';
 
         if (demoStoreId) {
-          const { data: storeById } = await supabase
+          const { data: storeById } = await supabasePublic
             .from('stores')
             .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
             .eq('id', demoStoreId)
@@ -162,7 +160,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
 
         if (!demoStore && demoStoreSlug) {
-          const { data: storeBySlug } = await supabase
+          const { data: storeBySlug } = await supabasePublic
             .from('stores')
             .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
             .eq('slug', demoStoreSlug)
@@ -175,7 +173,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
         // Method 2: Try to find store with "ricky", "rsquare", or "yusar" in name/slug
         if (!demoStore) {
-          const { data: storesByKeywords } = await supabase
+          const { data: storesByKeywords } = await supabasePublic
             .from('stores')
             .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
             .or('slug.ilike.%ricky%,slug.ilike.%rsquare%,slug.ilike.%yusar%,name.ilike.%ricky%,name.ilike.%rsquare%,name.ilike.%yusar%')
@@ -189,7 +187,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
         // Method 3: Try to find store with "warungku" in name/slug
         if (!demoStore) {
-          const { data: warungkuStore } = await supabase
+          const { data: warungkuStore } = await supabasePublic
             .from('stores')
             .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
             .or('slug.eq.warungku,name.ilike.%warungku%')
@@ -203,7 +201,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
         // Method 4: Get first available store as fallback
         if (!demoStore) {
-          const { data: firstStore } = await supabase
+          const { data: firstStore } = await supabasePublic
             .from('stores')
             .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
             .limit(1)

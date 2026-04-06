@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { supabase } from './supabase';
+import { supabase, supabasePublic } from './supabase';
 import { RepositoryContainer } from '@/infrastructure/database/repositories/RepositoryContainer';
 
 RepositoryContainer.initialize(supabase);
@@ -573,7 +573,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             return b.createdAt - a.createdAt;
           });
 
-
+          console.log(`[STORE] Successfully mapped ${mappedProducts.length} products`);
           set({ products: mappedProducts });
         } catch (error) {
           console.error('[FETCH PRODUCTS ERROR]', error);
