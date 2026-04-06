@@ -1215,13 +1215,28 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           return newProduct;
         }
 
-        // Retry logic helper - more retries for slow connections
+        // Retry logic helper - more retries for slow connections + DEADLOCK protection
         const retryOperation = async (operation: () => Promise<any>, maxRetries = 4) => {
           let lastError;
           for (let i = 0; i < maxRetries; i++) {
             try {
-              return await operation();
+              // Wrap the operation in a 15s timeout to catch LockManager deadlocks
+              const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT_DEADLOCK')), 15000);
+              });
+              return await Promise.race([operation(), timeoutPromise]);
             } catch (error: any) {
+              if (error?.message === 'TIMEOUT_DEADLOCK') {
+                console.error('[addProduct] DEADLOCK DETECTED! Clearing corrupt cache and returning to refresh...');
+                try {
+                  for (let j = 0; j < localStorage.length; j++) {
+                    const key = localStorage.key(j);
+                    if (key && key.includes('-auth-token')) localStorage.removeItem(key);
+                  }
+                  window.location.reload();
+                } catch (e) { }
+                throw new Error('Sesi cache penuh menyebabkan nyangkut. Silakan refresh halaman.');
+              }
               console.warn(`[addProduct] Attempt ${i + 1}/${maxRetries} failed:`, error?.message || error);
               lastError = error;
               // Wait before retry (exponential backoff: 1s, 2s, 4s, 8s)

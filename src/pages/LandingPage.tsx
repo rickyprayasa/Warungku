@@ -39,22 +39,15 @@ function RealStatsSection() {
                     .select('*', { count: 'exact', head: true });
 
                 // Count total unique users by counting distinct user_ids from store_members
-                // Exclude super_admin role users from count
                 const { data: membersData } = await supabasePublic
                     .from('store_members')
-                    .select('user_id, users!inner(role)');
+                    .select('user_id');
 
-                // Get unique user count excluding super admins
-                const adminUserIds = new Set<string>();
+                // Get unique user count 
                 const uniqueUserIds = new Set<string>();
 
                 (membersData || []).forEach((member: any) => {
-                    const role = member?.users?.role;
-                    if (role === 'super_admin') {
-                        // This is a super admin user, track their ID
-                        adminUserIds.add(member.user_id);
-                    } else if (member.user_id) {
-                        // Regular user, add to count
+                    if (member.user_id) {
                         uniqueUserIds.add(member.user_id);
                     }
                 });
