@@ -38,7 +38,70 @@ const memoryStorage = {
   removeItem: (key: string) => { },
 };
 
-// Initialize Supabase client with additional configuration to handle potential connection issues
+/**
+ * Custom lock function to prevent LockManager deadlocks.
+ * 
+ * Supabase internally uses navigator.locks.request() to synchronize
+ * token refreshes across browser tabs. When a tab is closed without
+ * a clean logout, the lock can become orphaned, causing ALL subsequent
+ * Supabase operations (queries, inserts, auth) to hang indefinitely.
+ * 
+ * This custom implementation adds a 5-second timeout to lock acquisition.
+ * If the lock can't be acquired (deadlock), it proceeds WITHOUT the lock
+ * and clears corrupt auth tokens from localStorage.
+ */
+const navigatorLockWithTimeout = async (
+  name: string,
+  acquireTimeout: number,
+  fn: () => Promise<any>
+): Promise<any> => {
+  if (typeof navigator === 'undefined' || !navigator.locks) {
+    // No lock API available (SSR, older browsers), just run the function
+    return await fn();
+  }
+
+  const abortController = new AbortController();
+  const effectiveTimeout = Math.min(acquireTimeout, 5000); // Max 5s to acquire lock
+
+  const timer = setTimeout(() => {
+    abortController.abort();
+    logger.warn(`[LockManager] Lock "${name}" acquisition timed out after ${effectiveTimeout}ms — proceeding without lock (deadlock protection)`);
+  }, effectiveTimeout);
+
+  try {
+    return await navigator.locks.request(
+      name,
+      { signal: abortController.signal },
+      async () => {
+        clearTimeout(timer);
+        return await fn();
+      }
+    );
+  } catch (err: any) {
+    clearTimeout(timer);
+
+    if (err.name === 'AbortError') {
+      // Lock acquisition timed out = deadlock detected
+      // Clear corrupt auth tokens to break the deadlock cycle
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            logger.warn(`[LockManager] Removing corrupt token: ${key}`);
+            localStorage.removeItem(key);
+          }
+        }
+      } catch (e) { /* ignore storage errors */ }
+
+      // Proceed without the lock — this is safe for single-tab usage
+      return await fn();
+    }
+
+    throw err;
+  }
+};
+
+// Initialize Supabase client with deadlock-safe lock function
 export const supabase = createClient<Database>(
   supabaseUrl || '',
   supabaseAnonKey || '',
@@ -47,6 +110,7 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      lock: navigatorLockWithTimeout,
     },
     global: {
       headers: {
@@ -59,8 +123,8 @@ export const supabase = createClient<Database>(
         }
         return fetch(url, {
           ...options,
-          // Increase timeout for slower connections
-          signal: (options as any).signal || ('AbortSignal' in window && 'timeout' in (AbortSignal as any) ? (AbortSignal as any).timeout(30000) : undefined)
+          // 15s timeout for individual HTTP requests (separate from lock timeout)
+          signal: (options as any).signal || ('AbortSignal' in window && 'timeout' in (AbortSignal as any) ? (AbortSignal as any).timeout(15000) : undefined)
         });
       }
     },
