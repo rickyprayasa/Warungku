@@ -1265,8 +1265,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             is_best_seller: productData.isBestSeller || false,
             total_stock: Number(productData.totalStock) || 0,
             min_stock_level: productData.minStockLevel || 10,
-            qty_per_unit: productData.qtyPerUnit || 1,
-            unit: productData.unit || 'pcs'
+            qty_per_unit: productData.qtyPerUnit || 1
           };
 
           const response = await retryOperation(() =>
