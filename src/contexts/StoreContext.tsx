@@ -55,8 +55,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       console.log('[StoreContext] Fetching settings for store:', storeId);
 
       // Try RPC first (for public access bypassing RLS)
-      const { data: rpcData, error: rpcError } = await (supabase
-        .rpc('get_public_store_settings', { p_store_id: storeId }) as any);
+      const { data: rpcData, error: rpcError } = await (supabasePublic
+        .rpc('get_public_store_settings', { p_store_id: storeId } as any) as any);
 
       let settingsData = rpcData;
 
@@ -76,7 +76,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         // RPC succeeded but may not return all keys (e.g. store_category).
         // Supplement with direct query to fill in any missing keys.
         try {
-          const { data: directData } = await (supabase
+          const { data: directData } = await (supabasePublic
             .from('settings')
             .select('key, value')
             .eq('store_id', storeId) as any);

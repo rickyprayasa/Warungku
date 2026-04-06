@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AppFooter } from '@/components/AppFooter';
 import { useRef, useState, useEffect } from 'react';
 import { TrendingUp, ShoppingCart, BarChart3, Users, DollarSign, Package, Store, Download, MessageCircle, Facebook, Twitter, Share2, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabasePublic } from '@/lib/supabase';
 import { AnimatedLogo } from '@/components/AnimatedLogo';
 import { QRCodeCanvas } from 'qrcode.react';
 
@@ -24,23 +24,23 @@ function RealStatsSection() {
         async function fetchRealStats() {
             try {
                 // Count total active stores
-                const { count: storesCount } = await supabase
+                const { count: storesCount } = await supabasePublic
                     .from('stores')
                     .select('*', { count: 'exact', head: true });
 
                 // Count total transactions/sales
-                const { count: salesCount } = await supabase
+                const { count: salesCount } = await supabasePublic
                     .from('sales')
                     .select('*', { count: 'exact', head: true });
 
                 // Count total products
-                const { count: productsCount } = await supabase
+                const { count: productsCount } = await supabasePublic
                     .from('products')
                     .select('*', { count: 'exact', head: true });
 
                 // Count total unique users by counting distinct user_ids from store_members
                 // Exclude super_admin role users from count
-                const { data: membersData } = await supabase
+                const { data: membersData } = await supabasePublic
                     .from('store_members')
                     .select('user_id, users!inner(role)');
 
@@ -187,7 +187,7 @@ function DynamicTestimonials() {
     useEffect(() => {
         async function fetchTestimonials() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabasePublic
                     .from('testimonials')
                     .select('*, stores(name, logo_url)')
                     .eq('status', 'approved')
