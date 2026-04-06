@@ -253,9 +253,19 @@ export function SettingsDashboard() {
     const fetchMembers = useCallback(async () => {
         setIsLoadingMembers(true);
         try {
-            const { data, error } = await supabase.rpc('get_store_members');
-            if (error) throw error;
-            setMembers(data || []);
+            // Wrap in timeout to prevent infinite loading from LockManager deadlocks
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT')), 10000);
+            });
+
+            const fetchPromise = async () => {
+                const { data, error } = await supabase.rpc('get_store_members');
+                if (error) throw error;
+                return data || [];
+            };
+
+            const data = await Promise.race([fetchPromise(), timeoutPromise]);
+            setMembers(data);
         } catch (error) {
             console.error('Error fetching members:', error);
             // Fallback for demo/dev if RPC doesn't exist yet

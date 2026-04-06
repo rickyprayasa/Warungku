@@ -101,31 +101,40 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
     const fetchMembers = useCallback(async () => {
         setIsLoadingMembers(true);
         try {
-            const { data, error } = await (supabase.rpc as any)('get_store_members');
-            if (error) throw error;
-
-            // Fetch permissions explicitly from table as RPC might not return new column yet
-            const { data: permData } = await supabase
-                .from('store_members')
-                .select('user_id, permissions')
-                .eq('store_id', store?.id);
-
-            // Map out_ prefixed columns from RPC to frontend property names
-            const mapped = (data || []).map((m: any) => {
-                const userId = m.out_user_id || m.user_id;
-                const userPerms = (permData as any[])?.find(p => p.user_id === userId)?.permissions;
-
-                return {
-                    user_id: userId,
-                    email: m.out_email || m.email,
-                    role: m.out_role || m.role,
-                    name: m.out_name || m.name,
-                    joined_at: m.out_joined_at || m.joined_at,
-                    permissions: userPerms
-                };
+            // Wrap in timeout to prevent infinite loading from LockManager deadlocks
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT')), 10000);
             });
+
+            const fetchPromise = async () => {
+                const { data, error } = await (supabase.rpc as any)('get_store_members');
+                if (error) throw error;
+
+                // Fetch permissions explicitly from table as RPC might not return new column yet
+                const { data: permData } = await supabase
+                    .from('store_members')
+                    .select('user_id, permissions')
+                    .eq('store_id', store?.id);
+
+                // Map out_ prefixed columns from RPC to frontend property names
+                return (data || []).map((m: any) => {
+                    const userId = m.out_user_id || m.user_id;
+                    const userPerms = (permData as any[])?.find(p => p.user_id === userId)?.permissions;
+
+                    return {
+                        user_id: userId,
+                        email: m.out_email || m.email,
+                        role: m.out_role || m.role,
+                        name: m.out_name || m.name,
+                        joined_at: m.out_joined_at || m.joined_at,
+                        permissions: userPerms
+                    };
+                });
+            };
+
+            const mapped = await Promise.race([fetchPromise(), timeoutPromise]);
             setMembers(mapped);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching members:', error);
             if (user?.email) {
                 setMembers([

@@ -538,10 +538,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: 'Too many failed attempts. Please try again later.' };
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // DEADLOCK PROTECTION: Wrap signIn in a 10-second timeout
+      // Supabase's internal LockManager can deadlock indefinitely on corrupt cached sessions
+      const signInPromise = supabase.auth.signInWithPassword({ email, password });
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('TIMEOUT_DEADLOCK')), 10000);
       });
+
+      const { data, error } = await Promise.race([signInPromise, timeoutPromise]);
 
       if (error) {
         // Increment failed attempts
@@ -564,7 +568,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.debug('Clearing permission service cache on sign in');
         permissionService.clearCache();
         try {
-          await fetchUserStore(data.user.id, data.user.email);
+          await fetchUserStoreRef.current(data.user.id, data.user.email);
         } catch (err) {
           logger.error('Error fetching store after sign in', { err });
         }
@@ -575,6 +579,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       logger.error('SignIn error', {}, err);
       setLoading(false);
+
+      // If we caught the deadlock timeout, forcefully clear storage and tell user
+      if (err.message === 'TIMEOUT_DEADLOCK') {
+        logger.warn('DEADLOCK DETECTED during signIn! Clearing corrupt auth tokens...');
+        try {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+              localStorage.removeItem(key);
+            }
+          }
+        } catch (e) { /* ignore */ }
+        return { error: 'Sesi cache nyangkut. Data error sudah dihapus otomatis, silakan klik Masuk sekali lagi.' };
+      }
+
       return { error: err.message || 'Login failed' };
     }
   };

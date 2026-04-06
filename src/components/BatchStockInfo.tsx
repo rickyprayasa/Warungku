@@ -17,6 +17,7 @@ interface BatchStockInfoProps {
 export function BatchStockInfo({ productId, productName, totalStock, stockMethod = 'FIFO', className }: BatchStockInfoProps) {
   const [stockDetails, setStockDetails] = useState<StockDetail[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadStockDetails();
@@ -25,17 +26,25 @@ export function BatchStockInfo({ productId, productName, totalStock, stockMethod
 
   const loadStockDetails = async () => {
     setIsLoading(true);
+    setError(null);
     try {
-      // Fetch stock details from Supabase directly
-      const { data, error } = await supabase
+      // Wrap in timeout to prevent infinite loading from LockManager deadlocks
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('TIMEOUT')), 10000);
+      });
+
+      const queryPromise = supabase
         .from('stock_details')
         .select('*')
         .eq('product_id', productId)
         .gt('quantity', 0) // Only batches with stock remaining
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Failed to load stock details:', error);
+      const { data, error: queryError } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+      if (queryError) {
+        console.error('Failed to load stock details:', queryError);
+        setError('Gagal memuat data batch.');
         setStockDetails([]);
       } else {
         // Map to StockDetail type
@@ -49,8 +58,13 @@ export function BatchStockInfo({ productId, productName, totalStock, stockMethod
         }));
         setStockDetails(mappedDetails);
       }
-    } catch (error) {
-      console.error('Failed to load stock details:', error);
+    } catch (err: any) {
+      console.error('Failed to load stock details:', err);
+      if (err?.message === 'TIMEOUT') {
+        setError('Koneksi timeout. Coba refresh halaman.');
+      } else {
+        setError('Gagal memuat data batch.');
+      }
       setStockDetails([]);
     } finally {
       setIsLoading(false);
@@ -101,6 +115,23 @@ export function BatchStockInfo({ productId, productName, totalStock, stockMethod
       <Card className={cn("border-4 border-brand-black shadow-hard", className)}>
         <CardContent className="p-6">
           <p className="text-center text-muted-foreground font-mono">Loading batch info...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className={cn("border-4 border-brand-black shadow-hard", className)}>
+        <CardContent className="p-6 text-center">
+          <AlertTriangle className="w-8 h-8 mx-auto text-yellow-600 mb-2" />
+          <p className="text-muted-foreground font-mono mb-3">{error}</p>
+          <button
+            onClick={loadStockDetails}
+            className="px-4 py-2 bg-brand-orange text-brand-black border-2 border-brand-black font-mono font-bold text-sm hover:bg-brand-black hover:text-white transition-colors"
+          >
+            Coba Lagi
+          </button>
         </CardContent>
       </Card>
     );
