@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { KeyRound, Loader2, UserPlus, Eye, EyeOff, ShieldAlert, ExternalLink } from 'lucide-react';
+import { KeyRound, Loader2, UserPlus, Eye, EyeOff, ShieldAlert, ExternalLink, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWarungStore } from '@/lib/store';
@@ -211,10 +211,28 @@ export function LoginPage() {
         </div>
 
         {error && (
-          <Alert className="mb-6 border-2 border-red-500 bg-red-50">
-            <AlertDescription className="text-sm font-mono text-red-800">
+          <Alert className="mb-6 border-2 border-red-500 bg-red-50 flex flex-col items-center">
+            <AlertDescription className="text-sm font-mono text-red-800 text-center mb-2">
               {error}
             </AlertDescription>
+            {(error.includes('nyangkut') || error.includes('cache') || error.includes('refresh') || error.includes('gagal')) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-2 border-red-800 text-red-800 hover:bg-red-800 hover:text-white mt-1 h-9 rounded-none font-bold uppercase transition-colors"
+                onClick={() => {
+                  try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.reload();
+                  } catch (e) { }
+                }}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Bersihkan Cache & Refresh
+              </Button>
+            )}
           </Alert>
         )}
 

@@ -10,7 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { KeyRound, Loader2, Eye, EyeOff, Store, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { KeyRound, Loader2, Eye, EyeOff, Store, ArrowLeft, ShieldAlert, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -263,7 +263,24 @@ export function StoreLoginPage() {
                                     {error}
                                 </DialogDescription>
                             </DialogHeader>
-                            <DialogFooter className="sm:justify-end">
+                            <DialogFooter className="sm:justify-end gap-2">
+                                {(error.includes('nyangkut') || error.includes('cache') || error.includes('refresh') || error.includes('gagal') || error.includes('kesalahan')) && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => {
+                                            try {
+                                                localStorage.clear();
+                                                sessionStorage.clear();
+                                                window.location.reload();
+                                            } catch (e) { }
+                                        }}
+                                        className="border-2 border-red-800 text-red-800 hover:bg-red-800 hover:text-white rounded-none font-bold"
+                                    >
+                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                        Bersihkan Cache
+                                    </Button>
+                                )}
                                 <Button
                                     type="button"
                                     onClick={() => setError('')}
