@@ -81,19 +81,10 @@ const navigatorLockWithTimeout = async (
     clearTimeout(timer);
 
     if (err.name === 'AbortError') {
-      // Lock acquisition timed out = deadlock detected
-      // Clear corrupt auth tokens to break the deadlock cycle
-      try {
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
-            logger.warn(`[LockManager] Removing corrupt token: ${key}`);
-            localStorage.removeItem(key);
-          }
-        }
-      } catch (e) { /* ignore storage errors */ }
-
-      // Proceed without the lock — this is safe for single-tab usage
+      // Lock acquisition timed out = likely deadlock
+      // DO NOT clear auth tokens here — that causes false "session expired" on tab switch.
+      // Instead, just proceed without the lock. This is safe for single-tab usage.
+      // Token clearing is only done during explicit signIn deadlock recovery in AuthContext.
       return await fn();
     }
 

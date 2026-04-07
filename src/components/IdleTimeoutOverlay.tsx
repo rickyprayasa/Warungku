@@ -12,93 +12,144 @@ const WARNING_BEFORE_MS = 60 * 1000;     // Show warning 1 minute before timeout
  * After 10 minutes of inactivity, shows a full-screen overlay
  * prompting the user to re-login, preventing the app from
  * silently hanging due to expired/deadlocked sessions.
+ * 
+ * Uses real timestamps (Date.now()) instead of setTimeout to
+ * avoid issues with browser throttling timers in background tabs.
  */
 export function IdleTimeoutOverlay() {
     const { isAuthenticated, signOut } = useAuth();
     const [isIdle, setIsIdle] = useState(false);
     const [showWarning, setShowWarning] = useState(false);
     const [countdown, setCountdown] = useState(60);
-    const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Use refs for real timestamps instead of relying on setTimeout
+    const lastActivityRef = useRef(Date.now());
+    const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const clearAllTimers = useCallback(() => {
-        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-        if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
-        if (countdownRef.current) clearInterval(countdownRef.current);
-        idleTimerRef.current = null;
-        warningTimerRef.current = null;
-        countdownRef.current = null;
-    }, []);
+    // Record user activity with throttling
+    const recordActivity = useCallback(() => {
+        lastActivityRef.current = Date.now();
 
-    const resetTimer = useCallback(() => {
-        // Don't reset if already timed out
-        if (isIdle) return;
-
-        clearAllTimers();
-        setShowWarning(false);
-        setCountdown(60);
-
-        // Set warning timer (fires 1 min before idle timeout)
-        warningTimerRef.current = setTimeout(() => {
-            setShowWarning(true);
-            setCountdown(60);
-
-            // Start countdown
-            countdownRef.current = setInterval(() => {
-                setCountdown(prev => {
-                    if (prev <= 1) {
-                        if (countdownRef.current) clearInterval(countdownRef.current);
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-        }, IDLE_TIMEOUT_MS - WARNING_BEFORE_MS);
-
-        // Set idle timeout
-        idleTimerRef.current = setTimeout(() => {
-            setIsIdle(true);
+        // If warning is showing and user interacts, dismiss it
+        if (showWarning) {
             setShowWarning(false);
-            clearAllTimers();
-        }, IDLE_TIMEOUT_MS);
-    }, [isIdle, clearAllTimers]);
+            setCountdown(60);
+            if (countdownRef.current) {
+                clearInterval(countdownRef.current);
+                countdownRef.current = null;
+            }
+        }
+    }, [showWarning]);
 
-    // Activity event listener
+    // Activity event listeners
     useEffect(() => {
         if (!isAuthenticated) {
-            clearAllTimers();
             setIsIdle(false);
             setShowWarning(false);
             return;
         }
 
-        const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'];
+        const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
 
-        // Throttled reset - don't fire on every pixel of mouse movement
-        let lastReset = Date.now();
-        const throttledReset = () => {
+        // Throttle to max once per 3 seconds to avoid perf issues
+        let lastRecorded = 0;
+        const throttledRecord = () => {
             const now = Date.now();
-            if (now - lastReset > 5000) { // Max once per 5 seconds
-                lastReset = now;
-                resetTimer();
+            if (now - lastRecorded > 3000) {
+                lastRecorded = now;
+                recordActivity();
             }
         };
 
-        activityEvents.forEach(event => {
-            window.addEventListener(event, throttledReset, { passive: true });
-        });
+        // Also record activity on mousemove but with heavier throttle (10s)
+        let lastMouseMove = 0;
+        const throttledMouseMove = () => {
+            const now = Date.now();
+            if (now - lastMouseMove > 10000) {
+                lastMouseMove = now;
+                recordActivity();
+            }
+        };
 
-        // Start initial timer
-        resetTimer();
+        events.forEach(event => {
+            window.addEventListener(event, throttledRecord, { passive: true });
+        });
+        window.addEventListener('mousemove', throttledMouseMove, { passive: true });
 
         return () => {
-            activityEvents.forEach(event => {
-                window.removeEventListener(event, throttledReset);
+            events.forEach(event => {
+                window.removeEventListener(event, throttledRecord);
             });
-            clearAllTimers();
+            window.removeEventListener('mousemove', throttledMouseMove);
         };
-    }, [isAuthenticated, resetTimer, clearAllTimers]);
+    }, [isAuthenticated, recordActivity]);
+
+    // Check idle status using real timestamps (runs every 15 seconds)
+    // This approach is immune to browser timer throttling in background tabs
+    useEffect(() => {
+        if (!isAuthenticated || isIdle) {
+            if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+            return;
+        }
+
+        checkIntervalRef.current = setInterval(() => {
+            const elapsed = Date.now() - lastActivityRef.current;
+
+            if (elapsed >= IDLE_TIMEOUT_MS) {
+                // Full timeout reached
+                setIsIdle(true);
+                setShowWarning(false);
+                if (countdownRef.current) clearInterval(countdownRef.current);
+                if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+            } else if (elapsed >= IDLE_TIMEOUT_MS - WARNING_BEFORE_MS && !showWarning) {
+                // Warning threshold reached
+                setShowWarning(true);
+                const remaining = Math.ceil((IDLE_TIMEOUT_MS - elapsed) / 1000);
+                setCountdown(remaining);
+
+                // Start countdown based on real time
+                if (countdownRef.current) clearInterval(countdownRef.current);
+                countdownRef.current = setInterval(() => {
+                    const nowElapsed = Date.now() - lastActivityRef.current;
+                    const timeLeft = Math.ceil((IDLE_TIMEOUT_MS - nowElapsed) / 1000);
+                    if (timeLeft <= 0) {
+                        setIsIdle(true);
+                        setShowWarning(false);
+                        if (countdownRef.current) clearInterval(countdownRef.current);
+                        if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+                    } else {
+                        setCountdown(timeLeft);
+                    }
+                }, 1000);
+            }
+        }, 15000); // Check every 15 seconds
+
+        return () => {
+            if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+            if (countdownRef.current) clearInterval(countdownRef.current);
+        };
+    }, [isAuthenticated, isIdle, showWarning]);
+
+    // Also check on tab visibility change (user returns to tab)
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const handleVisibility = () => {
+            if (document.visibilityState !== 'visible') return;
+
+            const elapsed = Date.now() - lastActivityRef.current;
+            if (elapsed >= IDLE_TIMEOUT_MS) {
+                setIsIdle(true);
+                setShowWarning(false);
+            }
+            // Do NOT show warning just because the tab became visible.
+            // The regular interval check handles that.
+        };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
+    }, [isAuthenticated]);
 
     const handleRelogin = async () => {
         try {
@@ -120,6 +171,7 @@ export function IdleTimeoutOverlay() {
         setIsIdle(false);
         setShowWarning(false);
         setCountdown(60);
+        lastActivityRef.current = Date.now();
         // Try refreshing the page to get a fresh session
         window.location.reload();
     };
@@ -140,9 +192,7 @@ export function IdleTimeoutOverlay() {
                             </p>
                             <button
                                 onClick={() => {
-                                    setShowWarning(false);
-                                    setIsIdle(false);
-                                    resetTimer();
+                                    recordActivity();
                                 }}
                                 className="mt-2 px-3 py-1.5 bg-yellow-500 text-brand-black border-2 border-yellow-700 font-mono font-bold text-xs hover:bg-yellow-400 transition-colors"
                             >

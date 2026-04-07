@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSession } from '@/components/SessionProvider';
@@ -7,6 +7,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
+
+const LOADING_TIMEOUT_MS = 15000; // 15 seconds
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, loading, store, refreshStore, user } = useAuth();
@@ -19,6 +21,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
   const hasFetched = useRef(false);
   const isRefreshing = useRef(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+
+  // Loading timeout safety net — if loading takes > 15s, show fallback UI
+  useEffect(() => {
+    if (!loading) {
+      setLoadingTimedOut(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setLoadingTimedOut(true);
+    }, LOADING_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   // Set store ID and fetch settings when authenticated
   useEffect(() => {
@@ -64,6 +81,50 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }, [isAuthenticated, store, fetchCurrentUser, user]);
 
   if (loading) {
+    if (loadingTimedOut) {
+      // Safety net: loading took too long, show retry options
+      return (
+        <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50 p-4">
+          <div className="text-center max-w-sm">
+            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-100 border-2 border-yellow-400 flex items-center justify-center">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <p className="font-display font-bold text-lg text-brand-black mb-2">
+              Memuat data terlalu lama
+            </p>
+            <p className="font-mono text-sm text-muted-foreground mb-6">
+              Koneksi mungkin bermasalah atau sesi Anda perlu diperbarui.
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full py-3 px-6 bg-brand-orange text-brand-black border-2 border-brand-black font-bold font-mono shadow-hard hover:bg-brand-black hover:text-white transition-all"
+              >
+                🔄 Coba Lagi
+              </button>
+              <button
+                onClick={() => {
+                  // Clear corrupt tokens and redirect to login
+                  try {
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                      const key = localStorage.key(i);
+                      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                        localStorage.removeItem(key);
+                      }
+                    }
+                  } catch (e) { /* ignore */ }
+                  window.location.href = '/login';
+                }}
+                className="w-full py-3 px-6 bg-white text-brand-black border-2 border-brand-black font-bold font-mono hover:bg-gray-100 transition-all"
+              >
+                🔑 Login Ulang
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-orange"></div>

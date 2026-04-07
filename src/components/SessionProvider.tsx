@@ -73,44 +73,38 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         return unsubscribe;
     }, []);
 
-    // Check session on tab visibility change (user returns after idle)
+    // Check session on tab visibility change (user returns after being away)
     useEffect(() => {
+        let hiddenSince: number | null = null;
+
         const handleVisibilityChange = async () => {
-            if (document.visibilityState === 'visible') {
-                logger.debug('Tab became visible, checking session...');
-                try {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (!session) {
-                        // Try refresh before showing modal
-                        const { data, error } = await supabase.auth.refreshSession();
-                        if (error || !data.session) {
-                            logger.warn('Session invalid on tab return');
-                            const path = window.location.pathname;
-                            const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
-                            setIsSessionValid(false);
-                            if (isProtectedRoute) {
-                                setIsModalOpen(true);
-                            }
-                        } else {
-                            setIsSessionValid(true);
-                        }
-                    } else {
-                        // Check if about to expire
-                        const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
-                        const timeUntilExpiry = expiresAt - Date.now();
-                        if (timeUntilExpiry < 10 * 60 * 1000) { // Less than 10 minutes
-                            await supabase.auth.refreshSession();
-                        }
-                        setIsSessionValid(true);
-                    }
-                } catch (err: any) {
-                    logger.error('Error checking session on visibility', {}, err);
+            if (document.visibilityState === 'hidden') {
+                hiddenSince = Date.now();
+                return;
+            }
 
-                    // Supabase gotrue-js can throw Navigator LockManager timeouts if another tab is doing auth stuff.
-                    // This doesn't mean the session is expired, it just means we couldn't check it right now.
-                    const isLockTimeout = err?.message?.includes('LockManager') || err?.message?.includes('timed out');
+            // Tab became visible again
+            if (document.visibilityState !== 'visible') return;
 
-                    if (!isLockTimeout) {
+            const awayDuration = hiddenSince ? Date.now() - hiddenSince : 0;
+            hiddenSince = null;
+
+            // Don't check session if user was only away briefly (< 2 minutes)
+            // This prevents false "session expired" dialogs from tab switching
+            if (awayDuration < 2 * 60 * 1000) {
+                logger.debug(`Tab visible again after ${Math.round(awayDuration / 1000)}s — skipping session check`);
+                return;
+            }
+
+            logger.debug(`Tab visible after ${Math.round(awayDuration / 1000)}s away, checking session...`);
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    // Try refresh before showing modal
+                    const { data, error } = await supabase.auth.refreshSession();
+                    if (error || !data.session) {
+                        logger.warn('Session truly expired after extended absence');
                         const path = window.location.pathname;
                         const isProtectedRoute = ['/dashboard', '/pos', '/admin', '/opname', '/upgrade'].some(route => path.startsWith(route));
                         setIsSessionValid(false);
@@ -118,9 +112,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
                             setIsModalOpen(true);
                         }
                     } else {
-                        logger.warn('Ignoring LockManager timeout error - session is likely still valid');
+                        setIsSessionValid(true);
                     }
+                } else {
+                    // Check if about to expire
+                    const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+                    const timeUntilExpiry = expiresAt - Date.now();
+                    if (timeUntilExpiry < 10 * 60 * 1000) { // Less than 10 minutes
+                        await supabase.auth.refreshSession();
+                    }
+                    setIsSessionValid(true);
                 }
+            } catch (err: any) {
+                // On ANY error during visibility check, do NOT show the modal.
+                // The global lock timeout fix handles deadlocks, and transient
+                // errors should not lock the user out of the app.
+                logger.warn('Session check on visibility failed (ignored):', err?.message);
             }
         };
 
@@ -274,13 +281,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
         setIsLoading(true);
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            // Use a timeout to prevent hanging on deadlocked auth
+            const signInPromise = supabase.auth.signInWithPassword({
                 email: email.trim(),
                 password: password.trim(),
             });
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT')), 10000);
+            });
+
+            const { error } = await Promise.race([signInPromise, timeoutPromise]);
 
             if (error) {
                 toast.error(error.message);
+                setIsLoading(false);
                 return;
             }
 
@@ -290,11 +304,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             setEmail('');
             setPassword('');
 
-            // Refresh the page data
-            window.location.reload();
-        } catch (err) {
-            toast.error('Gagal login. Coba lagi.');
-        } finally {
+            // Hard redirect to dashboard to ensure full clean re-initialization
+            window.location.href = '/dashboard';
+        } catch (err: any) {
+            if (err?.message === 'TIMEOUT') {
+                // Clear corrupt tokens and redirect to login page
+                try {
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                            localStorage.removeItem(key);
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+                toast.error('Sesi bermasalah. Mengarahkan ke halaman login...');
+                setTimeout(() => { window.location.href = '/login'; }, 1000);
+            } else {
+                toast.error('Gagal login. Coba lagi.');
+            }
             setIsLoading(false);
         }
     };
@@ -302,18 +329,29 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const handleRefreshSession = async () => {
         setIsLoading(true);
         try {
-            const { error } = await supabase.auth.refreshSession();
+            const refreshPromise = supabase.auth.refreshSession();
+            const timeoutPromise = new Promise<never>((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT')), 10000);
+            });
+
+            const { error } = await Promise.race([refreshPromise, timeoutPromise]);
             if (error) {
                 toast.error('Session tidak dapat diperpanjang. Silakan login kembali.');
+                setIsLoading(false);
                 return;
             }
 
             toast.success('Session berhasil diperpanjang!');
             setIsSessionValid(true);
             setIsModalOpen(false);
-        } catch (err) {
-            toast.error('Gagal memperpanjang session.');
-        } finally {
+            // Hard redirect to re-initialize all contexts cleanly
+            window.location.href = '/dashboard';
+        } catch (err: any) {
+            if (err?.message === 'TIMEOUT') {
+                toast.error('Gagal memperpanjang session. Coba login ulang.');
+            } else {
+                toast.error('Gagal memperpanjang session.');
+            }
             setIsLoading(false);
         }
     };
