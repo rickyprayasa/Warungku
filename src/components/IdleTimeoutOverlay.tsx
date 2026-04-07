@@ -151,19 +151,24 @@ export function IdleTimeoutOverlay() {
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [isAuthenticated]);
 
-    const handleRelogin = async () => {
+    const handleRelogin = () => {
         try {
-            // Clear all Supabase auth tokens
+            // Clear all Supabase auth tokens immediately to break any deadlocks
             for (let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i);
                 if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
                     localStorage.removeItem(key);
                 }
             }
-            await signOut();
+
+            // Fire and forget signOut, do NOT await it because it might hang
+            // if the LockManager is deadlocked.
+            signOut().catch(() => { });
         } catch {
-            // Force redirect even if signOut fails
+            // Ignore errors
         }
+
+        // Hard redirect immediately
         window.location.href = '/login';
     };
 
