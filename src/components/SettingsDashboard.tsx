@@ -599,6 +599,47 @@ export function SettingsDashboard() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                <TabsContent value="system" className="space-y-6">
+                    <Card className="border-4 border-brand-black rounded-none shadow-hard">
+                        <CardHeader className="border-b-2 border-brand-black bg-gray-50">
+                            <div className="flex items-center gap-3">
+                                <SettingsIcon className="w-6 h-6 text-brand-black" />
+                                <div>
+                                    <CardTitle className="font-display text-xl">Pengaturan Antarmuka</CardTitle>
+                                    <CardDescription className="font-mono">
+                                        Sesuaikan pengalaman penggunaan Omzetin
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6">
+                            <div className="flex items-center justify-between border-b border-gray-200 pb-6">
+                                <div className="space-y-0.5">
+                                    <h4 className="font-bold font-mono">Onboarding Tour (Panduan)</h4>
+                                    <p className="text-sm text-muted-foreground font-mono">
+                                        Tampilkan panduan interaktif saat membuka fitur baru. Matikan jika dirasa mengganggu.
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={localStorage.getItem('onboarding-tours-disabled') !== 'true'}
+                                    onCheckedChange={(checked) => {
+                                        if (checked) {
+                                            localStorage.removeItem('onboarding-tours-disabled');
+                                        } else {
+                                            localStorage.setItem('onboarding-tours-disabled', 'true');
+                                            // Make sure any active tours are skipped instantly
+                                            localStorage.setItem('has-seen-onboarding-tour', 'true');
+                                        }
+                                        // Force state update to reflect changes
+                                        window.dispatchEvent(new Event('storage'));
+                                        toast.success(checked ? 'Panduan diaktifkan' : 'Panduan dinonaktifkan');
+                                    }}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
 
             <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>

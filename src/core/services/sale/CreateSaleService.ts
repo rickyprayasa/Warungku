@@ -15,6 +15,7 @@ export interface CreateSaleInput {
     saleType?: string;
     notes?: string;
     createdBy?: string;
+    status?: 'pending' | 'completed' | 'cancelled';
 }
 
 export class CreateSaleService implements IService<CreateSaleInput, SaleRow> {
@@ -46,7 +47,7 @@ export class CreateSaleService implements IService<CreateSaleInput, SaleRow> {
             store_id: input.storeId,
             total: totalRevenue,
             profit: totalProfit,
-            sale_type: input.saleType || 'cash',
+            sale_type: input.status === 'pending' ? 'piutang' : (input.saleType || 'cash'),
             notes: input.notes || '',
             created_by: input.createdBy
         };

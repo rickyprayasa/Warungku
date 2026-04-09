@@ -38,9 +38,15 @@ export class PermissionService {
     let role = UserRole.STORE_MEMBER; // default
 
     try {
-      const { data, error } = await (supabase.rpc as any)('get_user_role_data', {
+      // Prevent indefinite hang if RPC deadlocks
+      const rpcPromise = (supabase.rpc as any)('get_user_role_data', {
         p_user_id: userId
       });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('RPC Timeout')), 5000)
+      );
+
+      const { data, error } = await Promise.race([rpcPromise, timeoutPromise]) as any;
 
       if (!error && data && data.length > 0) {
         const userData = data[0];
@@ -57,7 +63,7 @@ export class PermissionService {
         console.warn('[PermissionService] RPC error:', error.message);
       }
     } catch (error) {
-      console.error('[PermissionService] Error fetching user role:', error);
+      console.warn('[PermissionService] Failed to fetch user role (timeout or error):', error);
     }
 
     log('[PermissionService] Role resolved:', role);

@@ -83,6 +83,7 @@ export const saleSchema = z.object({
   customerPhone: z.string().optional(),
   customerAddress: z.string().optional(),
   paymentProofUrl: z.string().optional(),
+  status: z.enum(['pending', 'completed', 'cancelled']).optional().default('completed'),
 });
 export type SaleFormValues = z.infer<typeof saleSchema>;
 // Types for Purchases

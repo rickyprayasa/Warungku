@@ -38,6 +38,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
   const [isDisplaySale, setIsDisplaySale] = useState(false);
   const [printAfterSave, setPrintAfterSave] = useState(false);
   const [whatsappAfterSave, setWhatsappAfterSave] = useState(false);
+  const [isPiutang, setIsPiutang] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [savedSale, setSavedSale] = useState<Sale | null>(null);
   const [notes, setNotes] = useState('');
@@ -68,6 +69,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
     const saleData = {
       ...values,
       saleType: isDisplaySale ? 'display' as const : 'retail' as const,
+      status: isPiutang ? 'pending' as const : 'completed' as const,
       notes: notes.trim() || undefined,
     };
 
@@ -86,6 +88,7 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
     });
     setNotes('');
     setIsDisplaySale(false);
+    setIsPiutang(false);
     onSuccess();
   };
 
@@ -279,8 +282,18 @@ export function SaleForm({ onSuccess }: SaleFormProps) {
           />
 
           {/* Receipt Options */}
-          <div className="flex gap-4 mb-4">
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap gap-4 mb-4 p-2 bg-gray-50 border-2 border-brand-black/10 rounded">
+            <div className="flex items-center space-x-2 mr-4">
+              <Switch
+                id="piutang-mode-sale"
+                checked={isPiutang}
+                onCheckedChange={setIsPiutang}
+              />
+              <label htmlFor="piutang-mode-sale" className="text-sm font-bold flex items-center cursor-pointer text-red-600">
+                Catat Piutang
+              </label>
+            </div>
+            <div className="flex items-center space-x-2 border-l-2 pl-4 border-gray-300">
               <Switch
                 id="print-mode"
                 checked={printAfterSave}

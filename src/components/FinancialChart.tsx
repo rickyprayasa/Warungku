@@ -1,12 +1,16 @@
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+
 interface ChartData {
   name: string;
   revenue: number;
   profit: number;
+  purchases?: number;
 }
+
 interface FinancialChartProps {
   data: ChartData[];
 }
+
 export function FinancialChart({ data }: FinancialChartProps) {
   if (data.length === 0) {
     return (
@@ -15,6 +19,9 @@ export function FinancialChart({ data }: FinancialChartProps) {
       </div>
     );
   }
+
+  const hasPurchases = data.some(d => (d.purchases ?? 0) > 0);
+
   return (
     <div className="h-[350px]">
       <ResponsiveContainer width="100%" height="100%">
@@ -44,8 +51,14 @@ export function FinancialChart({ data }: FinancialChartProps) {
             }}
             formatter={(value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)}
           />
+          <Legend
+            wrapperStyle={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}
+          />
           <Bar dataKey="revenue" fill="rgb(243, 128, 32)" radius={[4, 4, 0, 0]} name="Pendapatan Kotor" />
           <Bar dataKey="profit" fill="rgb(17, 17, 17)" radius={[4, 4, 0, 0]} name="Laba Bersih" />
+          {hasPurchases && (
+            <Bar dataKey="purchases" fill="rgb(156, 163, 175)" radius={[4, 4, 0, 0]} name="Pembelian" />
+          )}
         </BarChart>
       </ResponsiveContainer>
     </div>

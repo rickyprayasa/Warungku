@@ -185,13 +185,13 @@ function toSale(row: any, items: any[], cashierMap?: Map<string, string>): Sale 
     id: row.id,
     total: Number(row.total),
     profit: Number(row.profit),
-    saleType: row.sale_type || 'retail',
+    saleType: row.sale_type === 'piutang' ? 'retail' : (row.sale_type || 'retail'),
     notes: row.notes || '',
     customerName: row.customer_name || undefined,
     customerPhone: row.customer_phone || undefined,
     customerAddress: row.customer_address || undefined,
     paymentProofUrl: row.payment_proof_url || undefined,
-    status: row.status || 'completed',
+    status: row.sale_type === 'piutang' ? 'pending' : 'completed',
     createdAt: new Date(row.created_at).getTime(),
     userId: row.user_id || undefined,
     cashierName: (row.user_id && cashierMap) ? cashierMap.get(row.user_id) : undefined,
@@ -892,9 +892,14 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         // Priority 0: Try using RPC (most robust, bypasses RLS)
         try {
           console.warn('[fetchCurrentUser] Calling RPC get_my_role...');
-          const rpcResult = await (supabase.rpc as any)('get_my_role', {
+          const rpcPromise = (supabase.rpc as any)('get_my_role', {
             p_store_id: storeId
           });
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('RPC get_my_role Timeout')), 5000)
+          );
+
+          const rpcResult = await Promise.race([rpcPromise, timeoutPromise]) as any;
           const { data: role, error: rpcError } = rpcResult || {};
           console.warn('[fetchCurrentUser] RPC result:', { role, error: rpcError?.message });
 
@@ -1449,7 +1454,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             saleType: (saleData as any).saleType || 'retail',
             notes: saleData.notes,
             customerName: saleData.customerName,
-            status: 'completed',
+            status: saleData.status || 'completed',
             cashierName: 'Ryus (Demo Owner)'
           };
 
@@ -1507,7 +1512,8 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             items,
             saleType: (saleData as any).saleType || 'retail',
             notes: saleData.notes || '',
-            createdBy: get().currentUser?.id
+            createdBy: get().currentUser?.id,
+            status: saleData.status || 'completed'
           });
 
           if (!response.success) throw new Error(response.error);

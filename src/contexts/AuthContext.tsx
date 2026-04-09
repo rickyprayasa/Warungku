@@ -903,16 +903,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateStore(null);
       setMustChangePassword(false);
 
-      // Clear ALL storage to prevent data leakage, BUT preserve tour history
-      const tourKeys = Object.keys(localStorage).filter(key => key.startsWith('has-seen-'));
-      const tourData = tourKeys.map(key => ({ key, value: localStorage.getItem(key) }));
+      // Clear ALL storage to prevent data leakage, BUT preserve tour history and UI settings
+      const keysToPreserve = Object.keys(localStorage).filter(key =>
+        key.startsWith('has-seen-') ||
+        key === 'onboarding-tours-disabled' ||
+        key === 'vite-ui-theme' ||
+        key === 'omzetin-theme'
+      );
+      const preservedData = keysToPreserve.map(key => ({ key, value: localStorage.getItem(key) }));
 
       localStorage.clear();
       sessionStorage.clear();
 
-      // Restore tour history
-      tourData.forEach(({ key, value }) => {
-        if (value) localStorage.setItem(key, value);
+      // Restore preserved data
+      preservedData.forEach(({ key, value }) => {
+        if (value !== null) localStorage.setItem(key, value);
       });
 
       // Clear specific keys just in case

@@ -36,6 +36,7 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
     const [isDisplaySale, setIsDisplaySale] = useState(false);
     const [printAfterSave, setPrintAfterSave] = useState(false);
     const [whatsappAfterSave, setWhatsappAfterSave] = useState(false);
+    const [isPiutang, setIsPiutang] = useState(false);
     const [showReceiptDialog, setShowReceiptDialog] = useState(false);
     const [savedSale, setSavedSale] = useState<Sale | null>(null);
     const [notes, setNotes] = useState('');
@@ -134,6 +135,7 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
         const saleData = {
             ...values,
             saleType: isDisplaySale ? 'display' as const : 'retail' as const,
+            status: isPiutang ? 'pending' as const : 'completed' as const,
             notes: notes.trim() || undefined,
         };
 
@@ -155,6 +157,7 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
 
             form.reset({ items: [] });
             setNotes('');
+            setIsPiutang(false);
         } catch (e) {
             // toast handled by promise
         }
@@ -373,7 +376,7 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
                         <span className="font-bold text-2xl text-brand-orange leading-none">{formatCurrency(total)}</span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="grid grid-cols-2 gap-3 text-xs mb-2">
                         {opnameMode !== 'retail' && (
                             <div className="flex items-center gap-2 p-2 rounded border border-brand-black/10 bg-white">
                                 <Switch checked={isDisplaySale} onCheckedChange={setIsDisplaySale} id="mode-display" className="scale-75 origin-left" />
@@ -381,8 +384,12 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
                             </div>
                         )}
                         <div className="flex items-center gap-2 p-2 rounded border border-brand-black/10 bg-white">
+                            <Switch checked={isPiutang} onCheckedChange={setIsPiutang} id="mode-piutang" className="scale-75 origin-left" />
+                            <label htmlFor="mode-piutang" className="cursor-pointer font-bold text-red-600">Catat Piutang</label>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 rounded border border-brand-black/10 bg-white col-span-2">
                             <Switch checked={printAfterSave} onCheckedChange={setPrintAfterSave} id="print-opt" className="scale-75 origin-left" />
-                            <label htmlFor="print-opt" className="cursor-pointer font-bold text-brand-black">Cetak Struk</label>
+                            <label htmlFor="print-opt" className="cursor-pointer font-bold text-brand-black">Cetak Struk Otomatis</label>
                         </div>
                     </div>
 

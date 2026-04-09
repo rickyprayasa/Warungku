@@ -169,8 +169,9 @@ export function OnboardingTour({ tourId = 'onboarding-tour', steps, runOnce = tr
         // isActive && !loading: create driver and auto-start if not seen
         const storageKey = `has-seen-${tourId}`;
         const hasSeenTour = localStorage.getItem(storageKey);
+        const toursDisabled = localStorage.getItem('onboarding-tours-disabled') === 'true';
 
-        if (runOnce && hasSeenTour) {
+        if ((runOnce && hasSeenTour) || toursDisabled) {
             // Still create the driver so handleRestart works, but don't auto-start
             createDriver();
             return () => { destroyDriver(); };

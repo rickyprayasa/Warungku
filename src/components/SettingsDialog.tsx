@@ -461,295 +461,324 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 mb-4 border-2 border-brand-black p-0 bg-transparent gap-0">
+                    <TabsList className={`grid w-full ${isDemo ? 'grid-cols-1' : 'grid-cols-2'} mb-4 border-2 border-brand-black p-0 bg-transparent gap-0`}>
                         <TabsTrigger
                             value="system"
                             className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase border-r-2 border-brand-black"
                         >
-                            System
+                            System & Konfigurasi
                         </TabsTrigger>
                         {!isDemo && (
                             <TabsTrigger
                                 value="team"
-                                className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase border-r-2 border-brand-black"
+                                className="rounded-none data-[state=active]:bg-brand-black data-[state=active]:text-white font-mono font-bold uppercase"
                             >
-                                Team
+                                Bisnis & Tim
                             </TabsTrigger>
                         )}
                     </TabsList>
 
                     <TabsContent value="system" className="space-y-4 py-2">
-                        {/* Opname Configuration Section - Move to top for clarity */}
-                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-                            <div className="border-2 border-brand-black p-4 space-y-3 bg-blue-50">
-                                <h3 className="font-mono font-bold flex items-center gap-2">
-                                    <Package className="w-4 h-4" />
-                                    Mode Penjualan
-                                </h3>
+                        <div className="space-y-4 max-w-3xl mx-auto">
+                            {/* Opname Configuration Section */}
+                            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                                <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                    <h3 className="font-mono font-bold flex items-center gap-2">
+                                        <Package className="w-4 h-4" />
+                                        Mode Penjualan
+                                    </h3>
 
-                                <div>
-                                    <label className="text-sm font-mono font-bold mb-2 block">
-                                        Pilih Mode Penjualan
-                                    </label>
-                                    <select
-                                        value={opnameMode}
-                                        onChange={(e) => handleModeChange(e.target.value)}
-                                        className="w-full border-2 border-brand-black p-2 font-mono rounded-none"
-                                    >
-                                        <option value="retail">Retail - Stok dikurangi saat penjualan → Rekon Stok</option>
-                                        <option value="display">Display - Stok dikurangi di awal → Rekon Kas</option>
-                                        <option value="terpadu">Terpadu - Self-service → Rekon Kas + Stok sekaligus</option>
-                                    </select>
-                                </div>
-
-                                {opnameMode === 'display' && (
-                                    <Alert className="border-2 border-purple-500 bg-purple-50">
-                                        <AlertDescription className="text-xs font-mono text-purple-800">
-                                            <strong>Mode Display Aktif:</strong> Stok sudah dikurangi saat dipajang.
-                                            Profit dihitung dari rekonsiliasi kas harian.
-                                            Fitur keranjang TIDAK tersedia di mode ini.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-
-                                {opnameMode === 'retail' && (
-                                    <Alert className="border-2 border-blue-500 bg-blue-100">
-                                        <AlertDescription className="text-xs font-mono text-blue-800">
-                                            <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan.
-                                            Cocok untuk warung dengan kasir atau self-checkout via QRIS.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-
-                                {opnameMode === 'terpadu' && (
-                                    <Alert className="border-2 border-green-500 bg-green-50">
-                                        <AlertDescription className="text-xs font-mono text-green-800">
-                                            <strong>Mode Terpadu Aktif:</strong> Cocok untuk warung self-service.
-                                            Rekonsiliasi kas dan stok dilakukan sekaligus. Selisih stok otomatis
-                                            di-generate sebagai penjualan cash.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Cart & QRIS Settings - Only show if NOT in display mode */}
-                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && opnameMode !== 'display' && (
-                            <div className="border-2 border-brand-black p-4 space-y-3 bg-green-50">
-                                <h3 className="font-mono font-bold flex items-center gap-2">
-                                    <ShoppingCart className="w-4 h-4" />
-                                    Fitur Keranjang & Self-Checkout
-                                </h3>
-
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label htmlFor="cart-toggle" className="font-mono font-bold text-sm">
-                                            Aktifkan Keranjang Belanja
-                                        </Label>
-                                        <p className="text-xs text-muted-foreground font-mono">
-                                            Pengunjung dapat self-checkout via QRIS
-                                        </p>
+                                    <div>
+                                        <label className="text-sm font-mono font-bold mb-2 block">
+                                            Pilih Mode Penjualan
+                                        </label>
+                                        <select
+                                            value={opnameMode}
+                                            onChange={(e) => handleModeChange(e.target.value)}
+                                            className="w-full border-2 border-brand-black p-2 font-mono rounded-none outline-none focus:ring-2 focus:ring-brand-black"
+                                        >
+                                            <option value="retail">Retail - Stok dikurangi saat penjualan → Rekon Stok</option>
+                                            <option value="display">Display - Stok dikurangi di awal → Rekon Kas</option>
+                                            <option value="terpadu">Terpadu - Self-service → Rekon Kas + Stok sekaligus</option>
+                                        </select>
                                     </div>
-                                    <Switch
-                                        id="cart-toggle"
-                                        checked={isCartEnabled}
-                                        onCheckedChange={handleToggleCart}
-                                    />
-                                </div>
 
-                                {isCartEnabled && !storeProfile.qrisCode && (
-                                    <Alert className="border-2 border-yellow-500 bg-yellow-50">
-                                        <AlertDescription className="text-xs font-mono text-yellow-800">
-                                            ⚠️ QRIS belum di-setup. Pengunjung tidak akan bisa checkout.
-                                            Setup QRIS di menu "Setup QRIS" di sidebar.
+                                    {opnameMode === 'display' && (
+                                        <Alert className="border-2 border-purple-500 bg-purple-50 rounded-none">
+                                            <AlertDescription className="text-xs font-mono text-purple-800">
+                                                <strong>Mode Display Aktif:</strong> Stok sudah dikurangi saat dipajang.
+                                                Profit dihitung dari rekonsiliasi kas harian.
+                                                Fitur keranjang TIDAK tersedia di mode ini.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+
+                                    {opnameMode === 'retail' && (
+                                        <Alert className="border-2 border-blue-500 bg-blue-100 rounded-none">
+                                            <AlertDescription className="text-xs font-mono text-blue-800">
+                                                <strong>Mode Retail:</strong> Stok dikurangi saat terjadi penjualan.
+                                                Cocok untuk warung dengan kasir atau self-checkout via QRIS.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+
+                                    {opnameMode === 'terpadu' && (
+                                        <Alert className="border-2 border-green-500 bg-green-50 rounded-none">
+                                            <AlertDescription className="text-xs font-mono text-green-800">
+                                                <strong>Mode Terpadu Aktif:</strong> Cocok untuk warung self-service.
+                                                Rekonsiliasi kas dan stok dilakukan sekaligus. Selisih stok otomatis
+                                                di-generate sebagai penjualan cash.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Cart & QRIS Settings - Only show if NOT in display mode */}
+                            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && opnameMode !== 'display' && (
+                                <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                    <h3 className="font-mono font-bold flex items-center gap-2">
+                                        <ShoppingCart className="w-4 h-4" />
+                                        Fitur Keranjang & Self-Checkout
+                                    </h3>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="cart-toggle" className="font-mono font-bold text-sm">
+                                                Aktifkan Keranjang Belanja
+                                            </Label>
+                                            <p className="text-xs text-muted-foreground font-mono pr-4">
+                                                Pengunjung dapat self-checkout via QRIS
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="cart-toggle"
+                                            checked={isCartEnabled}
+                                            onCheckedChange={handleToggleCart}
+                                        />
+                                    </div>
+
+                                    {isCartEnabled && !storeProfile.qrisCode && (
+                                        <Alert className="border-2 border-yellow-500 bg-yellow-50 rounded-none">
+                                            <AlertDescription className="text-xs font-mono text-yellow-800">
+                                                ⚠️ QRIS belum di-setup. Pengunjung tidak akan bisa checkout.
+                                                Setup QRIS di menu "Setup QRIS" di sidebar.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+
+                                    {isCartEnabled && storeProfile.qrisCode && (
+                                        <Alert className="border-2 border-green-500 bg-green-100 rounded-none">
+                                            <AlertDescription className="text-xs font-mono text-green-800">
+                                                ✓ Keranjang aktif dan QRIS sudah di-setup. Pengunjung dapat berbelanja.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+
+                                    <Alert className="border-2 border-orange-500 bg-orange-50 rounded-none">
+                                        <AlertDescription className="text-xs font-mono text-orange-800">
+                                            <strong>Penting:</strong> Pembayaran QRIS tidak bisa diverifikasi otomatis.
+                                            Pengunjung perlu konfirmasi manual setelah membayar.
+                                            Pastikan cek mutasi rekening secara berkala.
                                         </AlertDescription>
                                     </Alert>
-                                )}
-
-                                {isCartEnabled && storeProfile.qrisCode && (
-                                    <Alert className="border-2 border-green-500 bg-green-100">
-                                        <AlertDescription className="text-xs font-mono text-green-800">
-                                            ✓ Keranjang aktif dan QRIS sudah di-setup. Pengunjung dapat berbelanja.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-
-                                <Alert className="border-2 border-orange-500 bg-orange-50">
-                                    <AlertDescription className="text-xs font-mono text-orange-800">
-                                        <strong>Penting:</strong> Pembayaran QRIS tidak bisa diverifikasi otomatis.
-                                        Pengunjung perlu konfirmasi manual setelah membayar.
-                                        Pastikan cek mutasi rekening secara berkala.
-                                    </AlertDescription>
-                                </Alert>
-                            </div>
-                        )}
-
-                        {/* Display mode cart disabled notice */}
-                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && opnameMode === 'display' && (
-                            <div className="border-2 border-gray-300 p-4 space-y-3 bg-gray-50">
-                                <h3 className="font-mono font-bold flex items-center gap-2 text-gray-500">
-                                    <ShoppingCart className="w-4 h-4" />
-                                    Fitur Keranjang (Tidak Tersedia)
-                                </h3>
-                                <p className="text-xs text-muted-foreground font-mono">
-                                    Fitur keranjang tidak tersedia di Mode Display karena stok sudah dikurangi saat dipajang.
-                                    Gunakan Mode Retail jika ingin mengaktifkan fitur self-checkout.
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Data Management Section */}
-                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && !isDemo && (
-                            <div className="border-2 border-brand-black p-4 space-y-3">
-                                <h3 className="font-mono font-bold flex items-center gap-2">
-                                    <Database className="w-4 h-4" />
-                                    Manajemen Data
-                                </h3>
-
-                                <div className="space-y-2">
-                                    <Button
-                                        onClick={handleExportData}
-                                        variant="outline"
-                                        className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
-                                    >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Export Data (Backup)
-                                    </Button>
-
-                                    <Button
-                                        onClick={handleClearCache}
-                                        variant="outline"
-                                        className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
-                                    >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        Clear Cache
-                                    </Button>
-
-                                    <Button
-                                        onClick={handleResetData}
-                                        disabled={isResetting}
-                                        variant="destructive"
-                                        className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
-                                    >
-                                        <AlertTriangle className="w-4 h-4 mr-2" />
-                                        {isResetting ? 'Mereset...' : 'Reset Semua Data'}
-                                    </Button>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Store Category Settings */}
-                        {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
-                            <div className="border-2 border-brand-black p-4 space-y-3 bg-yellow-50">
-                                <h3 className="font-mono font-bold flex items-center gap-2">
-                                    <Store className="w-4 h-4" />
-                                    Kategori Toko
-                                </h3>
-
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-mono font-bold">Jenis Usaha</Label>
-                                    <Select
-                                        value={storeProfile.category || 'Warung'}
-                                        onValueChange={(val) => updateStoreProfile({ ...storeProfile, category: val })}
-                                    >
-                                        <SelectTrigger className="w-full border-2 border-brand-black rounded-none font-mono font-bold bg-white">
-                                            <SelectValue placeholder="Pilih Kategori" />
-                                        </SelectTrigger>
-                                        <SelectContent className="border-2 border-brand-black font-mono">
-                                            <SelectItem value="Warung">Warung / Retail (Umum)</SelectItem>
-                                            <SelectItem value="Material/Bangunan">Material / Bangunan</SelectItem>
-                                            <SelectItem value="F&B">Kuliner / F&B</SelectItem>
-                                            <SelectItem value="Pakaian">Fashion / Pakaian</SelectItem>
-                                            <SelectItem value="Jasa">Jasa / Service</SelectItem>
-                                            <SelectItem value="Pertanian">Pertanian / Agribisnis</SelectItem>
-                                            <SelectItem value="Listrik">Alat Listrik</SelectItem>
-                                            <SelectItem value="Elektronik">Elektronik / Gadget</SelectItem>
-                                            <SelectItem value="Lainnya">Lainnya</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                            {/* Display mode cart disabled notice */}
+                            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && opnameMode === 'display' && (
+                                <div className="border-2 border-gray-300 p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                    <h3 className="font-mono font-bold flex items-center gap-2 text-gray-500">
+                                        <ShoppingCart className="w-4 h-4" />
+                                        Fitur Keranjang (Tidak Tersedia)
+                                    </h3>
                                     <p className="text-xs text-muted-foreground font-mono">
-                                        Pilihan ini akan menentukan opsi <strong>Satuan Barang</strong> yang tersedia saat menambah produk.
+                                        Fitur keranjang tidak tersedia di Mode Display karena stok sudah dikurangi saat dipajang.
+                                        Gunakan Mode Retail jika ingin mengaktifkan fitur self-checkout.
                                     </p>
                                 </div>
+                            )}
+
+                            {/* Store Category Settings */}
+                            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                                <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                    <h3 className="font-mono font-bold flex items-center gap-2">
+                                        <Store className="w-4 h-4" />
+                                        Kategori Toko
+                                    </h3>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-mono font-bold">Jenis Usaha</Label>
+                                        <Select
+                                            value={storeProfile.category || 'Warung'}
+                                            onValueChange={(val) => updateStoreProfile({ ...storeProfile, category: val })}
+                                        >
+                                            <SelectTrigger className="w-full border-2 border-brand-black rounded-none font-mono font-bold bg-white">
+                                                <SelectValue placeholder="Pilih Kategori" />
+                                            </SelectTrigger>
+                                            <SelectContent className="border-2 border-brand-black font-mono">
+                                                <SelectItem value="Warung">Warung / Retail (Umum)</SelectItem>
+                                                <SelectItem value="Material/Bangunan">Material / Bangunan</SelectItem>
+                                                <SelectItem value="F&B">Kuliner / F&B</SelectItem>
+                                                <SelectItem value="Pakaian">Fashion / Pakaian</SelectItem>
+                                                <SelectItem value="Jasa">Jasa / Service</SelectItem>
+                                                <SelectItem value="Pertanian">Pertanian / Agribisnis</SelectItem>
+                                                <SelectItem value="Listrik">Alat Listrik</SelectItem>
+                                                <SelectItem value="Elektronik">Elektronik / Gadget</SelectItem>
+                                                <SelectItem value="Lainnya">Lainnya</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground font-mono">
+                                            Pilihan ini akan menentukan opsi <strong>Satuan Barang</strong> yang tersedia saat menambah produk.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Onboarding Tour Toggle */}
+                            <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                <h3 className="font-mono font-bold flex items-center gap-2">
+                                    <Settings className="w-4 h-4 text-brand-black" />
+                                    Pengaturan Antarmuka
+                                </h3>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="font-mono font-bold text-sm">Onboarding Tour</Label>
+                                        <p className="text-[10px] text-muted-foreground font-mono pr-4">Tampilkan panduan interaktif keseluruhan.</p>
+                                    </div>
+                                    <Switch
+                                        checked={localStorage.getItem('onboarding-tours-disabled') !== 'true'}
+                                        onCheckedChange={(checked) => {
+                                            if (checked) {
+                                                localStorage.removeItem('onboarding-tours-disabled');
+                                            } else {
+                                                localStorage.setItem('onboarding-tours-disabled', 'true');
+                                                localStorage.setItem('has-seen-onboarding-tour', 'true');
+                                            }
+                                            window.dispatchEvent(new Event('storage'));
+                                            toast.success(checked ? 'Panduan diaktifkan' : 'Panduan dinonaktifkan');
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        )}
 
-                        {/* App Info Section */}
-                        <div className="border-2 border-brand-black p-4 space-y-3">
-                            <h3 className="font-mono font-bold flex items-center gap-2">
-                                <Info className="w-4 h-4" />
-                                Informasi Aplikasi
-                            </h3>
+                            {/* Data Management Section */}
+                            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && !isDemo && (
+                                <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                    <h3 className="font-mono font-bold flex items-center gap-2">
+                                        <Database className="w-4 h-4" />
+                                        Manajemen Data
+                                    </h3>
 
-                            <div className="space-y-2 text-sm font-mono">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Versi:</span>
-                                    <span className="font-bold">1.0.0</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Database:</span>
-                                    <span className="font-bold">Supabase</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Storage:</span>
-                                    <span className="font-bold">SQLite</span>
-                                </div>
-                            </div>
-
-                            <Button
-                                onClick={handleAbout}
-                                variant="outline"
-                                className="w-full border-2 border-brand-black rounded-none font-mono"
-                            >
-                                <Info className="w-4 h-4 mr-2" />
-                                Tentang Aplikasi
-                            </Button>
-                        </div>
-
-                        {/* Account Section */}
-                        <div className="border-2 border-brand-black p-4 space-y-3 bg-gray-50">
-                            <h3 className="font-mono font-bold flex items-center gap-2">
-                                <LogOut className="w-4 h-4" />
-                                Akun & Keamanan
-                            </h3>
-
-                            {!isDemo && (
-                                <ChangePasswordDialog
-                                    trigger={
+                                    <div className="space-y-2">
                                         <Button
+                                            onClick={handleExportData}
                                             variant="outline"
                                             className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
                                         >
-                                            <KeyRound className="w-4 h-4 mr-2" />
-                                            Ganti Password
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Export Data (Backup)
                                         </Button>
-                                    }
-                                />
+
+                                        <Button
+                                            onClick={handleClearCache}
+                                            variant="outline"
+                                            className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                        >
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Clear Cache
+                                        </Button>
+
+                                        <Button
+                                            onClick={handleResetData}
+                                            disabled={isResetting}
+                                            variant="destructive"
+                                            className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                        >
+                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                            {isResetting ? 'Mereset...' : 'Reset Semua Data'}
+                                        </Button>
+                                    </div>
+                                </div>
                             )}
 
-                            <Button
-                                onClick={async () => {
-                                    if (window.confirm('Apakah Anda yakin ingin keluar?')) {
-                                        await signOut();
-                                        window.location.href = '/login';
-                                    }
-                                }}
-                                variant="destructive"
-                                className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
-                            >
-                                <LogOut className="w-4 h-4 mr-2" />
-                                Keluar Aplikasi
-                            </Button>
-                        </div>
+                            {/* Account Section */}
+                            <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                <h3 className="font-mono font-bold flex items-center gap-2">
+                                    <LogOut className="w-4 h-4" />
+                                    Akun & Keamanan
+                                </h3>
 
-                        {/* System Info */}
-                        <Alert className="border-2 border-brand-black bg-gradient-to-r from-brand-orange/10 to-brand-white">
-                            <AlertDescription className="text-xs font-mono text-brand-black">
-                                <strong>🏢 Developed by RSQUARE</strong><br />
-                                Sistem manajemen warung modern dengan teknologi cloud.
-                                Data Anda aman tersimpan di Supabase dengan backup otomatis.
-                            </AlertDescription>
-                        </Alert>
+                                {!isDemo && (
+                                    <ChangePasswordDialog
+                                        trigger={
+                                            <Button
+                                                variant="outline"
+                                                className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                            >
+                                                <KeyRound className="w-4 h-4 mr-2" />
+                                                Ganti Password
+                                            </Button>
+                                        }
+                                    />
+                                )}
+
+                                <Button
+                                    onClick={async () => {
+                                        if (window.confirm('Apakah Anda yakin ingin keluar?')) {
+                                            await signOut();
+                                            window.location.href = '/login';
+                                        }
+                                    }}
+                                    variant="destructive"
+                                    className="w-full justify-start border-2 border-brand-black rounded-none font-mono"
+                                >
+                                    <LogOut className="w-4 h-4 mr-2" />
+                                    Keluar Aplikasi
+                                </Button>
+                            </div>
+
+                            {/* App Info Section */}
+                            <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                <h3 className="font-mono font-bold flex items-center gap-2">
+                                    <Info className="w-4 h-4" />
+                                    Informasi Aplikasi
+                                </h3>
+
+                                <div className="space-y-2 text-sm font-mono">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Versi:</span>
+                                        <span className="font-bold">1.0.0</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Database:</span>
+                                        <span className="font-bold">Supabase</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Storage:</span>
+                                        <span className="font-bold">SQLite</span>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    onClick={handleAbout}
+                                    variant="outline"
+                                    className="w-full border-2 border-brand-black rounded-none font-mono"
+                                >
+                                    <Info className="w-4 h-4 mr-2" />
+                                    Tentang Aplikasi
+                                </Button>
+                            </div>
+
+                            {/* System Info */}
+                            <Alert className="border-2 border-brand-black bg-gradient-to-r from-brand-orange/10 to-brand-white">
+                                <AlertDescription className="text-xs font-mono text-brand-black">
+                                    <strong>🏢 Developed by RSQUARE</strong><br />
+                                    Sistem manajemen warung modern dengan teknologi cloud.
+                                    Data Anda aman tersimpan di Supabase dengan backup otomatis.
+                                </AlertDescription>
+                            </Alert>
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="team" className="space-y-4 py-2">

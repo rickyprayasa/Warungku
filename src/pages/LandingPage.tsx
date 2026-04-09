@@ -588,7 +588,7 @@ export function LandingPage() {
             desc: "Laporan laba rugi otomatis. Tahu persis keuntungan harian, mingguan, dan bulanan tanpa pusing hitung manual.",
             hoverColor: "",
             color: "bg-green-500",
-            screenshots: ["/features/laporan-keuangan.png"],
+            screenshots: ["/features/laporan-keuangan-user-1.png", "/features/laporan-keuangan-user-2.png"],
             highlights: ["Pendapatan & HPP otomatis", "Margin laba real-time", "Grafik kinerja bulanan", "Ekspor laporan PDF"]
         },
         {
@@ -599,6 +599,15 @@ export function LandingPage() {
             color: "bg-purple-500",
             screenshots: ["/features/analitik.png", "/features/analitik2.png", "/features/analitik3.png"],
             highlights: ["Tren pendapatan & profit", "Filter periode fleksibel", "Pertumbuhan vs periode lalu", "Overview bisnis lengkap"]
+        },
+        {
+            icon: "group_add",
+            title: "Undang Tim",
+            desc: "Ajak karyawan atau tim untuk mengurus toko bersama. Tersambung secara real-time dari dan ke perangkat mana saja.",
+            hoverColor: "",
+            color: "bg-pink-500",
+            screenshots: ["/features/team-member-1.png", "/features/team-member-2.png", "/features/team-member-3.png"],
+            highlights: ["Multi-user dashboard", "Undang via email", "Manajemen staf real-time", "Aman & transparan"]
         }
     ];
 
@@ -780,7 +789,7 @@ export function LandingPage() {
                                         >
                                             play_circle
                                         </motion.span>
-                                        Lihat Demo
+                                        Lihat Toko Warungku
                                     </NeoButton>
                                 </motion.div>
                                 <motion.div
