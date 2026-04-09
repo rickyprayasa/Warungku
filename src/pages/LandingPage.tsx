@@ -65,8 +65,7 @@ function RealStatsSection() {
                     stores: storesCount,
                     transactions: salesCount,
                     products: productsCount,
-                    users: membersCount,
-                    adminUsersExcluded: adminUserIds.size
+                    users: membersCount
                 });
             } catch (error) {
                 console.error('Error fetching stats:', error);
@@ -174,6 +173,7 @@ function RealStatsSection() {
 
 // Dynamic Testimonials Component - fetches from database
 function DynamicTestimonials() {
+    const navigate = useNavigate();
     const [testimonials, setTestimonials] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -182,7 +182,7 @@ function DynamicTestimonials() {
             try {
                 const { data, error } = await supabasePublic
                     .from('testimonials')
-                    .select('*, stores(name, logo_url)')
+                    .select('*, stores(id, name, logo_url, slug)')
                     .eq('status', 'approved')
                     .order('created_at', { ascending: false })
                     .limit(6);
@@ -264,26 +264,36 @@ function DynamicTestimonials() {
                             "{testimonial.content || testimonial.quote}"
                         </p>
                     </div>
-                    <div className="flex items-center gap-4 border-t-4 border-brand-black pt-4">
-                        {testimonial.stores?.logo_url ? (
-                            <div className="h-12 w-12 border-4 border-brand-black overflow-hidden bg-white flex items-center justify-center">
-                                <img
-                                    src={testimonial.stores.logo_url}
-                                    alt={testimonial.stores?.name || 'Store'}
-                                    className="w-full h-full object-contain"
-                                />
+                    <div className="flex items-center justify-between border-t-4 border-brand-black pt-4">
+                        <div className="flex items-center gap-4">
+                            {testimonial.stores?.logo_url ? (
+                                <div className="h-12 w-12 border-4 border-brand-black overflow-hidden bg-white flex items-center justify-center shrink-0">
+                                    <img
+                                        src={testimonial.stores.logo_url}
+                                        alt={testimonial.stores?.name || 'Store'}
+                                        className="w-full h-full object-contain"
+                                    />
+                                </div>
+                            ) : (
+                                <div
+                                    className={`h-12 w-12 ${testimonial.color || getColor(idx)} border-4 border-brand-black flex items-center justify-center text-brand-black font-black text-lg shrink-0`}
+                                >
+                                    {testimonial.initials || getInitials(testimonial.stores?.name || 'User')}
+                                </div>
+                            )}
+                            <div>
+                                <p className="font-bold text-brand-black line-clamp-1">{testimonial.name || testimonial.stores?.name || 'Pengguna Omzetin'}</p>
+                                <p className="text-sm text-muted-foreground font-mono line-clamp-1">{testimonial.role || 'Pemilik UMKM'}</p>
                             </div>
-                        ) : (
-                            <div
-                                className={`h-12 w-12 ${testimonial.color || getColor(idx)} border-4 border-brand-black flex items-center justify-center text-brand-black font-black text-lg`}
-                            >
-                                {testimonial.initials || getInitials(testimonial.stores?.name || 'User')}
-                            </div>
-                        )}
-                        <div>
-                            <p className="font-bold text-brand-black">{testimonial.name || testimonial.stores?.name || 'Pengguna Omzetin'}</p>
-                            <p className="text-sm text-muted-foreground font-mono">{testimonial.role || 'Pemilik UMKM'}</p>
                         </div>
+
+                        <a
+                            href={`/${testimonial.stores?.slug || testimonial.slug || testimonial.stores?.id || ''}`}
+                            className="font-mono text-xs font-bold bg-white hover:bg-brand-orange text-brand-black border-2 border-brand-black px-2 py-1 shadow-[2px_2px_0px_0px_#000] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                        >
+                            <span className="hidden sm:inline">Toko</span>
+                            <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                        </a>
                     </div>
                 </motion.div>
             ))}
