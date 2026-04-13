@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { QRCodeSVG } from 'qrcode.react';
 import { convertToDynamicQRIS, getMerchantName, validateQRIS, formatQRISAmount } from '@/lib/qris';
-import { ArrowLeft, Clock, CheckCircle, AlertCircle, Copy, ShoppingCart, RefreshCw, Lock, User, Building2, CreditCard, Send, Loader2, Upload, Image } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, AlertCircle, Copy, ShoppingCart, RefreshCw, Lock, User, Building2, CreditCard, Send, Loader2, Upload, Image, Truck, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { QRISDownloadButton } from '@/components/QRISDownload';
@@ -46,6 +46,8 @@ export function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(false);
   const [finalTotal, setFinalTotal] = useState(0); // Store total for success screen
+  const [shippingMethod, setShippingMethod] = useState<'pickup' | 'delivery'>('pickup');
+  const [shippingCost, setShippingCost] = useState(0);
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
@@ -260,6 +262,15 @@ export function CheckoutPage() {
         setIsUploadingProof(false);
       }
 
+      // Build notes with shipping info
+      const noteParts: string[] = [];
+      if (shippingMethod === 'delivery' && shippingCost > 0) {
+        noteParts.push(`[Pengiriman] Ongkir: ${formatCurrency(shippingCost)}`);
+      } else if (shippingMethod === 'pickup') {
+        noteParts.push('[Pengiriman] Ambil Sendiri');
+      }
+      if (customerNotes.trim()) noteParts.push(customerNotes.trim());
+
       const saleData: SaleFormValues = {
         items: items.map(item => ({
           productId: item.product.id,
@@ -267,7 +278,7 @@ export function CheckoutPage() {
           quantity: item.quantity,
           price: item.product.isPromo && item.product.promoPrice ? item.product.promoPrice : item.product.price,
         })),
-        notes: customerNotes.trim() || undefined,
+        notes: noteParts.length > 0 ? noteParts.join(' | ') : undefined,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim() || undefined,
         customerAddress: customerAddress.trim() || undefined,
@@ -275,7 +286,7 @@ export function CheckoutPage() {
       };
 
       await addPublicSale(saleData);
-      setFinalTotal(total); // Save total before clearing
+      setFinalTotal(total + (shippingMethod === 'delivery' ? shippingCost : 0)); // Save total + ongkir
       setIsCustomerDialogOpen(false);
       clearCart();
       setPaymentStatus('success');
@@ -656,12 +667,99 @@ export function CheckoutPage() {
               );
             })}
           </div>
-          {/* Total */}
-          <div className="p-3 border-t-2 border-brand-black bg-brand-orange/10">
+          {/* Subtotal + Ongkir + Total */}
+          <div className="p-3 border-t-2 border-brand-black bg-brand-orange/10 space-y-1">
             <div className="flex justify-between items-center">
-              <span className="font-mono font-bold">TOTAL</span>
-              <span className="font-mono font-bold text-lg">{formatCurrency(total)}</span>
+              <span className="font-mono text-sm text-muted-foreground">Subtotal</span>
+              <span className="font-mono text-sm">{formatCurrency(total)}</span>
             </div>
+            {shippingMethod === 'delivery' && shippingCost > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="font-mono text-sm text-muted-foreground">Ongkir</span>
+                <span className="font-mono text-sm">{formatCurrency(shippingCost)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center pt-1 border-t border-brand-black/20">
+              <span className="font-mono font-bold">TOTAL</span>
+              <span className="font-mono font-bold text-lg">{formatCurrency(total + (shippingMethod === 'delivery' ? shippingCost : 0))}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Shipping Method Section */}
+        <div className="bg-white border-4 border-brand-black mb-4">
+          <div className="p-3 border-b-2 border-brand-black bg-gray-50">
+            <h3 className="font-mono font-bold text-sm uppercase flex items-center gap-2">
+              <Truck className="w-4 h-4" />
+              Metode Pengiriman
+            </h3>
+          </div>
+          <div className="p-4 space-y-3">
+            {/* Pickup Option */}
+            <button
+              onClick={() => { setShippingMethod('pickup'); setShippingCost(0); }}
+              className={`w-full flex items-center gap-3 p-3 border-2 transition-all ${shippingMethod === 'pickup'
+                  ? 'border-brand-orange bg-brand-orange/10 shadow-[3px_3px_0px_0px_#000]'
+                  : 'border-brand-black bg-white hover:bg-gray-50'
+                }`}
+            >
+              <div className={`w-10 h-10 flex items-center justify-center border-2 border-brand-black ${shippingMethod === 'pickup' ? 'bg-brand-orange text-white' : 'bg-gray-100'
+                }`}>
+                <Store className="w-5 h-5" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-mono font-bold text-sm">Ambil Sendiri</p>
+                <p className="font-mono text-xs text-muted-foreground">Datang langsung ke toko</p>
+              </div>
+              <span className="font-mono font-bold text-sm text-green-600">GRATIS</span>
+            </button>
+
+            {/* Delivery Option */}
+            <button
+              onClick={() => setShippingMethod('delivery')}
+              className={`w-full flex items-center gap-3 p-3 border-2 transition-all ${shippingMethod === 'delivery'
+                  ? 'border-brand-orange bg-brand-orange/10 shadow-[3px_3px_0px_0px_#000]'
+                  : 'border-brand-black bg-white hover:bg-gray-50'
+                }`}
+            >
+              <div className={`w-10 h-10 flex items-center justify-center border-2 border-brand-black ${shippingMethod === 'delivery' ? 'bg-brand-orange text-white' : 'bg-gray-100'
+                }`}>
+                <Truck className="w-5 h-5" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-mono font-bold text-sm">Kirim ke Alamat</p>
+                <p className="font-mono text-xs text-muted-foreground">Input ongkir manual</p>
+              </div>
+            </button>
+
+            {/* Ongkir Input - only shown when delivery is selected */}
+            {shippingMethod === 'delivery' && (
+              <div className="pl-2 border-l-4 border-brand-orange space-y-3 pt-2">
+                <div>
+                  <Label className="font-mono text-sm font-bold">Biaya Ongkir (Rp)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={shippingCost || ''}
+                    onChange={(e) => setShippingCost(parseInt(e.target.value) || 0)}
+                    placeholder="Masukkan biaya ongkir"
+                    className="mt-1 border-2 border-brand-black rounded-none font-mono"
+                  />
+                </div>
+                <a
+                  href="https://cek-ongkir.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-mono font-bold text-blue-600 hover:text-blue-800 bg-blue-50 border-2 border-blue-200 px-3 py-2 hover:bg-blue-100 transition-colors"
+                >
+                  <Truck className="w-4 h-4" />
+                  Cek Ongkir di sini →
+                </a>
+                <p className="font-mono text-xs text-muted-foreground">
+                  Cek ongkir, lalu masukkan biaya di kolom di atas.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
