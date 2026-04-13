@@ -1460,11 +1460,13 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
           set((state) => {
             state.sales.unshift(newSale);
-            // deduct stock
-            for (const item of items) {
-              const pIdx = state.products.findIndex(p => p.id === item.productId);
-              if (pIdx !== -1) {
-                state.products[pIdx].totalStock = (state.products[pIdx].totalStock || 0) - item.quantity;
+            // Skip stock deduction for pending (piutang) sales
+            if (saleData.status !== 'pending') {
+              for (const item of items) {
+                const pIdx = state.products.findIndex(p => p.id === item.productId);
+                if (pIdx !== -1) {
+                  state.products[pIdx].totalStock = (state.products[pIdx].totalStock || 0) - item.quantity;
+                }
               }
             }
           });
@@ -1530,24 +1532,27 @@ export const useWarungStore = create<WarungState & WarungActions>()(
 
           if (itemsError) throw itemsError;
 
-          // Update stock
-          for (const item of saleData.items) {
-            const product = products.find(p => p.id === item.productId);
-            if (product) {
-              const qtyToDeduct = item.quantity * (product.qtyPerUnit || 1);
+          // Skip stock deduction for pending (piutang) sales — stock is deducted on confirmation
+          if (saleData.status !== 'pending') {
+            // Update stock
+            for (const item of saleData.items) {
+              const product = products.find(p => p.id === item.productId);
+              if (product) {
+                const qtyToDeduct = item.quantity * (product.qtyPerUnit || 1);
 
-              // FIFO: Deduct from stock_details (oldest batches first)
-              await deductStockFIFO(item.productId, qtyToDeduct);
+                // FIFO: Deduct from stock_details (oldest batches first)
+                await deductStockFIFO(item.productId, qtyToDeduct);
 
-              // Also update product total_stock
-              await withTimeout(
-                (supabase as any)
-                  .from('products')
-                  .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
-                  .eq('id', item.productId),
-                15000,
-                'Gagal update stok produk (timeout)'
-              );
+                // Also update product total_stock
+                await withTimeout(
+                  (supabase as any)
+                    .from('products')
+                    .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
+                    .eq('id', item.productId),
+                  15000,
+                  'Gagal update stok produk (timeout)'
+                );
+              }
             }
           }
 
@@ -1691,6 +1696,40 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               state.sales[saleIndex].status = 'completed';
             }
           });
+
+          // Now deduct stock since the sale is confirmed
+          const { data: saleItems } = await withTimeout(
+            supabase
+              .from('sale_items' as any)
+              .select('*')
+              .eq('sale_id', saleId) as any,
+            10000,
+            'Gagal mengambil detail penjualan untuk deduct stok'
+          ) as any;
+
+          const products = get().products;
+          for (const item of (saleItems || [])) {
+            const product = products.find((p: any) => p.id === item.product_id);
+            if (product) {
+              const qtyToDeduct = item.quantity * (product.qtyPerUnit || 1);
+
+              // FIFO: Deduct from stock_details (oldest batches first)
+              await deductStockFIFO(item.product_id, qtyToDeduct);
+
+              // Also update product total_stock
+              await withTimeout(
+                (supabase as any)
+                  .from('products')
+                  .update({ total_stock: Math.max(0, (product.totalStock || 0) - qtyToDeduct) })
+                  .eq('id', item.product_id),
+                15000,
+                'Gagal update stok produk (timeout)'
+              );
+            }
+          }
+
+          // Refresh products to sync UI
+          await get().fetchProducts();
         } catch (err) {
           console.error('[confirmSale] Failed to confirm sale:', err);
           throw err;
