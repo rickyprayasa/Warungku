@@ -494,6 +494,267 @@ function InteractiveAppPreview() {
     );
 }
 
+// Dynamic Pricing Section - fetches from subscription_plans table
+function DynamicPricingSection() {
+    const [isYearly, setIsYearly] = useState(false);
+    const [plans, setPlans] = useState<{
+        type: string;
+        name: string;
+        displayName: string;
+        description: string;
+        monthly_price: number;
+        yearly_price: number;
+        features: string[];
+        is_active: boolean;
+    }[]>([
+        // Fallback defaults
+        { type: 'free', name: 'Free', displayName: 'Starter', description: 'Cocok untuk warung kecil yang baru mulai digitalisasi.', monthly_price: 0, yearly_price: 0, features: ['Maksimal 50 Produk', 'Laporan Harian Dasar', 'Manajemen Stok Simpel', '1 User Kasir', 'Support via Email'], is_active: true },
+        { type: 'pro', name: 'Pro', displayName: 'Juragan', description: 'Untuk UMKM yang siap scale-up dan mengelola cabang.', monthly_price: 50000, yearly_price: 500000, features: ['Produk Unlimited', 'Laporan Keuangan Lengkap', 'Toko Online Publik', 'Manajemen Stok & Opname', '5 User Akses Kasir', 'Export Laporan Excel/PDF', 'Support Prioritas WhatsApp'], is_active: true },
+        { type: 'enterprise', name: 'Enterprise', displayName: 'Sultan', description: 'Solusi khusus untuk franchise & chain store skala besar.', monthly_price: 450000, yearly_price: 5000000, features: ['Semua Fitur Juragan', 'Multi-Cabang / Outlet', 'Dedicated Account Manager', 'Custom Integrasi API', 'SLA Guarantee 99.9%', 'White Label Option'], is_active: true },
+    ]);
+
+    useEffect(() => {
+        async function fetchPlans() {
+            try {
+                const { data, error } = await (supabasePublic
+                    .from('subscription_plans') as any)
+                    .select('*')
+                    .in('name', ['Free', 'Pro', 'Enterprise']);
+
+                if (error || !data || data.length === 0) return;
+
+                const displayNames: Record<string, string> = { free: 'Starter', pro: 'Juragan', enterprise: 'Sultan' };
+                const fallbackFeatures: Record<string, string[]> = {
+                    free: ['Maksimal 50 Produk', 'Laporan Harian Dasar', 'Manajemen Stok Simpel', '1 User Kasir', 'Support via Email'],
+                    pro: ['Produk Unlimited', 'Laporan Keuangan Lengkap', 'Toko Online Publik', 'Manajemen Stok & Opname', '5 User Akses Kasir', 'Export Laporan Excel/PDF', 'Support Prioritas WhatsApp'],
+                    enterprise: ['Semua Fitur Juragan', 'Multi-Cabang / Outlet', 'Dedicated Account Manager', 'Custom Integrasi API', 'SLA Guarantee 99.9%', 'White Label Option'],
+                };
+
+                const mapped = ['free', 'pro', 'enterprise'].map(type => {
+                    const dbPlan = data.find((p: any) => p.name.toLowerCase() === type);
+                    const defaultPlan = plans.find(p => p.type === type)!;
+                    return {
+                        type,
+                        name: dbPlan?.name || defaultPlan.name,
+                        displayName: displayNames[type] || defaultPlan.displayName,
+                        description: dbPlan?.description || defaultPlan.description,
+                        monthly_price: dbPlan?.price ?? defaultPlan.monthly_price,
+                        yearly_price: dbPlan?.yearly_price ?? defaultPlan.yearly_price,
+                        features: (dbPlan?.features && dbPlan.features.length > 0) ? dbPlan.features : fallbackFeatures[type],
+                        is_active: dbPlan?.is_active ?? true,
+                    };
+                });
+                setPlans(mapped);
+            } catch (err) {
+                console.error('[DynamicPricingSection] fetch error:', err);
+            }
+        }
+        fetchPlans();
+    }, []);
+
+    const formatPrice = (amount: number) => {
+        if (amount === 0) return { main: 'Rp 0', suffix: '/selamanya' };
+        if (amount >= 1000000) {
+            const jt = amount / 1000000;
+            return { main: `Rp ${jt % 1 === 0 ? jt.toFixed(0) : jt.toFixed(1)}jt`, suffix: isYearly ? '/tahun' : '/bulan' };
+        }
+        if (amount >= 1000) {
+            const rb = amount / 1000;
+            return { main: `Rp ${rb % 1 === 0 ? rb.toFixed(0) : rb.toFixed(1)}rb`, suffix: isYearly ? '/tahun' : '/bulan' };
+        }
+        return { main: `Rp ${amount.toLocaleString('id-ID')}`, suffix: isYearly ? '/tahun' : '/bulan' };
+    };
+
+    const getWhatsAppUrl = (planName: string) => {
+        const msg = `Halo, saya tertarik dengan paket ${planName} Omzetin. Bisa info lebih lanjut?`;
+        return `https://wa.me/6285846055901?text=${encodeURIComponent(msg)}`;
+    };
+
+    const getDiscount = (monthly: number, yearly: number) => {
+        if (monthly === 0 || yearly === 0) return 0;
+        const fullYearly = monthly * 12;
+        return Math.round(((fullYearly - yearly) / fullYearly) * 100);
+    };
+
+    const featureIcon = (type: string) => {
+        switch (type) {
+            case 'free': return { icon: 'check', cls: 'text-green-500 border-2 border-green-500 rounded p-0.5 text-sm shadow-[2px_2px_0px_0px_#22c55e]' };
+            case 'pro': return { icon: 'star', cls: 'text-white bg-black rounded-full p-0.5 text-sm shadow-[2px_2px_0px_0px_#FF6B00]' };
+            case 'enterprise': return { icon: 'diamond', cls: 'text-purple-600 font-bold' };
+            default: return { icon: 'check', cls: '' };
+        }
+    };
+
+    const proDiscount = getDiscount(plans[1].monthly_price, plans[1].yearly_price);
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Toggle - shown above the grid on mobile, spans all columns on desktop */}
+            <div className="md:col-span-3 flex justify-center mb-4">
+                <div className="inline-flex items-center bg-gray-100 border-4 border-black p-1 shadow-[4px_4px_0px_0px_#000]">
+                    <button
+                        onClick={() => setIsYearly(false)}
+                        className={`px-6 py-3 font-black text-sm uppercase transition-all ${!isYearly
+                            ? 'bg-black text-white shadow-[2px_2px_0px_0px_#FF6B00]'
+                            : 'bg-transparent text-gray-600 hover:text-black'
+                            }`}
+                    >
+                        Bulanan
+                    </button>
+                    <button
+                        onClick={() => setIsYearly(true)}
+                        className={`px-6 py-3 font-black text-sm uppercase transition-all relative ${isYearly
+                            ? 'bg-black text-white shadow-[2px_2px_0px_0px_#FF6B00]'
+                            : 'bg-transparent text-gray-600 hover:text-black'
+                            }`}
+                    >
+                        Tahunan
+                        {proDiscount > 0 && (
+                            <span className="absolute -top-3 -right-3 bg-brand-orange text-white text-[10px] font-black px-2 py-0.5 border-2 border-black transform rotate-6">
+                                -{proDiscount}%
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Free Plan */}
+            <motion.div
+                className="border-4 border-black p-8 flex flex-col relative bg-white shadow-[8px_8px_0px_0px_#000]"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4 }}
+                whileHover={{ y: -5, boxShadow: "12px 12px 0px 0px #000" }}
+            >
+                <div className="mb-6">
+                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-gray-300">{plans[0].displayName}</h3>
+                    <div className="mt-4 flex items-baseline gap-1">
+                        <span className="text-5xl font-black">{formatPrice(0).main}</span>
+                        <span className="text-sm font-bold text-gray-500 uppercase">{formatPrice(0).suffix}</span>
+                    </div>
+                    <p className="mt-4 font-bold text-gray-600 border-l-4 border-gray-300 pl-3">{plans[0].description}</p>
+                </div>
+                <ul className="space-y-4 mb-8 flex-1">
+                    {plans[0].features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-3 font-bold">
+                            <span className={`material-symbols-outlined ${featureIcon('free').cls}`}>{featureIcon('free').icon}</span>
+                            {feature}
+                        </li>
+                    ))}
+                </ul>
+                <button
+                    onClick={() => window.open(getWhatsAppUrl(plans[0].displayName), '_blank')}
+                    className="w-full py-4 text-lg border-4 border-black font-black bg-gray-100 hover:bg-gray-200 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 uppercase"
+                >
+                    Hubungi Sales
+                </button>
+            </motion.div>
+
+            {/* Pro Plan */}
+            <motion.div
+                className="border-4 border-black p-8 flex flex-col relative bg-brand-yellow transform md:-translate-y-6 md:scale-105 shadow-[12px_12px_0px_0px_#000] z-10"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+            >
+                <div className="absolute -top-4 -right-4 bg-brand-orange text-white px-4 py-2 text-sm font-black uppercase border-4 border-black shadow-[4px_4px_0px_0px_#000] transform rotate-3">
+                    Paling Laris 🔥
+                </div>
+                <div className="mb-6">
+                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-brand-orange">{plans[1].displayName}</h3>
+                    <div className="mt-4 flex items-baseline gap-1">
+                        {(() => {
+                            const price = isYearly ? plans[1].yearly_price : plans[1].monthly_price;
+                            const formatted = formatPrice(price);
+                            return (
+                                <>
+                                    <span className="text-5xl font-black">{formatted.main}</span>
+                                    <span className="text-sm font-bold text-black uppercase">{formatted.suffix}</span>
+                                </>
+                            );
+                        })()}
+                    </div>
+                    {isYearly && proDiscount > 0 && (
+                        <p className="mt-2 text-sm font-black text-green-600 bg-green-100 border-2 border-green-500 inline-block px-3 py-1">
+                            💰 Hemat {proDiscount}% vs bulanan
+                        </p>
+                    )}
+                    <p className="mt-4 font-bold text-black border-l-4 border-brand-orange pl-3">{plans[1].description}</p>
+                </div>
+                <ul className="space-y-4 mb-8 flex-1">
+                    {plans[1].features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-3 font-bold">
+                            <span className={`material-symbols-outlined ${featureIcon('pro').cls}`}>{featureIcon('pro').icon}</span>
+                            {feature}
+                        </li>
+                    ))}
+                </ul>
+                <button
+                    onClick={() => window.open(getWhatsAppUrl(plans[1].displayName), '_blank')}
+                    className="w-full py-4 text-lg border-4 border-black font-black bg-brand-orange text-white hover:bg-black transition-colors shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-1.5 active:translate-y-1.5 uppercase tracking-wide"
+                >
+                    Hubungi Sales
+                </button>
+            </motion.div>
+
+            {/* Enterprise Plan */}
+            <motion.div
+                className="border-4 border-black p-8 flex flex-col relative bg-[#FCE3FE] shadow-[8px_8px_0px_0px_#000]"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+                whileHover={{ y: -5, boxShadow: "12px 12px 0px 0px #000" }}
+            >
+                <div className="mb-6">
+                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-purple-500">{plans[2].displayName}</h3>
+                    <div className="mt-4 flex items-baseline gap-1">
+                        {(() => {
+                            const price = isYearly ? plans[2].yearly_price : plans[2].monthly_price;
+                            if (price === 0) {
+                                return <span className="text-5xl font-black">Custom</span>;
+                            }
+                            const formatted = formatPrice(price);
+                            return (
+                                <>
+                                    <span className="text-5xl font-black">{formatted.main}</span>
+                                    <span className="text-sm font-bold text-black uppercase">{formatted.suffix}</span>
+                                </>
+                            );
+                        })()}
+                    </div>
+                    {isYearly && (() => {
+                        const disc = getDiscount(plans[2].monthly_price, plans[2].yearly_price);
+                        if (disc > 0) return (
+                            <p className="mt-2 text-sm font-black text-green-600 bg-green-100 border-2 border-green-500 inline-block px-3 py-1">
+                                💰 Hemat {disc}% vs bulanan
+                            </p>
+                        );
+                        return null;
+                    })()}
+                    <p className="mt-4 font-bold text-black border-l-4 border-purple-500 pl-3">{plans[2].description}</p>
+                </div>
+                <ul className="space-y-4 mb-8 flex-1">
+                    {plans[2].features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-3 font-bold">
+                            <span className={`material-symbols-outlined ${featureIcon('enterprise').cls}`}>{featureIcon('enterprise').icon}</span>
+                            {feature}
+                        </li>
+                    ))}
+                </ul>
+                <button
+                    onClick={() => window.open(getWhatsAppUrl(plans[2].displayName), '_blank')}
+                    className="w-full py-4 text-lg border-4 border-black font-black bg-white hover:bg-purple-100 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 uppercase"
+                >
+                    Hubungi Sales
+                </button>
+            </motion.div>
+        </div>
+    );
+}
+
 export function LandingPage() {
     const navigate = useNavigate();
     const sectionRef = useRef<HTMLElement>(null);
@@ -1497,119 +1758,7 @@ export function LandingPage() {
                             <p className="text-xl font-bold text-gray-700">Investasi terbaik untuk pertumbuhan bisnis Anda.</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {/* Free Plan */}
-                            <motion.div
-                                className="border-4 border-black p-8 flex flex-col relative bg-white shadow-[8px_8px_0px_0px_#000]"
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.4 }}
-                                whileHover={{ y: -5, boxShadow: "12px 12px 0px 0px #000" }}
-                            >
-                                <div className="mb-6">
-                                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-gray-300">Starter</h3>
-                                    <div className="mt-4 flex items-baseline gap-1">
-                                        <span className="text-5xl font-black">Rp 0</span>
-                                        <span className="text-sm font-bold text-gray-500 uppercase">/selamanya</span>
-                                    </div>
-                                    <p className="mt-4 font-bold text-gray-600 border-l-4 border-gray-300 pl-3">Cocok untuk warung kecil yang baru mulai digitalisasi.</p>
-                                </div>
-                                <ul className="space-y-4 mb-8 flex-1">
-                                    {[
-                                        "Maksimal 50 Produk",
-                                        "Laporan Harian Dasar",
-                                        "Manajemen Stok Simpel",
-                                        "1 User Kasir",
-                                        "Support via Email"
-                                    ].map((feature, i) => (
-                                        <li key={i} className="flex items-center gap-3 font-bold">
-                                            <span className="material-symbols-outlined text-green-500 font-bold border-2 border-green-500 rounded p-0.5 text-sm shadow-[2px_2px_0px_0px_#22c55e]">check</span>
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <button onClick={() => navigate('/login')} className="w-full py-4 text-lg border-4 border-black font-black bg-gray-100 hover:bg-gray-200 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 uppercase">
-                                    Daftar Gratis
-                                </button>
-                            </motion.div>
-
-                            {/* Pro Plan */}
-                            <motion.div
-                                className="border-4 border-black p-8 flex flex-col relative bg-brand-yellow transform md:-translate-y-6 md:scale-105 shadow-[12px_12px_0px_0px_#000] z-10"
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.2, duration: 0.4 }}
-                            >
-                                <div className="absolute -top-4 -right-4 bg-brand-orange text-white px-4 py-2 text-sm font-black uppercase border-4 border-black shadow-[4px_4px_0px_0px_#000] transform rotate-3">
-                                    Paling Laris 🔥
-                                </div>
-                                <div className="mb-6">
-                                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-brand-orange">Juragan</h3>
-                                    <div className="mt-4 flex items-baseline gap-1">
-                                        <span className="text-5xl font-black">Rp 50<span className="text-3xl">rb</span></span>
-                                        <span className="text-sm font-bold text-black uppercase">/bulan</span>
-                                    </div>
-                                    <p className="mt-4 font-bold text-black border-l-4 border-brand-orange pl-3">Untuk UMKM yang siap scale-up dan mengelola cabang.</p>
-                                </div>
-                                <ul className="space-y-4 mb-8 flex-1">
-                                    {[
-                                        "Produk Unlimited",
-                                        "Laporan Keuangan Lengkap",
-                                        "Toko Online Publik",
-                                        "Manajemen Stok & Opname",
-                                        "5 User Akses Kasir",
-                                        "Export Laporan Excel/PDF",
-                                        "Support Prioritas WhatsApp"
-                                    ].map((feature, i) => (
-                                        <li key={i} className="flex items-center gap-3 font-bold">
-                                            <span className="material-symbols-outlined text-white bg-black rounded-full p-0.5 text-sm shadow-[2px_2px_0px_0px_#FF6B00]">star</span>
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <button onClick={() => navigate('/login')} className="w-full py-4 text-lg border-4 border-black font-black bg-brand-orange text-white hover:bg-black transition-colors shadow-[6px_6px_0px_0px_#000] active:shadow-none active:translate-x-1.5 active:translate-y-1.5 uppercase tracking-wide">
-                                    Pilih Paket Juragan
-                                </button>
-                            </motion.div>
-
-                            {/* Enterprise Plan */}
-                            <motion.div
-                                className="border-4 border-black p-8 flex flex-col relative bg-[#FCE3FE] shadow-[8px_8px_0px_0px_#000]"
-                                initial={{ opacity: 0, y: 30 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.4, duration: 0.4 }}
-                                whileHover={{ y: -5, boxShadow: "12px 12px 0px 0px #000" }}
-                            >
-                                <div className="mb-6">
-                                    <h3 className="text-2xl font-black uppercase inline-block border-b-4 border-purple-500">Sultan</h3>
-                                    <div className="mt-4 flex items-baseline gap-1">
-                                        <span className="text-5xl font-black">Custom</span>
-                                    </div>
-                                    <p className="mt-4 font-bold text-black border-l-4 border-purple-500 pl-3">Solusi khusus untuk franchise & chain store skala besar.</p>
-                                </div>
-                                <ul className="space-y-4 mb-8 flex-1">
-                                    {[
-                                        "Semua Fitur Juragan",
-                                        "Multi-Cabang / Outlet",
-                                        "Dedicated Account Manager",
-                                        "Custom Integrasi API",
-                                        "SLA Guarantee 99.9%",
-                                        "White Label Option"
-                                    ].map((feature, i) => (
-                                        <li key={i} className="flex items-center gap-3 font-bold">
-                                            <span className="material-symbols-outlined text-purple-600 font-bold">diamond</span>
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <button onClick={() => window.open('https://wa.me/6285846055901?text=' + encodeURIComponent('Halo, saya tertarik dengan paket Sultan/Enterprise Omzetin. Bisa info lebih lanjut?'), '_blank')} className="w-full py-4 text-lg border-4 border-black font-black bg-white hover:bg-purple-100 transition-colors shadow-[4px_4px_0px_0px_#000] active:shadow-none active:translate-x-1 active:translate-y-1 uppercase">
-                                    Hubungi Sales
-                                </button>
-                            </motion.div>
-                        </div>
+                        <DynamicPricingSection />
                     </div>
                 </motion.section>
             </main>
