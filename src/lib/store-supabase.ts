@@ -191,7 +191,7 @@ function toSale(row: any, items: any[], cashierMap?: Map<string, string>): Sale 
     customerPhone: row.customer_phone || undefined,
     customerAddress: row.customer_address || undefined,
     paymentProofUrl: row.payment_proof_url || undefined,
-    status: row.sale_type === 'piutang' ? 'pending' : 'completed',
+    status: row.status ? (row.status === 'completed' ? 'completed' : 'pending') : (row.sale_type === 'piutang' ? 'pending' : 'completed'),
     createdAt: new Date(row.created_at).getTime(),
     userId: row.user_id || undefined,
     cashierName: (row.user_id && cashierMap) ? cashierMap.get(row.user_id) : undefined,
