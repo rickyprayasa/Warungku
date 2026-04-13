@@ -149,6 +149,7 @@ export interface Database {
           total: number
           profit: number
           sale_type: string
+          status: string
           notes: string | null
           created_by: string | null
           created_at: string
@@ -159,6 +160,7 @@ export interface Database {
           total: number
           profit: number
           sale_type?: string
+          status?: string
           notes?: string | null
           created_by?: string | null
           created_at?: string
@@ -169,6 +171,7 @@ export interface Database {
           total?: number
           profit?: number
           sale_type?: string
+          status?: string
           notes?: string | null
           created_by?: string | null
           created_at?: string

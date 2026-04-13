@@ -48,6 +48,7 @@ export class CreateSaleService implements IService<CreateSaleInput, SaleRow> {
             total: totalRevenue,
             profit: totalProfit,
             sale_type: input.status === 'pending' ? 'piutang' : (input.saleType || 'cash'),
+            status: input.status || 'completed',
             notes: input.notes || '',
             created_by: input.createdBy
         };
