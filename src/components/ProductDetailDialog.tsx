@@ -18,7 +18,7 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
   const addToCart = useCartStore((state) => state.addToCart);
   const openCart = useCartStore((state) => state.openCart);
   const storeProfile = useWarungStore((state) => state.storeProfile);
-  
+
   const isCartEnabled = storeProfile.cartEnabled ?? true;
   const availableStock = product.totalStock ?? 0;
   const isOutOfStock = availableStock <= 0;
@@ -32,7 +32,7 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
   };
 
   const qtyPerUnit = product.qtyPerUnit || 1;
-  
+
   const handleAddToCart = () => {
     // Check if stock is enough (considering qtyPerUnit)
     const stockNeeded = quantity * qtyPerUnit;
@@ -63,7 +63,7 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
       <div className="p-6">
         <p className="text-sm font-mono uppercase text-muted-foreground">{product.category}</p>
         <h2 className="text-3xl font-display font-bold text-brand-black my-1">{product.name}</h2>
-        
+
 
 
         {product.isPromo && product.promoPrice !== undefined && product.promoPrice > 0 ? (
@@ -112,7 +112,24 @@ export function ProductDetailDialog({ product }: ProductDetailDialogProps) {
                     >
                       <Minus className="w-4 h-4" />
                     </Button>
-                    <span className="w-12 text-center font-mono font-bold">{quantity}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={maxQuantity}
+                      value={quantity || ''}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val)) {
+                          setQuantity(Math.min(maxQuantity, Math.max(1, val)));
+                        } else if (e.target.value === '') {
+                          setQuantity(0 as any); // allow empty temporarily
+                        }
+                      }}
+                      onBlur={() => {
+                        if (quantity < 1) setQuantity(1);
+                      }}
+                      className="w-12 h-8 text-center font-mono font-bold border-none outline-none focus:bg-brand-orange/10 p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
                     <Button
                       variant="ghost"
                       size="icon"

@@ -51,6 +51,7 @@ interface WarungState {
     phoneNumber?: string;
     slug?: string;
     category?: string;
+    settings?: any;
   };
   opnameMode: 'retail' | 'display' | 'terpadu';
   isLoading: boolean;
@@ -853,6 +854,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
                 accountName: settingsMap.account_name || '',
                 phoneNumber: settingsMap.phone_number || '',
                 category: settingsMap.store_category || 'Warung',
+                settings: store.settings || {},
               }
             });
           }
@@ -1078,6 +1080,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
                   qris_code: profile.qrisCode,
                   cart_enabled: profile.cartEnabled,
                   slug: profile.slug,
+                  settings: profile.settings || {},
                 })
                 .eq('id', storeId)
                 .select('id') // Simplified select
@@ -1090,7 +1093,6 @@ export const useWarungStore = create<WarungState & WarungActions>()(
             if (!data) throw new Error('Gagal menyimpan: Toko tidak ditemukan atau Anda tidak memiliki akses.');
           });
 
-          // Save payment methods and bank details to settings
           // These are less critical, so we can do them in parallel or sequentially without blocking the main success
           const settingsToUpsert = [
             { store_id: storeId, key: 'payment_methods', value: JSON.stringify(profile.paymentMethods || []) },

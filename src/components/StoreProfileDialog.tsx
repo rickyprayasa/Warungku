@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWarungStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Store, Save, Loader2, LayoutGrid } from 'lucide-react';
+import { Store, Save, Loader2, LayoutGrid, MapPin, ExternalLink, Navigation } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { MapPickerDialog } from './MapPickerDialog';
 
 const STORE_CATEGORIES = [
     { id: 'Warung', label: 'Warung (Default)', icon: '🏪' },
@@ -34,17 +35,109 @@ export function StoreProfileDialog({ iconOnly = false, compact = false, trigger 
         name: '',
         category: '',
         address: '',
+        address_detail: '',
         phone: '',
         logoUrl: '',
         slug: '',
-        color_scheme: 'orange' // default color
+        color_scheme: 'orange', // default color
+        location_lat: null as number | null,
+        location_lng: null as number | null,
     });
     // Sync formData when storeProfile changes (e.g., after fetch from server)
     useEffect(() => {
         if (storeProfile) {
-            setFormData(prev => ({ ...prev, ...storeProfile }));
+            setFormData(prev => ({
+                ...prev,
+                ...storeProfile,
+                address_detail: (storeProfile.settings as any)?.address_detail || '',
+                location_lat: (storeProfile.settings as any)?.location_lat ? Number((storeProfile.settings as any).location_lat) : null,
+                location_lng: (storeProfile.settings as any)?.location_lng ? Number((storeProfile.settings as any).location_lng) : null,
+            }));
         }
     }, [storeProfile]);
+
+    // Address autocomplete state
+    const [addressSuggestions, setAddressSuggestions] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const addressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const suggestionsRef = useRef<HTMLDivElement>(null);
+    const [isLocating, setIsLocating] = useState(false);
+    const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
+
+    // Debounced address search using Nominatim (free, no API key)
+    const searchAddress = useCallback((query: string) => {
+        if (addressTimeoutRef.current) clearTimeout(addressTimeoutRef.current);
+        if (query.length < 3) {
+            setAddressSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+        addressTimeoutRef.current = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=id&limit=5&addressdetails=1`,
+                    { headers: { 'Accept-Language': 'id' } }
+                );
+                const data = await res.json();
+                setAddressSuggestions(data);
+                setShowSuggestions(data.length > 0);
+            } catch {
+                setAddressSuggestions([]);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 500);
+    }, []);
+
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    // Use browser geolocation + reverse geocode
+    const handleUseMyLocation = async () => {
+        if (!navigator.geolocation) {
+            toast.error('Browser tidak mendukung geolokasi');
+            return;
+        }
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                try {
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&addressdetails=1`,
+                        { headers: { 'Accept-Language': 'id' } }
+                    );
+                    const data = await res.json();
+                    if (data.display_name) {
+                        setFormData(prev => ({ ...prev, address: data.display_name }));
+                        toast.success('Alamat berhasil diambil dari lokasi Anda');
+                    }
+                } catch {
+                    toast.error('Gagal mendapatkan alamat dari koordinat');
+                } finally {
+                    setIsLocating(false);
+                }
+            },
+            (err) => {
+                setIsLocating(false);
+                if (err.code === err.PERMISSION_DENIED) {
+                    toast.error('Izin lokasi ditolak. Aktifkan di pengaturan browser.');
+                } else {
+                    toast.error('Gagal mendapatkan lokasi');
+                }
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
 
     // Security Check: If not owner/admin, do not render
     // IMPORTANT: This must be AFTER all hooks to avoid "Rendered fewer hooks" error
@@ -60,11 +153,22 @@ export function StoreProfileDialog({ iconOnly = false, compact = false, trigger 
         setIsSaving(true);
         try {
             // Prepare payload with cleaned slug
-            const payload = { ...formData };
+            const payload: any = { ...formData };
             if (payload.slug) {
                 // Remove leading/trailing hyphens for submission
                 payload.slug = payload.slug.replace(/^-+|-+$/g, '');
             }
+
+            // Append exact lat,lng and address_detail into settings json
+            payload.settings = {
+                ...(storeProfile?.settings as any || {}),
+                location_lat: formData.location_lat,
+                location_lng: formData.location_lng,
+                address_detail: formData.address_detail || '',
+            };
+            delete payload.location_lat;
+            delete payload.location_lng;
+            delete payload.address_detail;
 
             // Validate slug
             if (payload.slug) {
@@ -195,188 +299,288 @@ export function StoreProfileDialog({ iconOnly = false, compact = false, trigger 
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                {trigger || (
-                    <Button
-                        variant="ghost"
-                        size={iconOnly || compact ? "sm" : "default"}
-                        className={iconOnly
-                            ? "hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                            : compact
-                                ? "flex-1 justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                                : "w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
-                        }
-                    >
-                        <Store className="w-4 h-4" style={(iconOnly || compact) ? {} : { marginRight: '0.5rem' }} />
-                        {!iconOnly && !compact && "Profil Toko"}
-                    </Button>
-                )}
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl w-full rounded-none border-4 border-brand-black bg-brand-white p-0 overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="bg-brand-orange p-4 border-b-4 border-brand-black shrink-0">
-                    <DialogHeader>
-                        <DialogTitle className="font-display font-black text-2xl text-brand-black uppercase tracking-wider flex items-center gap-2">
-                            <Store className="w-6 h-6" />
-                            Pengaturan Toko
-                        </DialogTitle>
-                    </DialogHeader>
-                </div>
+        <>
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                    {trigger || (
+                        <Button
+                            variant="ghost"
+                            size={iconOnly || compact ? "sm" : "default"}
+                            className={iconOnly
+                                ? "hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                                : compact
+                                    ? "flex-1 justify-center font-mono uppercase font-bold text-xs px-2 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                                    : "w-full justify-start font-mono uppercase font-bold text-sm px-4 py-2 hover:bg-brand-orange hover:text-brand-black rounded-none transition-colors text-muted-foreground"
+                            }
+                        >
+                            <Store className="w-4 h-4" style={(iconOnly || compact) ? {} : { marginRight: '0.5rem' }} />
+                            {!iconOnly && !compact && "Profil Toko"}
+                        </Button>
+                    )}
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-4xl w-full rounded-none border-4 border-brand-black bg-brand-white p-0 overflow-hidden max-h-[90vh] flex flex-col">
+                    <div className="bg-brand-orange p-4 border-b-4 border-brand-black shrink-0">
+                        <DialogHeader>
+                            <DialogTitle className="font-display font-black text-2xl text-brand-black uppercase tracking-wider flex items-center gap-2">
+                                <Store className="w-6 h-6" />
+                                Pengaturan Toko
+                            </DialogTitle>
+                        </DialogHeader>
+                    </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Left Column: General Info */}
-                        <div className="space-y-4">
-                            <h3 className="font-display font-bold text-lg border-b-2 border-brand-black pb-2 mb-4 flex items-center gap-2">
-                                <LayoutGrid className="w-5 h-5" />
-                                Informasi Utama
-                            </h3>
+                    <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Left Column: General Info */}
+                            <div className="space-y-4">
+                                <h3 className="font-display font-bold text-lg border-b-2 border-brand-black pb-2 mb-4 flex items-center gap-2">
+                                    <LayoutGrid className="w-5 h-5" />
+                                    Informasi Utama
+                                </h3>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="name" className="font-mono font-bold uppercase text-xs">Nama Toko</Label>
-                                <Input
-                                    id="name"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="border-2 border-brand-black rounded-none font-mono focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange"
-                                    required
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="category" className="font-mono font-bold uppercase text-xs">Kategori Usaha</Label>
-                                <Select
-                                    value={formData.category || 'Warung'}
-                                    onValueChange={(value) => setFormData({ ...formData, category: value })}
-                                >
-                                    <SelectTrigger className="w-full border-2 border-brand-black rounded-none font-mono focus:ring-0 focus:ring-offset-0">
-                                        <SelectValue placeholder="Pilih Kategori" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-none border-2 border-brand-black max-h-[200px]">
-                                        {STORE_CATEGORIES.map((cat) => (
-                                            <SelectItem key={cat.id} value={cat.id} className="font-mono cursor-pointer hover:bg-brand-orange/20">
-                                                <span className="mr-2">{cat.icon}</span> {cat.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <p className="text-[10px] text-muted-foreground font-mono">
-                                    Kategori akan menentukan tampilan background halaman publik toko Anda.
-                                </p>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="slug" className="font-mono font-bold uppercase text-xs">URL Toko (Slug)</Label>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground font-mono text-sm hidden sm:inline">omzetin.web.id/</span>
+                                <div className="space-y-2">
+                                    <Label htmlFor="name" className="font-mono font-bold uppercase text-xs">Nama Toko</Label>
                                     <Input
-                                        id="slug"
-                                        value={formData.slug || ''}
-                                        onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-') })}
-                                        className="border-2 border-brand-black rounded-none font-mono focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange flex-1"
-                                        placeholder="nama-toko"
+                                        id="name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="border-2 border-brand-black rounded-none font-mono focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange"
+                                        required
                                     />
                                 </div>
-                                <p className="text-[10px] text-muted-foreground font-mono">
-                                    Slug hanya boleh huruf kecil, angka, & strip (-). URL: <span className="font-bold text-brand-orange">/{formData.slug || storeProfile.slug || 'nama-toko'}</span>
-                                </p>
-                            </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="logoUrl" className="font-mono font-bold uppercase text-xs">Logo Toko</Label>
-                                <div className="flex items-start gap-4">
-                                    {formData.logoUrl ? (
-                                        <div className="w-20 h-20 border-2 border-brand-black rounded-full overflow-hidden bg-gray-100 shrink-0">
-                                            <img src={formData.logoUrl} alt="Preview" className="w-full h-full object-cover" />
-                                        </div>
-                                    ) : (
-                                        <div className="w-20 h-20 border-2 border-brand-black border-dashed rounded-full flex items-center justify-center bg-gray-50 text-gray-400 shrink-0">
-                                            <Store className="w-8 h-8 opacity-50" />
-                                        </div>
-                                    )}
-                                    <div className="flex-1 space-y-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="category" className="font-mono font-bold uppercase text-xs">Kategori Usaha</Label>
+                                    <Select
+                                        value={formData.category || 'Warung'}
+                                        onValueChange={(value) => setFormData({ ...formData, category: value })}
+                                    >
+                                        <SelectTrigger className="w-full border-2 border-brand-black rounded-none font-mono focus:ring-0 focus:ring-offset-0">
+                                            <SelectValue placeholder="Pilih Kategori" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-none border-2 border-brand-black max-h-[200px]">
+                                            {STORE_CATEGORIES.map((cat) => (
+                                                <SelectItem key={cat.id} value={cat.id} className="font-mono cursor-pointer hover:bg-brand-orange/20">
+                                                    <span className="mr-2">{cat.icon}</span> {cat.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                        Kategori akan menentukan tampilan background halaman publik toko Anda.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="slug" className="font-mono font-bold uppercase text-xs">URL Toko (Slug)</Label>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-muted-foreground font-mono text-sm hidden sm:inline">omzetin.web.id/</span>
                                         <Input
-                                            id="logoUpload"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                            className="border-2 border-brand-black rounded-none font-mono cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-xs file:font-bold file:bg-brand-black file:text-brand-white hover:file:bg-brand-orange hover:file:text-brand-black transition-all"
+                                            id="slug"
+                                            value={formData.slug || ''}
+                                            onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-') })}
+                                            className="border-2 border-brand-black rounded-none font-mono focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange flex-1"
+                                            placeholder="nama-toko"
                                         />
-                                        <div className="relative">
-                                            <div className="absolute inset-0 flex items-center">
-                                                <span className="w-full border-t border-gray-300" />
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                        Slug hanya boleh huruf kecil, angka, & strip (-). URL: <span className="font-bold text-brand-orange">/{formData.slug || storeProfile.slug || 'nama-toko'}</span>
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="logoUrl" className="font-mono font-bold uppercase text-xs">Logo Toko</Label>
+                                    <div className="flex items-start gap-4">
+                                        {formData.logoUrl ? (
+                                            <div className="w-20 h-20 border-2 border-brand-black rounded-full overflow-hidden bg-gray-100 shrink-0">
+                                                <img src={formData.logoUrl} alt="Preview" className="w-full h-full object-cover" />
                                             </div>
-                                            <div className="relative flex justify-center text-xs uppercase">
-                                                <span className="bg-brand-white px-2 text-muted-foreground font-mono">Atau URL</span>
+                                        ) : (
+                                            <div className="w-20 h-20 border-2 border-brand-black border-dashed rounded-full flex items-center justify-center bg-gray-50 text-gray-400 shrink-0">
+                                                <Store className="w-8 h-8 opacity-50" />
                                             </div>
+                                        )}
+                                        <div className="flex-1 space-y-2">
+                                            <Input
+                                                id="logoUpload"
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                className="border-2 border-brand-black rounded-none font-mono cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-xs file:font-bold file:bg-brand-black file:text-brand-white hover:file:bg-brand-orange hover:file:text-brand-black transition-all"
+                                            />
+                                            <div className="relative">
+                                                <div className="absolute inset-0 flex items-center">
+                                                    <span className="w-full border-t border-gray-300" />
+                                                </div>
+                                                <div className="relative flex justify-center text-xs uppercase">
+                                                    <span className="bg-brand-white px-2 text-muted-foreground font-mono">Atau URL</span>
+                                                </div>
+                                            </div>
+                                            <Input
+                                                id="logoUrl"
+                                                value={formData.logoUrl || ''}
+                                                onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
+                                                placeholder="https://example.com/logo.png"
+                                                className="border-2 border-brand-black rounded-none font-mono text-xs h-8 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange"
+                                            />
                                         </div>
-                                        <Input
-                                            id="logoUrl"
-                                            value={formData.logoUrl || ''}
-                                            onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                                            placeholder="https://example.com/logo.png"
-                                            className="border-2 border-brand-black rounded-none font-mono text-xs h-8 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange"
-                                        />
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Right Column: Contact & Address */}
+                            <div className="space-y-4">
+                                <h3 className="font-display font-bold text-lg border-b-2 border-brand-black pb-2 mb-4 flex items-center gap-2">
+                                    <span className="text-xl">📍</span>
+                                    Kontak & Lokasi
+                                </h3>
+
+                                <div className="space-y-2 relative" ref={suggestionsRef}>
+                                    <Label htmlFor="address" className="font-mono font-bold uppercase text-xs">Alamat Lengkap</Label>
+                                    <MapPickerDialog
+                                        open={isMapPickerOpen}
+                                        onOpenChange={setIsMapPickerOpen}
+                                        currentAddress={formData.address}
+                                        currentLocation={formData.location_lat && formData.location_lng ? { lat: formData.location_lat, lng: formData.location_lng } : undefined}
+                                        onSelectAddress={(addr, lat, lng) => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                address: addr,
+                                                location_lat: lat || prev.location_lat,
+                                                location_lng: lng || prev.location_lng
+                                            }));
+                                        }}
+                                    />
+                                    <div className="relative">
+                                        <textarea
+                                            id="address"
+                                            value={formData.address}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, address: e.target.value });
+                                                searchAddress(e.target.value);
+                                            }}
+                                            onFocus={() => { if (addressSuggestions.length > 0) setShowSuggestions(true); }}
+                                            rows={3}
+                                            placeholder="Ketik alamat untuk mencari..."
+                                            className="flex w-full rounded-none border-2 border-brand-black bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-brand-orange disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-none"
+                                        />
+                                        {isSearching && (
+                                            <div className="absolute right-2 top-2">
+                                                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Autocomplete Suggestions */}
+                                    {showSuggestions && addressSuggestions.length > 0 && (
+                                        <div className="absolute z-50 w-full bg-white border-2 border-brand-black shadow-[4px_4px_0px_0px_#000] max-h-48 overflow-y-auto">
+                                            {addressSuggestions.map((s, i) => (
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-brand-orange/20 border-b border-gray-100 last:border-0 flex items-start gap-2 transition-colors"
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, address: s.display_name });
+                                                        setShowSuggestions(false);
+                                                    }}
+                                                >
+                                                    <MapPin className="w-3 h-3 text-red-500 mt-0.5 shrink-0" />
+                                                    <span className="line-clamp-2">{s.display_name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {formData.address && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsMapPickerOpen(true)}
+                                            className="w-full border-2 border-brand-black rounded-none font-mono font-bold text-xs hover:bg-brand-orange/20 flex items-center gap-2"
+                                        >
+                                            <MapPin className="w-4 h-4 text-red-500" />
+                                            Sesuaikan Titik di Peta (Map Picker)
+                                        </Button>
+                                    )}
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleUseMyLocation}
+                                        disabled={isLocating}
+                                        className="w-full border-2 border-blue-400 bg-blue-50 rounded-none font-mono font-bold text-xs text-blue-700 hover:bg-blue-100 flex items-center gap-2"
+                                    >
+                                        {isLocating ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Navigation className="w-4 h-4" />
+                                        )}
+                                        {isLocating ? 'Mencari lokasi...' : 'Gunakan Lokasi Saya'}
+                                    </Button>
+                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                        Ketik untuk cari alamat, atau gunakan GPS / Google Maps.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="address_detail" className="font-mono font-bold uppercase text-xs">Detail Alamat (Opsional)</Label>
+                                    <textarea
+                                        id="address_detail"
+                                        value={formData.address_detail}
+                                        onChange={(e) => setFormData({ ...formData, address_detail: e.target.value })}
+                                        rows={2}
+                                        placeholder="Contoh: Bumi Arum Regency Blok Akasia No. 21, Patokan depan masjid"
+                                        className="flex w-full rounded-none border-2 border-brand-black bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-brand-orange disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-none"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                        Tambahkan detail spesifik seperti nama gedung, blok, nomor rumah, atau patokan.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone" className="font-mono font-bold uppercase text-xs">Nomor Telepon / WhatsApp</Label>
+                                    <Input
+                                        id="phone"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        className="border-2 border-brand-black rounded-none font-mono focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange"
+                                        placeholder="Contoh: 08123456789"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                        Nomor ini akan digunakan untuk link WhatsApp pada struk.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Right Column: Contact & Address */}
-                        <div className="space-y-4">
-                            <h3 className="font-display font-bold text-lg border-b-2 border-brand-black pb-2 mb-4 flex items-center gap-2">
-                                <span className="text-xl">📍</span>
-                                Kontak & Lokasi
-                            </h3>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="address" className="font-mono font-bold uppercase text-xs">Alamat Lengkap</Label>
-                                <textarea
-                                    id="address"
-                                    value={formData.address}
-                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                    rows={4}
-                                    className="flex w-full rounded-none border-2 border-brand-black bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-brand-orange disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-none"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="phone" className="font-mono font-bold uppercase text-xs">Nomor Telepon / WhatsApp</Label>
-                                <Input
-                                    id="phone"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                    className="border-2 border-brand-black rounded-none font-mono focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-brand-orange"
-                                    placeholder="Contoh: 08123456789"
-                                />
-                                <p className="text-[10px] text-muted-foreground font-mono">
-                                    Nomor ini akan digunakan untuk link WhatsApp pada struk.
-                                </p>
-                            </div>
+                        <div className="p-6 pt-0 mt-auto">
+                            <Button
+                                type="submit"
+                                disabled={isSaving}
+                                className="w-full bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-transparent hover:border-brand-black rounded-none font-mono font-bold uppercase transition-all disabled:opacity-50 h-12 text-lg"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                        Menyimpan Perubahan...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-5 h-5 mr-2" />
+                                        Simpan Pengaturan Toko
+                                    </>
+                                )}
+                            </Button>
                         </div>
-                    </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
-                    <div className="p-6 pt-0 mt-auto">
-                        <Button
-                            type="submit"
-                            disabled={isSaving}
-                            className="w-full bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-transparent hover:border-brand-black rounded-none font-mono font-bold uppercase transition-all disabled:opacity-50 h-12 text-lg"
-                        >
-                            {isSaving ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                    Menyimpan Perubahan...
-                                </>
-                            ) : (
-                                <>
-                                    <Save className="w-5 h-5 mr-2" />
-                                    Simpan Pengaturan Toko
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
+            {/* Map Picker Modal */}
+            <MapPickerDialog
+                open={isMapPickerOpen}
+                onOpenChange={setIsMapPickerOpen}
+                currentAddress={formData.address}
+                onSelectAddress={(address) => setFormData({ ...formData, address })}
+            />
+        </>
     );
 }

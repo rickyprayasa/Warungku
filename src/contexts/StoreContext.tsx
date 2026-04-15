@@ -16,9 +16,9 @@ interface PublicStore {
   paymentMethods?: string[];
   bankName?: string;
   accountNumber?: string;
-  accountName?: string;
   phoneNumber?: string; // E-wallet phone number
   category?: string;
+  settings?: any;
 }
 
 interface StoreContextType {
@@ -112,10 +112,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const result = {
         paymentMethods,
         bankName: settingsMap.bank_name || '',
-        accountNumber: settingsMap.account_number || '',
         accountName: settingsMap.account_name || '',
         phoneNumber: settingsMap.phone_number || '',
         category: settingsMap.store_category || 'Warung',
+        settings: settingsMap,
       };
 
       return result;
@@ -124,10 +124,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return {
         paymentMethods: [],
         bankName: '',
-        accountNumber: '',
         accountName: '',
         phoneNumber: '',
         category: 'Warung',
+        settings: {},
       };
     }
   };
@@ -150,7 +150,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (demoStoreId) {
           const { data: storeById } = await supabasePublic
             .from('stores')
-            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled, settings')
             .eq('id', demoStoreId)
             .maybeSingle();
           if (storeById) {
@@ -162,7 +162,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!demoStore && demoStoreSlug) {
           const { data: storeBySlug } = await supabasePublic
             .from('stores')
-            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled, settings')
             .eq('slug', demoStoreSlug)
             .maybeSingle();
           if (storeBySlug) {
@@ -175,7 +175,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!demoStore) {
           const { data: storesByKeywords } = await supabasePublic
             .from('stores')
-            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled, settings')
             .or('slug.ilike.%ricky%,slug.ilike.%rsquare%,slug.ilike.%yusar%,name.ilike.%ricky%,name.ilike.%rsquare%,name.ilike.%yusar%')
             .limit(1)
             .maybeSingle();
@@ -189,7 +189,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!demoStore) {
           const { data: warungkuStore } = await supabasePublic
             .from('stores')
-            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled, settings')
             .or('slug.eq.warungku,name.ilike.%warungku%')
             .limit(1)
             .maybeSingle();
@@ -203,7 +203,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!demoStore) {
           const { data: firstStore } = await supabasePublic
             .from('stores')
-            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+            .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled, settings')
             .limit(1)
             .maybeSingle();
           if (firstStore) {
@@ -223,7 +223,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             logoUrl: demoStore.logo_url || '',
             qrisCode: demoStore.qris_code || '',
             cartEnabled: demoStore.cart_enabled !== false,
-            ...settings
+            ...settings,
+            settings: demoStore.settings || {},
           };
           setPublicStore(store);
           setCurrentStoreId(store.id);
@@ -259,7 +260,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const { data, error } = await withTimeout(
         supabasePublic
           .from('stores')
-          .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled')
+          .select('id, name, slug, address, phone, logo_url, qris_code, cart_enabled, settings')
           .eq('slug', slug)
           .maybeSingle() as any,
         10000 // 10s timeout
@@ -292,7 +293,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             logoUrl: ilikData.logo_url || '',
             qrisCode: ilikData.qris_code || '',
             cartEnabled: ilikData.cart_enabled !== false,
-            ...settings
+            ...settings,
+            settings: ilikData.settings || {},
           };
           setPublicStore(store);
           setCurrentStoreId(store.id);
@@ -331,7 +333,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         logoUrl: data.logo_url || '',
         qrisCode: data.qris_code || '',
         cartEnabled: data.cart_enabled !== false,
-        ...settings
+        ...settings,
+        settings: data.settings || {},
       };
 
       setPublicStore(store);

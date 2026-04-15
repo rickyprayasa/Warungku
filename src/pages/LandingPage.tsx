@@ -1009,22 +1009,23 @@ export function LandingPage() {
                     </motion.div>
 
                     <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10 lg:py-24">
-                        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16 items-center">
-                            <div className="lg:col-span-7 flex flex-col gap-8 text-center lg:text-left z-10">
+                        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16 items-center">
+                            <div className="flex flex-col gap-8 text-center lg:text-left z-10">
                                 <motion.h1
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5, delay: 0.1 }}
-                                    className="text-6xl font-black leading-[0.95] tracking-tight text-black sm:text-7xl lg:text-8xl"
+                                    className="text-5xl font-black leading-[1.1] tracking-tight text-black sm:text-6xl lg:text-7xl"
                                 >
-                                    Satu Aplikasi,<br />
+                                    Satu Aplikasi,<br className="hidden sm:block" />
                                     <motion.span
-                                        className="inline-block bg-brand-orange px-2 text-white border-3 border-black shadow-[5px_5px_0px_0px_#000] transform rotate-2"
+                                        className="inline-block whitespace-nowrap bg-brand-orange px-4 py-1 text-white border-4 border-black shadow-[6px_6px_0px_0px_#000] transform -rotate-2 my-3"
                                         whileHover={{ scale: 1.05, rotate: 0 }}
                                     >
                                         Semua Solusi
                                     </motion.span>
-                                    <span className="block mt-2">UMKM</span>
+                                    <br />
+                                    UMKM
                                 </motion.h1>
                                 <motion.p
                                     initial={{ opacity: 0, y: 20 }}
@@ -1086,7 +1087,7 @@ export function LandingPage() {
                             </div>
 
                             {/* Interactive App Preview */}
-                            <div className="lg:col-span-5 relative flex justify-center lg:justify-end">
+                            <div className="relative flex justify-center lg:justify-end">
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}

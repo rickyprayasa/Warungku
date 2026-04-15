@@ -163,7 +163,7 @@ export function POSPage() {
               </div>
 
               {/* View Toggle & Sort Toggle */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2">
                 {/* View Toggle */}
                 <div className="flex items-center border-2 border-brand-black bg-brand-white">
                   <Button

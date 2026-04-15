@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useCartStore } from '@/lib/cart-store';
 import { useWarungStore } from '@/lib/store';
 import { useStore } from '@/contexts/StoreContext';
@@ -14,6 +15,40 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ShoppingCart, Minus, Plus, Trash2, CreditCard, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+
+function QuantityInput({ value, max, onChange }: { value: number; max?: number; onChange: (val: number) => void }) {
+  const [localVal, setLocalVal] = useState<string | number>(value);
+
+  useEffect(() => {
+    setLocalVal(value);
+  }, [value]);
+
+  return (
+    <input
+      type="number"
+      min={1}
+      max={max}
+      value={localVal}
+      onChange={(e) => {
+        setLocalVal(e.target.value);
+        const val = parseInt(e.target.value);
+        if (!isNaN(val) && val > 0) {
+          onChange(max !== undefined ? Math.min(max, val) : val);
+        }
+      }}
+      onBlur={() => {
+        const val = parseInt(String(localVal));
+        if (isNaN(val) || val < 1) {
+          setLocalVal(1);
+          onChange(1);
+        } else {
+          setLocalVal(val);
+        }
+      }}
+      className="w-10 h-8 text-center font-mono font-bold border-none bg-transparent outline-none focus:bg-brand-orange/20 p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+    />
+  );
+}
 
 export function CartSheet() {
   const { items, isCartOpen, closeCart, updateQuantity, removeFromCart, clearCart, getTotal } = useCartStore();

@@ -212,10 +212,14 @@ export function PublicStorePage() {
   // This preserves the store initialization/context but lets CheckoutPage control the UI
   if (isCheckoutRoute) {
     return (
-      <>
-        <Outlet />
+      <div className="flex flex-col min-h-screen min-w-0 overflow-x-hidden relative z-10">
+        <AppHeader storeName={publicStore.name} logoUrl={publicStore.logoUrl} />
+        <main className="pt-16 md:pt-20 flex-1">
+          <Outlet />
+        </main>
+        <AppFooter />
         <Toaster richColors closeButton theme="light" />
-      </>
+      </div>
     );
   }
 

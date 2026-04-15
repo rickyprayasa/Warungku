@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from './ui/button';
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2, MessageSquare, CheckCircle, Clock, User, Eye, X, Printer, MessageCircle } from 'lucide-react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Trash2, MessageSquare, CheckCircle, Clock, User, Eye, X, Printer, MessageCircle, Truck, Store } from 'lucide-react';
 import type { Sale } from '@shared/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
@@ -148,16 +148,32 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                   </div>
                 )}
 
-                {/* Notes */}
-                {selectedSale.notes && (
-                  <div className="p-3 bg-purple-50 border-l-4 border-purple-500">
+                {/* Shipping Info */}
+                {selectedSale.notes?.includes('[Pengiriman]') && (
+                  <div className={`p-3 border-l-4 ${selectedSale.notes.includes('Ongkir:') ? 'bg-blue-50 border-blue-500' : 'bg-gray-50 border-gray-400'}`}>
                     <h4 className="font-bold mb-1 flex items-center gap-1 text-sm">
-                      <MessageSquare className="w-4 h-4" />
-                      Catatan
+                      {selectedSale.notes.includes('Ongkir:') ? <Truck className="w-4 h-4 text-blue-600" /> : <Store className="w-4 h-4 text-gray-600" />}
+                      Pengiriman
                     </h4>
-                    <p className="text-sm font-mono italic">{selectedSale.notes}</p>
+                    <p className="text-sm font-mono font-bold">
+                      {selectedSale.notes.includes('Ambil Sendiri') ? '📍 Ambil Sendiri' : selectedSale.notes.match(/Ongkir: ([^|]+)/)?.[1]?.trim() || 'Kirim'}
+                    </p>
                   </div>
                 )}
+
+                {/* Notes (cleaned from shipping tag) */}
+                {selectedSale.notes && (() => {
+                  const cleanNotes = selectedSale.notes.replace(/\[Pengiriman\][^|]*\|?\s*/g, '').trim();
+                  return cleanNotes ? (
+                    <div className="p-3 bg-purple-50 border-l-4 border-purple-500">
+                      <h4 className="font-bold mb-1 flex items-center gap-1 text-sm">
+                        <MessageSquare className="w-4 h-4" />
+                        Catatan
+                      </h4>
+                      <p className="text-sm font-mono italic">{cleanNotes}</p>
+                    </div>
+                  ) : null;
+                })()}
 
                 {/* Payment Proof */}
                 {selectedSale.paymentProofUrl && (
@@ -352,13 +368,31 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
                 <TableCell className="font-mono text-right font-bold">{formatCurrency(sale.total)}</TableCell>
                 <TableCell className="font-mono text-right font-bold text-green-600">{formatCurrency(calculateProfit(sale))}</TableCell>
                 <TableCell className="font-mono text-sm text-muted-foreground max-w-[200px]">
-                  {sale.notes ? (
-                    <span className="italic truncate block" title={sale.notes}>
-                      {sale.notes.length > 50 ? `${sale.notes.substring(0, 50)}...` : sale.notes}
-                    </span>
-                  ) : (
-                    <span className="text-gray-300">-</span>
-                  )}
+                  <div className="flex flex-col gap-1">
+                    {sale.notes?.includes('[Pengiriman]') && (
+                      sale.notes.includes('Ongkir:') ? (
+                        <Badge className="bg-blue-100 text-blue-700 text-xs w-fit flex items-center gap-1">
+                          <Truck className="w-3 h-3" />
+                          {sale.notes.match(/Ongkir: ([^|]+)/)?.[1]?.trim() || 'Kirim'}
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-gray-100 text-gray-600 text-xs w-fit flex items-center gap-1">
+                          <Store className="w-3 h-3" />
+                          Ambil Sendiri
+                        </Badge>
+                      )
+                    )}
+                    {(() => {
+                      const cleanNotes = (sale.notes || '').replace(/\[Pengiriman\][^|]*\|?\s*/g, '').trim();
+                      return cleanNotes ? (
+                        <span className="italic truncate block" title={cleanNotes}>
+                          {cleanNotes.length > 40 ? `${cleanNotes.substring(0, 40)}...` : cleanNotes}
+                        </span>
+                      ) : !sale.notes?.includes('[Pengiriman]') ? (
+                        <span className="text-gray-300">-</span>
+                      ) : null;
+                    })()}
+                  </div>
                 </TableCell>
                 <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-center gap-1">
@@ -437,14 +471,35 @@ export function SalesDataTable({ sales }: SalesDataTableProps) {
               </div>
             </div>
 
-            {sale.notes && (
-              <div className="mt-2 p-2 bg-blue-50/50 border-l-4 border-blue-500 rounded-r">
-                <div className="flex items-start gap-2">
-                  <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs italic text-muted-foreground font-mono leading-relaxed line-clamp-2">{sale.notes}</p>
-                </div>
+            {/* Shipping Badge - Mobile */}
+            {sale.notes?.includes('[Pengiriman]') && (
+              <div className="mt-2">
+                {sale.notes.includes('Ongkir:') ? (
+                  <Badge className="bg-blue-100 text-blue-700 text-xs flex items-center gap-1 w-fit">
+                    <Truck className="w-3 h-3" />
+                    {sale.notes.match(/Ongkir: ([^|]+)/)?.[1]?.trim() || 'Kirim'}
+                  </Badge>
+                ) : (
+                  <Badge className="bg-gray-100 text-gray-600 text-xs flex items-center gap-1 w-fit">
+                    <Store className="w-3 h-3" />
+                    Ambil Sendiri
+                  </Badge>
+                )}
               </div>
             )}
+
+            {/* Clean Notes - Mobile */}
+            {sale.notes && (() => {
+              const cleanNotes = sale.notes.replace(/\[Pengiriman\][^|]*\|?\s*/g, '').trim();
+              return cleanNotes ? (
+                <div className="mt-2 p-2 bg-blue-50/50 border-l-4 border-blue-500 rounded-r">
+                  <div className="flex items-start gap-2">
+                    <MessageSquare className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs italic text-muted-foreground font-mono leading-relaxed line-clamp-2">{cleanNotes}</p>
+                  </div>
+                </div>
+              ) : null;
+            })()}
 
             <Button
               variant="outline"
