@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { ProductDetailDialog } from './ProductDetailDialog';
 import { motion } from 'framer-motion';
@@ -24,7 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const isActive = product.isActive ?? true;
   const isOutOfStock = (product.totalStock ?? 0) <= 0;
-  
+
   // Check if product is new (created within last 24 hours)
   const isNewProduct = product.createdAt && (Date.now() - product.createdAt) < 24 * 60 * 60 * 1000;
 
@@ -111,6 +112,7 @@ export function ProductCard({ product }: ProductCardProps) {
       </DialogTrigger>
       {isActive ? (
         <DialogContent className="sm:max-w-[425px] rounded-none border-4 border-brand-black bg-brand-white p-0">
+          <DialogTitle className="sr-only">{product.name}</DialogTitle>
           <ProductDetailDialog product={product} />
         </DialogContent>
       ) : null}
