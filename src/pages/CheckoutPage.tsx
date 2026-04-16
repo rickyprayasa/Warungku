@@ -870,8 +870,8 @@ export function CheckoutPage() {
         </div>
         {/* Customer Details Modal */}
         <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
-          <DialogContent className="sm:max-w-md rounded-none border-4 border-brand-black bg-brand-white">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-4xl w-[95vw] h-fit max-h-[90vh] sm:max-h-[85vh] flex flex-col p-0 rounded-none border-4 border-brand-black bg-brand-white overflow-hidden !top-[8vh] !translate-y-0">
+            <DialogHeader className="p-4 border-b-2 border-brand-black bg-brand-light-orange/20 flex-shrink-0">
               <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
                 <User className="w-5 h-5" />
                 Data Pembeli
@@ -883,7 +883,7 @@ export function CheckoutPage() {
 
             {/* Universal Store Address Block */}
             {activeStoreProfile?.address && (
-              <div className="p-4 bg-amber-50 border-b-2 border-brand-black shadow-[inset_0_-2px_0_0_#ebb300]">
+              <div className="p-4 bg-amber-50 border-b-2 border-brand-black shadow-[inset_0_-2px_0_0_#ebb300] flex-shrink-0">
                 <div className="max-w-2xl mx-auto flex items-start gap-3">
                   <div className="bg-amber-200 p-2 rounded-full mt-1 border-2 border-amber-400">
                     <Store className="w-4 h-4 text-amber-800" />
@@ -913,165 +913,177 @@ export function CheckoutPage() {
               </div>
             )}
 
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="customerName" className="font-mono text-sm font-bold">
-                  Nama <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="customerName"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Masukkan nama Anda"
-                  className="mt-1 border-2 border-brand-black rounded-none font-mono"
-                />
-              </div>
-              <div>
-                <Label htmlFor="customerPhone" className="font-mono text-sm font-bold">
-                  No. Handphone (Opsional)
-                </Label>
-                <Input
-                  id="customerPhone"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="08xxxxxxxxxx"
-                  className="mt-1 border-2 border-brand-black rounded-none font-mono"
-                />
-              </div>
-              <div>
-                <Label htmlFor="customerAddress" className="font-mono text-sm font-bold">
-                  Alamat Pengiriman {shippingMethod === 'delivery' && <span className="text-red-500">*</span>}
-                </Label>
-
-                {/* Map Picker for buyer address */}
-                <MapPickerDialog
-                  open={customerAddressMapOpen}
-                  onOpenChange={setCustomerAddressMapOpen}
-                  currentAddress={customerAddress}
-                  onSelectAddress={(addr) => {
-                    setCustomerAddress(addr);
-                  }}
-                />
-
-                {customerAddress ? (
-                  <div className="mt-1 p-2 bg-green-50 border-2 border-green-300 space-y-1">
-                    <p className="font-mono text-xs text-green-800 font-bold">📍 {customerAddress}</p>
-                    <button
-                      type="button"
-                      onClick={() => setCustomerAddressMapOpen(true)}
-                      className="text-[11px] font-mono font-bold text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Ubah Lokasi di Peta
-                    </button>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCustomerAddressMapOpen(true)}
-                    className="mt-1 w-full border-2 border-dashed border-brand-black rounded-none font-mono text-xs h-12 flex items-center justify-center gap-2 hover:bg-brand-orange/10"
-                  >
-                    <MapPin className="w-4 h-4 text-red-500" />
-                    Pilih Lokasi di Peta
-                  </Button>
-                )}
-              </div>
-              {/* Detail address for buyer */}
-              <div>
-                <Label htmlFor="customerAddressDetail" className="font-mono text-sm font-bold">
-                  Detail Alamat (Opsional)
-                </Label>
-                <Input
-                  id="customerAddressDetail"
-                  value={customerAddressDetail}
-                  onChange={(e) => setCustomerAddressDetail(e.target.value)}
-                  placeholder="Contoh: Blok Akasia No. 21, depan masjid"
-                  className="mt-1 border-2 border-brand-black rounded-none font-mono"
-                />
-                <p className="text-[10px] text-muted-foreground font-mono mt-1">
-                  Tambahkan detail spesifik seperti nama gedung, blok, nomor rumah.
-                </p>
-              </div>
-              <div>
-                <Label htmlFor="customerNotes" className="font-mono text-sm font-bold">
-                  Catatan (Opsional)
-                </Label>
-                <Input
-                  id="customerNotes"
-                  value={customerNotes}
-                  onChange={(e) => setCustomerNotes(e.target.value)}
-                  placeholder="Catatan tambahan untuk pesanan"
-                  className="mt-1 border-2 border-brand-black rounded-none font-mono"
-                />
-              </div>
-              {/* Payment Proof Upload - Only for manual payment */}
-              {activeTab === 'manual' && (
-                <div>
-                  <Label className="font-mono text-sm font-bold">
-                    Bukti Transfer <span className="text-red-500">*</span>
-                  </Label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePaymentProofChange}
-                    className="hidden"
-                  />
-                  {paymentProofPreview ? (
-                    <div className="mt-2 relative">
-                      <img
-                        src={paymentProofPreview}
-                        alt="Bukti Transfer"
-                        className="w-full max-h-48 object-contain border-2 border-brand-black"
+            <div className="flex flex-col flex-1 bg-white min-h-0">
+              <div className="flex-1 overflow-y-auto p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  {/* Left Column: Data Diri & Catatan */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="customerName" className="font-mono text-sm font-bold">
+                        Nama <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="customerName"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder="Masukkan nama Anda"
+                        className="mt-1 border-2 border-brand-black rounded-none font-mono"
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setPaymentProofFile(null);
-                          setPaymentProofPreview(null);
-                          if (fileInputRef.current) fileInputRef.current.value = '';
-                        }}
-                        className="absolute top-2 right-2 rounded-none text-xs"
-                      >
-                        Ganti
-                      </Button>
                     </div>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="mt-2 w-full border-2 border-dashed border-brand-black rounded-none font-mono h-20 flex flex-col items-center justify-center gap-1 hover:bg-brand-orange/10"
-                    >
-                      <Upload className="w-5 h-5" />
-                      <span className="text-xs">Upload Bukti Transfer</span>
-                    </Button>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1 font-mono">
-                    Format: JPG, PNG. Maks 5MB
-                  </p>
+                    <div>
+                      <Label htmlFor="customerPhone" className="font-mono text-sm font-bold">
+                        No. Handphone (Opsional)
+                      </Label>
+                      <Input
+                        id="customerPhone"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="08xxxxxxxxxx"
+                        className="mt-1 border-2 border-brand-black rounded-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="customerNotes" className="font-mono text-sm font-bold">
+                        Catatan (Opsional)
+                      </Label>
+                      <Input
+                        id="customerNotes"
+                        value={customerNotes}
+                        onChange={(e) => setCustomerNotes(e.target.value)}
+                        placeholder="Catatan tambahan untuk pesanan"
+                        className="mt-1 border-2 border-brand-black rounded-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column: Alamat & Pembayaran */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="customerAddress" className="font-mono text-sm font-bold">
+                        Alamat Pengiriman {shippingMethod === 'delivery' && <span className="text-red-500">*</span>}
+                      </Label>
+
+                      <MapPickerDialog
+                        open={customerAddressMapOpen}
+                        onOpenChange={setCustomerAddressMapOpen}
+                        currentAddress={customerAddress}
+                        onSelectAddress={(addr) => {
+                          setCustomerAddress(addr);
+                        }}
+                      />
+
+                      {customerAddress ? (
+                        <div className="mt-1 p-2 bg-green-50 border-2 border-green-300 space-y-1">
+                          <p className="font-mono text-xs text-green-800 font-bold">📍 {customerAddress}</p>
+                          <button
+                            type="button"
+                            onClick={() => setCustomerAddressMapOpen(true)}
+                            className="text-[11px] font-mono font-bold text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Ubah Lokasi di Peta
+                          </button>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setCustomerAddressMapOpen(true)}
+                          className="mt-1 w-full border-2 border-dashed border-brand-black rounded-none font-mono text-xs h-12 flex items-center justify-center gap-2 hover:bg-brand-orange/10"
+                        >
+                          <MapPin className="w-4 h-4 text-red-500" />
+                          Pilih Lokasi di Peta
+                        </Button>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="customerAddressDetail" className="font-mono text-sm font-bold">
+                        Detail Alamat (Opsional)
+                      </Label>
+                      <Input
+                        id="customerAddressDetail"
+                        value={customerAddressDetail}
+                        onChange={(e) => setCustomerAddressDetail(e.target.value)}
+                        placeholder="Contoh: Blok Akasia No. 21, depan masjid"
+                        className="mt-1 border-2 border-brand-black rounded-none font-mono"
+                      />
+                      <p className="text-[10px] text-muted-foreground font-mono mt-1">
+                        Tambahkan detail spesifik seperti nama gedung, blok, nomor rumah.
+                      </p>
+                    </div>
+                    {/* Payment Proof Upload - Only for manual payment */}
+                    {activeTab === 'manual' && (
+                      <div>
+                        <Label className="font-mono text-sm font-bold">
+                          Bukti Transfer <span className="text-red-500">*</span>
+                        </Label>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePaymentProofChange}
+                          className="hidden"
+                        />
+                        {paymentProofPreview ? (
+                          <div className="mt-2 relative">
+                            <img
+                              src={paymentProofPreview}
+                              alt="Bukti Transfer"
+                              className="w-full max-h-48 object-contain border-2 border-brand-black"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setPaymentProofFile(null);
+                                setPaymentProofPreview(null);
+                                if (fileInputRef.current) fileInputRef.current.value = '';
+                              }}
+                              className="absolute top-2 right-2 rounded-none text-xs"
+                            >
+                              Ganti
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="mt-2 w-full border-2 border-dashed border-brand-black rounded-none font-mono h-20 flex flex-col items-center justify-center gap-1 hover:bg-brand-orange/10"
+                          >
+                            <Upload className="w-5 h-5" />
+                            <span className="text-xs">Upload Bukti Transfer</span>
+                          </Button>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1 font-mono">
+                          Format: JPG, PNG. Maks 5MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
-            <Button
-              onClick={handleConfirmPayment}
-              disabled={isSubmitting || !customerName.trim()}
-              className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Mengirim...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Kirim Pesanan
-                </>
-              )}
-            </Button>
+
+            <div className="p-4 border-t-2 border-brand-black bg-white flex-shrink-0">
+              <Button
+                onClick={handleConfirmPayment}
+                disabled={isSubmitting || !customerName.trim()}
+                className="w-full bg-brand-orange text-brand-black border-2 border-brand-black rounded-none font-bold uppercase text-sm shadow-hard hover:bg-brand-black hover:text-brand-white hover:shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Mengirim...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Kirim Pesanan
+                  </>
+                )}
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
 
