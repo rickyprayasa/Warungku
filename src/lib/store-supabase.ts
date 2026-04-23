@@ -1755,7 +1755,19 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           return;
         }
 
-        // Get sale items first for stock restoration
+        // Get sale record first to check if it's a reconciliation sale
+        const { data: saleRecord } = await withTimeout(
+          supabase
+            .from('sales' as any)
+            .select('notes')
+            .eq('id', saleId)
+            .single() as any,
+          10000,
+          'Gagal mengambil data penjualan (timeout)'
+        );
+        const isRekonSale = saleRecord?.notes?.includes('[REKON]');
+
+        // Get sale items for stock restoration
         const { data: items } = await withTimeout(
           supabase
             .from('sale_items' as any)
@@ -1783,7 +1795,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         for (const item of items || []) {
           const product = products.find(p => p.id === item.product_id);
           if (product) {
-            const qtyToRestore = item.quantity * (product.qtyPerUnit || 1);
+            // Reconciliation sales already store quantity in pieces (not selling units)
+            // so we must NOT multiply by qtyPerUnit again to avoid double-counting
+            const qtyToRestore = isRekonSale
+              ? item.quantity
+              : item.quantity * (product.qtyPerUnit || 1);
 
             // FIFO: Restore to stock_details
             if (storeId) {
