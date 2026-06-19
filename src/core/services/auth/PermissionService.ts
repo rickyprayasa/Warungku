@@ -21,6 +21,40 @@ export class PermissionService {
   private cacheExpiry = new Map<string, number>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+  constructor() {
+    // Initialize from localStorage if available
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('warung-role-cache');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          Object.keys(parsed).forEach(userId => {
+            if (isValidRole(parsed[userId].role)) {
+              this.roleCache.set(userId, parsed[userId].role);
+              // Expire immediately on start to force a fresh fetch but keep as fallback
+              this.cacheExpiry.set(userId, Date.now() - 1000);
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to load role cache from localStorage:', e);
+      }
+    }
+  }
+
+  private saveToLocalStorage() {
+    if (typeof window === 'undefined') return;
+    try {
+      const data: Record<string, { role: UserRole }> = {};
+      this.roleCache.forEach((role, userId) => {
+        data[userId] = { role };
+      });
+      localStorage.setItem('warung-role-cache', JSON.stringify(data));
+    } catch (e) {
+      console.warn('Failed to save role cache to localStorage:', e);
+    }
+  }
+
   /**
    * Get user role from auth.users table
    * Uses SECURITY DEFINER RPC function to bypass RLS
@@ -35,7 +69,8 @@ export class PermissionService {
     }
 
     log('[PermissionService] Fetching role for:', userId);
-    let role = UserRole.STORE_MEMBER; // default
+    let role: UserRole | null = null;
+    let fetchSuccessful = false;
 
     try {
       // Prevent indefinite hang if RPC deadlocks
@@ -58,7 +93,10 @@ export class PermissionService {
           role = UserRole.SUPER_ADMIN;
         } else if (userData.role && isValidRole(userData.role)) {
           role = userData.role as UserRole;
+        } else {
+          role = UserRole.STORE_MEMBER;
         }
+        fetchSuccessful = true;
       } else if (error) {
         console.warn('[PermissionService] RPC error:', error.message);
       }
@@ -66,13 +104,32 @@ export class PermissionService {
       console.warn('[PermissionService] Failed to fetch user role (timeout or error):', error);
     }
 
+    // Fallback logic if fetch failed
+    if (!fetchSuccessful) {
+      // If we have a cached role (even if expired), fall back to it!
+      if (cached) {
+        console.warn('[PermissionService] Fetch failed. Using expired cached role as fallback:', cached);
+        return cached;
+      }
+      // Otherwise use default
+      role = UserRole.STORE_MEMBER;
+    }
+
     log('[PermissionService] Role resolved:', role);
 
     // Update cache
-    this.roleCache.set(userId, role);
-    this.cacheExpiry.set(userId, Date.now() + this.CACHE_TTL);
+    if (role) {
+      this.roleCache.set(userId, role);
+      // If fetch failed, do not cache for 5 minutes (only 5 seconds) to allow quick retry on recovery
+      const ttl = fetchSuccessful ? this.CACHE_TTL : 5000;
+      this.cacheExpiry.set(userId, Date.now() + ttl);
 
-    return role;
+      if (fetchSuccessful) {
+        this.saveToLocalStorage();
+      }
+    }
+
+    return role || UserRole.STORE_MEMBER;
   }
 
   /**
