@@ -150,6 +150,12 @@ export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts 
             const inputQty = quantities[p.id] || 0;
             if (inputQty > 0) {
                 const isPack = packModes[p.id] || false;
+                const currentUnitsPerPack = unitsPerPacks[p.id] || p.qtyPerUnit || 1;
+                const defaultItemCost = isPack ? (p.cost || 0) * currentUnitsPerPack : (p.cost || 0);
+
+                // Calculate unit buy price from total price input divided by quantity
+                const totalPrice = buyPrices[p.id];
+                const buyPrice = totalPrice !== undefined ? (totalPrice / inputQty) : defaultItemCost;
 
                 if (isPack) {
                     selected.push({
@@ -157,8 +163,8 @@ export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts 
                         quantity: 0, // Calculated later in Parent
                         isPack: true,
                         packQuantity: inputQty,
-                        buyPrice: buyPrices[p.id] !== undefined ? buyPrices[p.id] : (p.cost || 0),
-                        unitsPerPack: unitsPerPacks[p.id] || p.qtyPerUnit || 1,
+                        buyPrice: buyPrice,
+                        unitsPerPack: currentUnitsPerPack,
                         notes: notes[p.id] || ''
                     });
                 } else {
@@ -166,7 +172,7 @@ export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts 
                     selected.push({
                         productId: p.id,
                         quantity: inputQty,
-                        buyPrice: buyPrices[p.id] !== undefined ? buyPrices[p.id] : (p.cost || 0),
+                        buyPrice: buyPrice,
                         isPack: false,
                         notes: notes[p.id] || ''
                     });
@@ -257,110 +263,135 @@ export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts 
                             const isSelected = qty > 0;
                             const currentUnitsPerPack = unitsPerPacks[product.id] || product.qtyPerUnit || 1;
 
-                            return (
-                                <div
-                                    key={product.id}
-                                    className={`
-                    flex items-center justify-between p-4 border-b transition-all
-                    ${isSelected ? 'bg-brand-orange/10' : 'bg-white hover:bg-gray-50'}
-                    border-gray-200
-                  `}
-                                >
-                                    <div className="flex-1 min-w-0 mr-4">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h4 className="font-bold text-lg truncate">{product.name}</h4>
-                                            {product.category && <Badge variant="outline" className="text-[10px] h-5 rounded-none border-black">{product.category}</Badge>}
-                                        </div>
-                                        <div className="text-sm text-muted-foreground font-mono flex gap-3">
-                                            <span>•</span>
-                                            <span>Limit Min: {product.minStockLevel}</span>
-                                        </div>
-                                        <div className="mt-2">
-                                            <Input
-                                                placeholder="Catatan..."
-                                                className="h-8 text-xs border-dashed border-2 border-gray-300 w-full"
-                                                value={notes[product.id] || ''}
-                                                onChange={(e) => handleNoteChange(product.id, e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
+                             const defaultItemCost = isPack ? (product.cost || 0) * currentUnitsPerPack : (product.cost || 0);
 
-                                    <div className="flex items-center gap-4">
-                                        {/* Pack Mode Configuration Group */}
-                                        <div className={`
-                                            flex items-center gap-3 px-3 py-1 rounded-lg border-2 transition-all
-                                            ${isPack ? 'bg-brand-orange/10 border-brand-orange' : 'bg-gray-50 border-gray-200'}
-                                        `}>
-                                            <div className="flex items-center gap-2">
-                                                <Label htmlFor={`mode-${product.id}`} className="text-xs font-mono text-muted-foreground cursor-pointer select-none font-bold">
-                                                    {isPack ? 'Paket' : 'Satuan'}
-                                                </Label>
-                                                <Switch
-                                                    id={`mode-${product.id}`}
-                                                    checked={isPack}
-                                                    onCheckedChange={() => togglePackMode(product.id)}
-                                                    className="data-[state=checked]:bg-brand-orange border-2 border-brand-black scale-90"
-                                                />
-                                            </div>
+                             // Calculate unit price for display
+                             const totalPrice = buyPrices[product.id];
+                             const calculatedUnitPrice = totalPrice !== undefined ? (qty > 0 ? totalPrice / qty : 0) : defaultItemCost;
 
-                                            {/* Units per Pack Input (Only visible in Pack Mode) */}
-                                            {isPack && (
-                                                <div className="flex items-center gap-1 pl-3 border-l-2 border-brand-black/10 animate-in fade-in slide-in-from-left-2">
-                                                    <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">Isi:</span>
-                                                    <Input
-                                                        id={`upp-${product.id}`}
-                                                        type="number"
-                                                        className="h-7 w-14 font-mono text-center font-bold border-1 border-brand-black/30 focus:border-brand-black text-xs p-0 rounded-md bg-white"
-                                                        placeholder="1"
-                                                        value={currentUnitsPerPack}
-                                                        onChange={(e) => handleUnitsPerPackChange(product.id, e.target.value)}
-                                                    />
-                                                    <span className="text-[10px] font-mono text-muted-foreground">pcs</span>
-                                                </div>
-                                            )}
-                                        </div>
+                             return (
+                                 <div
+                                     key={product.id}
+                                     className={`
+                                         flex flex-col md:flex-row md:items-center justify-between p-4 gap-4 border-b transition-all
+                                         ${isSelected ? 'bg-brand-orange/5 border-l-4 border-l-brand-orange' : 'bg-white hover:bg-gray-50 border-l-4 border-l-transparent'}
+                                         border-gray-200
+                                     `}
+                                 >
+                                     <div className="flex-1 min-w-0 mr-4">
+                                         <div className="flex items-center gap-2 mb-1">
+                                             <h4 className="font-bold text-lg text-brand-black truncate">{product.name}</h4>
+                                             {product.category && (
+                                                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 rounded-none border-brand-black bg-brand-light-orange/20 font-bold">
+                                                     {product.category}
+                                                 </Badge>
+                                             )}
+                                         </div>
+                                         <div className="text-xs text-muted-foreground font-mono flex items-center gap-1.5">
+                                             <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-orange"></span>
+                                             <span>Limit Min: {product.minStockLevel} pcs</span>
+                                         </div>
+                                         <div className="mt-2.5">
+                                             <Input
+                                                 placeholder="Catatan..."
+                                                 className="h-8 text-xs border-dashed border-2 border-brand-black/20 focus:border-brand-black rounded-md w-full font-mono bg-white/50"
+                                                 value={notes[product.id] || ''}
+                                                 onChange={(e) => handleNoteChange(product.id, e.target.value)}
+                                             />
+                                         </div>
+                                     </div>
 
-                                        {/* Quantity Input */}
-                                        <div className="flex items-center gap-0 bg-white border-2 border-brand-black shadow-sm h-10 w-32">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-full w-9 rounded-none hover:bg-gray-100 border-r-2 border-brand-black"
-                                                onClick={() => decrementQty(product.id)}
-                                            >
-                                                <Minus className="w-3 h-3" />
-                                            </Button>
-                                            <Input
-                                                type="number"
-                                                className="h-full border-none text-center p-0 focus-visible:ring-0 font-bold text-lg rounded-none"
-                                                value={qty === 0 ? '' : qty}
-                                                placeholder="0"
-                                                onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                            />
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-full w-9 rounded-none hover:bg-gray-100 border-l-2 border-brand-black"
-                                                onClick={() => incrementQty(product.id)}
-                                            >
-                                                <Plus className="w-3 h-3" />
-                                            </Button>
-                                        </div>
+                                     <div className="flex flex-wrap items-center gap-4 md:gap-6 md:ml-auto">
+                                         {/* Pack Mode Configuration Group */}
+                                         <div className={`
+                                             flex items-center gap-2.5 px-3 py-1.5 h-10 rounded-lg border-2 transition-all select-none
+                                             ${isPack ? 'bg-brand-orange/10 border-brand-orange/50' : 'bg-gray-50 border-gray-200'}
+                                         `}>
+                                             <div className="flex items-center gap-2">
+                                                 <Label htmlFor={`mode-${product.id}`} className="text-xs font-mono font-bold text-muted-foreground cursor-pointer select-none">
+                                                     {isPack ? 'Paket' : 'Satuan'}
+                                                 </Label>
+                                                 <Switch
+                                                     id={`mode-${product.id}`}
+                                                     checked={isPack}
+                                                     onCheckedChange={() => togglePackMode(product.id)}
+                                                     className="data-[state=checked]:bg-brand-orange border-2 border-brand-black scale-90"
+                                                 />
+                                             </div>
 
-                                        {/* Price Input directly in row */}
-                                        <div className="flex flex-col gap-0.5 w-28">
-                                            <Label htmlFor={`price-${product.id}`} className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider">Harga {isPack ? '/ Pack' : '/ Unit'}</Label>
-                                            <Input
-                                                id={`price-${product.id}`}
-                                                className="h-9 font-mono text-right font-bold text-sm border-2 border-gray-200 focus:border-brand-black focus:ring-0 transition-all"
-                                                placeholder="Rp 0"
-                                                value={buyPrices[product.id] !== undefined ? buyPrices[product.id] : (product.cost || '')}
-                                                onChange={(e) => handlePriceChange(product.id, e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            );
+                                             {/* Units per Pack Input (Only visible in Pack Mode) */}
+                                             {isPack && (
+                                                 <div className="flex items-center gap-1.5 pl-2.5 border-l border-brand-black/10 animate-in fade-in slide-in-from-left-1">
+                                                     <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">Isi:</span>
+                                                     <Input
+                                                         id={`upp-${product.id}`}
+                                                         type="number"
+                                                         min={1}
+                                                         className="h-7 w-12 font-mono text-center font-bold border border-brand-black/30 focus:border-brand-black text-xs p-0 rounded bg-white"
+                                                         value={currentUnitsPerPack}
+                                                         onChange={(e) => handleUnitsPerPackChange(product.id, e.target.value)}
+                                                     />
+                                                     <span className="text-[10px] font-mono text-muted-foreground">pcs</span>
+                                                 </div>
+                                             )}
+                                         </div>
+
+                                         {/* Quantity Input */}
+                                         <div className="flex items-center gap-0 bg-white border-2 border-brand-black shadow-sm h-10 w-28 rounded-md overflow-hidden">
+                                             <Button
+                                                 variant="ghost"
+                                                 size="icon"
+                                                 className="h-full w-8 rounded-none hover:bg-gray-100 border-r-2 border-brand-black flex-shrink-0"
+                                                 onClick={() => decrementQty(product.id)}
+                                             >
+                                                 <Minus className="w-3 h-3" />
+                                             </Button>
+                                             <Input
+                                                 type="number"
+                                                 min={0}
+                                                 className="h-full border-none text-center p-0 focus-visible:ring-0 font-mono font-bold text-base rounded-none w-full"
+                                                 value={qty === 0 ? '' : qty}
+                                                 placeholder="0"
+                                                 onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                             />
+                                             <Button
+                                                 variant="ghost"
+                                                 size="icon"
+                                                 className="h-full w-8 rounded-none hover:bg-gray-100 border-l-2 border-brand-black flex-shrink-0"
+                                                 onClick={() => incrementQty(product.id)}
+                                             >
+                                                 <Plus className="w-3 h-3" />
+                                             </Button>
+                                         </div>
+
+                                         {/* Price Input directly in row */}
+                                         <div className="flex flex-col gap-0.5 w-32">
+                                             <Label htmlFor={`price-${product.id}`} className="text-[9px] font-mono font-bold text-muted-foreground uppercase tracking-wider text-right block mb-0.5">Total Harga</Label>
+                                             <div className="relative">
+                                                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-xs font-bold text-muted-foreground">Rp</span>
+                                                 <Input
+                                                     id={`price-${product.id}`}
+                                                     className="h-9 pl-7 pr-2 font-mono text-right font-bold text-sm border-2 border-brand-black rounded-md focus:border-brand-orange focus:ring-0 transition-all bg-white"
+                                                     placeholder={(qty * (isPack ? (product.cost || 0) * currentUnitsPerPack : (product.cost || 0))).toLocaleString('id-ID')}
+                                                     value={buyPrices[product.id] !== undefined ? buyPrices[product.id] : ''}
+                                                     onChange={(e) => handlePriceChange(product.id, e.target.value)}
+                                                 />
+                                             </div>
+                                             {/* Calculated Unit Price */}
+                                             <div className="mt-1 text-right flex flex-col gap-0">
+                                                 <span className="text-[10px] font-mono font-bold text-brand-orange">
+                                                     {`@ Rp ${calculatedUnitPrice.toLocaleString('id-ID')}/${isPack ? 'pack' : 'pcs'}`}
+                                                 </span>
+                                                 {isPack && (
+                                                     <span className="text-[9px] font-mono text-muted-foreground/80 leading-none">
+                                                         {`(${ (calculatedUnitPrice / currentUnitsPerPack).toLocaleString('id-ID', { maximumFractionDigits: 1 }) }/pcs)`}
+                                                     </span>
+                                                 )}
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                             );
                         })}
 
                         {filteredProducts.length === 0 && (

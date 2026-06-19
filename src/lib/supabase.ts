@@ -52,9 +52,23 @@ const memoryStorage = {
  */
 const navigatorLockWithTimeout = async (
   name: string,
-  acquireTimeout: number,
-  fn: () => Promise<any>
+  acquireTimeoutOrFn: number | (() => Promise<any>),
+  fnOrUndefined?: () => Promise<any>
 ): Promise<any> => {
+  let fn: () => Promise<any>;
+  let acquireTimeout = 5000; // Default 5s timeout
+
+  if (typeof acquireTimeoutOrFn === 'function') {
+    fn = acquireTimeoutOrFn;
+  } else if (typeof fnOrUndefined === 'function') {
+    fn = fnOrUndefined;
+    if (typeof acquireTimeoutOrFn === 'number') {
+      acquireTimeout = acquireTimeoutOrFn;
+    }
+  } else {
+    throw new Error('Lock callback is not a function');
+  }
+
   if (typeof navigator === 'undefined' || !navigator.locks) {
     // No lock API available (SSR, older browsers), just run the function
     return await fn();
