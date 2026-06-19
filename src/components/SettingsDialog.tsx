@@ -662,6 +662,83 @@ export function SettingsDialog({ trigger }: { trigger?: React.ReactNode }) {
                                 </div>
                             </div>
 
+                            {/* Purchase Defaults Section */}
+                            {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && (
+                                <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">
+                                    <h3 className="font-mono font-bold flex items-center gap-2">
+                                        <ShoppingCart className="w-4 h-4" />
+                                        Pengaturan Pembelian
+                                    </h3>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label className="font-mono font-bold text-sm">Default Mode Paket</Label>
+                                            <p className="text-[10px] text-muted-foreground font-mono pr-4">
+                                                Semua produk di form "Pilih Banyak" otomatis mode Paket.
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            checked={(storeProfile.settings as any)?.defaultPackMode === true}
+                                            onCheckedChange={async (checked) => {
+                                                try {
+                                                    await updateStoreProfile({
+                                                        ...storeProfile,
+                                                        settings: {
+                                                            ...(storeProfile.settings || {}),
+                                                            defaultPackMode: checked,
+                                                        },
+                                                    });
+                                                    toast.success(checked ? 'Default mode Paket diaktifkan' : 'Default mode Satuan diaktifkan');
+                                                } catch (error) {
+                                                    toast.error('Gagal menyimpan pengaturan');
+                                                }
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between border-t border-gray-200 pt-3">
+                                        <div className="space-y-0.5">
+                                            <Label className="font-mono font-bold text-sm">Default Isi Paket</Label>
+                                            <p className="text-[10px] text-muted-foreground font-mono pr-4">
+                                                Jumlah pcs default per paket. Kosongkan = pakai data produk.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                className="w-20 h-9 font-mono text-center font-bold border-2 border-brand-black rounded-none text-sm"
+                                                placeholder="Auto"
+                                                defaultValue={(storeProfile.settings as any)?.defaultUnitsPerPack || ''}
+                                                onBlur={async (e) => {
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    try {
+                                                        await updateStoreProfile({
+                                                            ...storeProfile,
+                                                            settings: {
+                                                                ...(storeProfile.settings || {}),
+                                                                defaultUnitsPerPack: val > 0 ? val : undefined,
+                                                            },
+                                                        });
+                                                        if (val > 0) {
+                                                            toast.success(`Default isi paket: ${val} pcs`);
+                                                        }
+                                                    } catch (error) {
+                                                        toast.error('Gagal menyimpan pengaturan');
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        (e.target as HTMLInputElement).blur();
+                                                    }
+                                                }}
+                                            />
+                                            <span className="text-xs font-mono text-muted-foreground">pcs</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Data Management Section */}
                             {(currentUser?.role === 'owner' || currentUser?.role === 'admin') && !isDemo && (
                                 <div className="border-2 border-brand-black p-4 space-y-3 bg-white shadow-[2px_2px_0px_#000]">

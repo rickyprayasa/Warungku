@@ -78,6 +78,17 @@ export function SettingsDashboard() {
 
     const isCartEnabled = storeProfile.cartEnabled ?? false;
 
+    // Local state for default isi paket input (to avoid saving on every keystroke)
+    const [localDefaultUnitsPerPack, setLocalDefaultUnitsPerPack] = useState<string>(
+        (storeProfile.settings as any)?.defaultUnitsPerPack?.toString() || ''
+    );
+
+    // Sync local state when storeProfile changes (e.g. after fetch)
+    useEffect(() => {
+        const val = (storeProfile.settings as any)?.defaultUnitsPerPack;
+        setLocalDefaultUnitsPerPack(val ? val.toString() : '');
+    }, [(storeProfile.settings as any)?.defaultUnitsPerPack]);
+
     // Load opname mode on mount
     useEffect(() => {
         fetchOpnameMode();
@@ -636,6 +647,93 @@ export function SettingsDashboard() {
                                         toast.success(checked ? 'Panduan diaktifkan' : 'Panduan dinonaktifkan');
                                     }}
                                 />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Purchase Defaults Card */}
+                    <Card className="border-4 border-brand-black rounded-none shadow-hard">
+                        <CardHeader className="border-b-2 border-brand-black bg-gray-50">
+                            <div className="flex items-center gap-3">
+                                <Package className="w-6 h-6 text-brand-black" />
+                                <div>
+                                    <CardTitle className="font-display text-xl">Pengaturan Pembelian</CardTitle>
+                                    <CardDescription className="font-mono">
+                                        Atur default mode dan isi paket untuk form Pilih Banyak Produk
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6">
+                            {/* Default Pack Mode Toggle */}
+                            <div className="flex items-center justify-between border-b border-gray-200 pb-6">
+                                <div className="space-y-0.5">
+                                    <h4 className="font-bold font-mono">Default Mode Paket</h4>
+                                    <p className="text-sm text-muted-foreground font-mono">
+                                        Aktifkan agar semua produk di form "Pilih Banyak Produk" otomatis menggunakan mode Paket.
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={(storeProfile.settings as any)?.defaultPackMode === true}
+                                    onCheckedChange={async (checked) => {
+                                        try {
+                                            await updateStoreProfile({
+                                                ...storeProfile,
+                                                settings: {
+                                                    ...(storeProfile.settings || {}),
+                                                    defaultPackMode: checked,
+                                                },
+                                            });
+                                            toast.success(checked ? 'Default mode Paket diaktifkan' : 'Default mode Satuan diaktifkan');
+                                        } catch (error) {
+                                            toast.error('Gagal menyimpan pengaturan');
+                                        }
+                                    }}
+                                    className="data-[state=checked]:bg-brand-orange border-2 border-brand-black"
+                                />
+                            </div>
+
+                            {/* Default Units Per Pack */}
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <h4 className="font-bold font-mono">Default Isi Paket</h4>
+                                    <p className="text-sm text-muted-foreground font-mono">
+                                        Jumlah pcs/unit default per paket saat mode Paket aktif. Kosongkan untuk menggunakan Isi Per Unit produk.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        className="w-24 h-10 font-mono text-center font-bold border-2 border-brand-black rounded-none"
+                                        placeholder="Auto"
+                                        value={localDefaultUnitsPerPack}
+                                        onChange={(e) => setLocalDefaultUnitsPerPack(e.target.value)}
+                                        onBlur={async () => {
+                                            const val = parseInt(localDefaultUnitsPerPack) || 0;
+                                            try {
+                                                await updateStoreProfile({
+                                                    ...storeProfile,
+                                                    settings: {
+                                                        ...(storeProfile.settings || {}),
+                                                        defaultUnitsPerPack: val > 0 ? val : undefined,
+                                                    },
+                                                });
+                                                if (val > 0) {
+                                                    toast.success(`Default isi paket: ${val} pcs`);
+                                                }
+                                            } catch (error) {
+                                                toast.error('Gagal menyimpan pengaturan');
+                                            }
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                (e.target as HTMLInputElement).blur();
+                                            }
+                                        }}
+                                    />
+                                    <span className="text-sm font-mono text-muted-foreground">pcs</span>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

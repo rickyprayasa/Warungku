@@ -3,12 +3,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Package, Check, Minus, Plus } from 'lucide-react';
+import { Search, Package, Check, Minus, Plus, Settings } from 'lucide-react';
 import { useWarungStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface MultiProductPickerDialogProps {
     open: boolean;
@@ -18,6 +19,8 @@ interface MultiProductPickerDialogProps {
 
 export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts }: MultiProductPickerDialogProps) {
     const products = useWarungStore((state) => state.products);
+    const storeProfile = useWarungStore((state) => state.storeProfile);
+    const updateStoreProfile = useWarungStore((state) => state.updateStoreProfile);
     const [searchQuery, setSearchQuery] = useState('');
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     const [buyPrices, setBuyPrices] = useState<Record<string, number>>({});
@@ -25,15 +28,35 @@ export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts 
     const [packModes, setPackModes] = useState<Record<string, boolean>>({});
     const [unitsPerPacks, setUnitsPerPacks] = useState<Record<string, number>>({});
 
-    // Reset when opening
+    // Read default settings from storeProfile
+    const defaultPackMode = (storeProfile.settings as any)?.defaultPackMode === true;
+    const defaultUnitsPerPack = (storeProfile.settings as any)?.defaultUnitsPerPack as number | undefined;
+
+    // Apply defaults to all products helper
+    const applyDefaultsToAll = (packMode: boolean, unitsPP?: number) => {
+        if (packMode) {
+            const defaultModes: Record<string, boolean> = {};
+            const defaultUnits: Record<string, number> = {};
+            products.forEach(p => {
+                defaultModes[p.id] = true;
+                defaultUnits[p.id] = unitsPP || p.qtyPerUnit || 1;
+            });
+            setPackModes(defaultModes);
+            setUnitsPerPacks(defaultUnits);
+        } else {
+            setPackModes({});
+            setUnitsPerPacks({});
+        }
+    };
+
+    // Reset when opening, apply defaults from settings
     useEffect(() => {
         if (open) {
             setQuantities({});
             setBuyPrices({});
             setNotes({});
-            setPackModes({});
-            setUnitsPerPacks({});
             setSearchQuery('');
+            applyDefaultsToAll(defaultPackMode, defaultUnitsPerPack);
         }
     }, [open]);
 
@@ -76,6 +99,48 @@ export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts 
 
     const togglePackMode = (productId: string) => {
         setPackModes(prev => ({ ...prev, [productId]: !prev[productId] }));
+    };
+
+    // Save setting to storeProfile
+    const handleToggleDefaultPackMode = async (checked: boolean) => {
+        // Apply to local product states instantly for responsive UI
+        applyDefaultsToAll(checked, defaultUnitsPerPack);
+
+        try {
+            await updateStoreProfile({
+                ...storeProfile,
+                settings: {
+                    ...(storeProfile.settings || {}),
+                    defaultPackMode: checked,
+                },
+            });
+            toast.success(checked ? 'Default mode Paket diaktifkan' : 'Default mode Satuan diaktifkan');
+        } catch (error) {
+            toast.error('Gagal menyimpan pengaturan');
+        }
+    };
+
+    const handleSaveDefaultUnitsPerPack = async (val: number) => {
+        const targetVal = val > 0 ? val : undefined;
+        // Apply to local product states instantly for responsive UI
+        if (defaultPackMode) {
+            applyDefaultsToAll(true, targetVal);
+        }
+
+        try {
+            await updateStoreProfile({
+                ...storeProfile,
+                settings: {
+                    ...(storeProfile.settings || {}),
+                    defaultUnitsPerPack: targetVal,
+                },
+            });
+            if (val > 0) {
+                toast.success(`Default isi paket: ${val} pcs`);
+            }
+        } catch (error) {
+            toast.error('Gagal menyimpan pengaturan');
+        }
     };
 
     const handleSubmit = () => {
@@ -124,6 +189,52 @@ export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts 
                         Pilih Banyak Produk
                     </DialogTitle>
                 </DialogHeader>
+
+                {/* Inline Settings Bar (Always visible) */}
+                <div className="px-6 py-3 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
+                    <div className="flex items-center gap-6 flex-wrap">
+                        {/* Default Pack Mode Toggle */}
+                        <div className="flex items-center gap-2.5">
+                            <Label className="text-xs font-mono font-bold text-muted-foreground whitespace-nowrap">Default Mode:</Label>
+                            <div className="flex items-center gap-1.5 bg-white border-2 border-brand-black/20 rounded-lg px-2.5 py-1.5">
+                                <span className={`text-xs font-mono font-bold ${defaultPackMode ? 'text-brand-orange' : 'text-muted-foreground'}`}>
+                                    {defaultPackMode ? 'Paket' : 'Satuan'}
+                                </span>
+                                <Switch
+                                    checked={defaultPackMode}
+                                    onCheckedChange={handleToggleDefaultPackMode}
+                                    className="data-[state=checked]:bg-brand-orange border-2 border-brand-black scale-75"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Default Units Per Pack */}
+                        <div className="flex items-center gap-2.5">
+                            <Label className="text-xs font-mono font-bold text-muted-foreground whitespace-nowrap">Isi Paket:</Label>
+                            <div className="flex items-center gap-1">
+                                <Input
+                                    type="number"
+                                    min={1}
+                                    className="w-16 h-8 font-mono text-center font-bold border-2 border-brand-black/20 rounded-lg text-sm bg-white"
+                                    placeholder="Auto"
+                                    defaultValue={defaultUnitsPerPack || ''}
+                                    onBlur={(e) => {
+                                        const val = parseInt(e.target.value) || 0;
+                                        handleSaveDefaultUnitsPerPack(val);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                    }}
+                                />
+                                <span className="text-[10px] font-mono text-muted-foreground">pcs</span>
+                            </div>
+                        </div>
+
+                        <span className="text-[10px] font-mono text-muted-foreground/60 italic ml-auto">
+                            Pengaturan tersimpan otomatis
+                        </span>
+                    </div>
+                </div>
 
                 <div className="p-4 border-b-2 border-brand-black bg-white flex-shrink-0">
                     <div className="relative">
