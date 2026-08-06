@@ -40,6 +40,7 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
     const [showReceiptDialog, setShowReceiptDialog] = useState(false);
     const [savedSale, setSavedSale] = useState<Sale | null>(null);
     const [notes, setNotes] = useState('');
+    const [mobileStep, setMobileStep] = useState<1 | 2>(1);
     const storeProfile = useWarungStore((state) => state.storeProfile);
     const opnameMode = useWarungStore((state) => state.opnameMode);
     const { user } = useAuth();
@@ -158,6 +159,7 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
             form.reset({ items: [] });
             setNotes('');
             setIsPiutang(false);
+            setMobileStep(1);
         } catch (e) {
             // toast handled by promise
         }
@@ -166,7 +168,10 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
     return (
         <div className="flex flex-col md:flex-row h-full gap-4 overflow-hidden">
             {/* Left: Product Grid */}
-            <div className="h-[35%] flex-shrink-0 md:h-auto md:flex-1 flex flex-col min-w-0 bg-gray-50 p-4 border-2 border-brand-black rounded-lg overflow-hidden">
+            <div className={cn(
+                "flex-1 h-full md:h-auto flex flex-col min-w-0 bg-gray-50 p-4 border-2 border-brand-black rounded-lg overflow-hidden",
+                mobileStep === 1 ? "flex" : "hidden md:flex"
+            )}>
                 {/* Search */}
                 <div className="relative mb-4 flex-shrink-0">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -275,19 +280,48 @@ export function POSSaleForm({ onSuccess }: POSSaleFormProps) {
                         ))}
                     </div>
                 </ScrollArea>
+
+                {/* Mobile Bottom Bar - Step 1 */}
+                <div className="md:hidden mt-4 pt-3 border-t-2 border-brand-black flex items-center justify-between bg-white flex-shrink-0">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold">Total Sementara</span>
+                        <span className="font-bold text-lg text-brand-orange leading-none">{formatCurrency(total)}</span>
+                    </div>
+                    <Button
+                        type="button"
+                        disabled={fields.length === 0}
+                        onClick={() => setMobileStep(2)}
+                        className="bg-brand-orange text-brand-black border-2 border-brand-black rounded-md font-bold uppercase text-xs shadow-hard hover:shadow-hard-sm px-4 h-10 flex items-center gap-2 disabled:opacity-50"
+                    >
+                        <span>Lanjut Ke Bayar ({fields.length})</span>
+                        <ShoppingCart className="w-4 h-4" />
+                    </Button>
+                </div>
             </div>
 
             {/* Right: Cart */}
-            <div className="w-full md:w-[380px] flex-1 md:h-full flex flex-col bg-white border-2 border-brand-black rounded-lg overflow-hidden shadow-hard flex-shrink-0">
-                <div className="p-4 border-b-2 border-brand-black bg-brand-orange/10 flex items-center gap-2 flex-shrink-0">
-                    <ShoppingCart className="w-5 h-5 text-brand-black" />
-                    <h3 className="font-display font-bold text-lg">Keranjang</h3>
-                    <Badge variant="outline" className="ml-auto border-2 border-brand-black bg-white font-mono">
+            <div className={cn(
+                "w-full md:w-[380px] h-full flex flex-col bg-white border-2 border-brand-black rounded-lg overflow-hidden shadow-hard flex-shrink-0",
+                mobileStep === 2 ? "flex" : "hidden md:flex"
+            )}>
+                <div className="p-3 md:p-4 border-b-2 border-brand-black bg-brand-orange/10 flex items-center gap-2 flex-shrink-0">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMobileStep(1)}
+                        className="md:hidden border-2 border-brand-black rounded-md font-bold text-xs h-8 px-2 bg-white"
+                    >
+                        ← Tambah
+                    </Button>
+                    <ShoppingCart className="w-4 h-4 text-brand-black" />
+                    <h3 className="font-display font-bold text-base md:text-lg">Keranjang</h3>
+                    <Badge variant="outline" className="ml-auto border-2 border-brand-black bg-white font-mono text-xs">
                         {fields.length} Item
                     </Badge>
                 </div>
 
-                <ScrollArea className="flex-1 p-4">
+                <ScrollArea className="flex-1 p-4 hidden md:block">
                     {fields.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-center p-8 opacity-50">
                             <Package className="w-16 h-16 mb-4 stroke-1" />

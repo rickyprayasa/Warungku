@@ -69,6 +69,17 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   const [promoPrice, setPromoPrice] = useState(product?.promoPrice || 0);
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [isImageCaptureOpen, setIsImageCaptureOpen] = useState(false);
+  const [mobileStep, setMobileStep] = useState(1);
+
+  const handleNextStep = async () => {
+    if (mobileStep === 1) {
+      const isValid = await form.trigger(['name', 'category', 'unit', 'minStockLevel']);
+      if (isValid) setMobileStep(2);
+    } else if (mobileStep === 2) {
+      const isValid = await form.trigger(['price']);
+      if (isValid) setMobileStep(3);
+    }
+  };
 
   const isEditing = !!product;
 
@@ -187,12 +198,31 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Step Indicator on Mobile */}
+        <div className="md:hidden bg-white border-2 border-brand-black p-3 rounded-xl shadow-hard-sm">
+          <div className="flex items-center justify-between text-xs font-mono font-bold mb-2">
+            <span>LANGKAH {mobileStep} DARI 3</span>
+            <span className="text-brand-orange uppercase">
+              {mobileStep === 1 && "Informasi Produk"}
+              {mobileStep === 2 && "Harga & Stok"}
+              {mobileStep === 3 && "Visual & Detail"}
+            </span>
+          </div>
+          {/* Progress Bar */}
+          <div className="w-full h-3 bg-gray-100 border-2 border-brand-black rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-brand-orange border-r-2 border-brand-black transition-all duration-300"
+              style={{ width: `${(mobileStep / 3) * 100}%` }}
+            />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           {/* LEFT COLUMN - MAIN INFO (7/12) */}
           <div className="md:col-span-7 space-y-6">
 
             {/* Card: Basic Info */}
-            <div className="p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-4 relative overflow-hidden">
+            <div className={cn("p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-4 relative overflow-hidden", mobileStep === 1 ? "block" : "hidden md:block")}>
               <div className="absolute top-0 left-0 w-full h-1 bg-brand-black"></div>
               <h3 className="font-display font-bold text-lg flex items-center gap-2">
                 <span className="w-8 h-8 rounded-lg bg-brand-orange border-2 border-brand-black flex items-center justify-center text-sm">01</span>
@@ -213,7 +243,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="category"
@@ -284,7 +314,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
             </div>
 
             {/* Card: Inventory & Pricing */}
-            <div className="p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-5 relative overflow-hidden">
+            <div className={cn("p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-5 relative overflow-hidden", mobileStep === 2 ? "block" : "hidden md:block")}>
               <div className="absolute top-0 left-0 w-full h-1 bg-brand-black"></div>
               <h3 className="font-display font-bold text-lg flex items-center gap-2">
                 <span className="w-8 h-8 rounded-lg bg-green-400 border-2 border-brand-black flex items-center justify-center text-sm">02</span>
@@ -419,7 +449,7 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           </div>
 
           {/* RIGHT COLUMN - VISUALS & EXTRAS (5/12) */}
-          <div className="md:col-span-5 space-y-6">
+          <div className={cn("md:col-span-5 space-y-6", mobileStep === 3 ? "block" : "hidden md:block")}>
             {/* Card: Media */}
             <div className="p-6 bg-white border-2 border-brand-black rounded-xl shadow-hard space-y-4 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1 bg-brand-black"></div>
@@ -550,9 +580,47 @@ export function ProductForm({ product, onSuccess }: ProductFormProps) {
           </div>
         )}
 
+        {/* Navigation / Submit Buttons on Mobile */}
+        <div className="flex md:hidden gap-3 mt-6">
+          {mobileStep > 1 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 border-2 border-brand-black rounded-xl font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-brand-black/5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
+              disabled={isSubmitting}
+              onClick={() => setMobileStep(prev => prev - 1)}
+            >
+              ← Kembali
+            </Button>
+          )}
+          {mobileStep < 3 ? (
+            <Button
+              type="button"
+              className="flex-1 bg-brand-orange text-brand-black border-2 border-brand-black rounded-xl font-bold uppercase text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-brand-orange/90 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12"
+              onClick={handleNextStep}
+            >
+              Lanjut →
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              className="flex-1 bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-brand-black rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all h-12 font-bold text-sm uppercase tracking-wide"
+              disabled={isSubmitting || (!isEditing && productLimitReached)}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </span>
+              ) : isEditing ? "Simpan" : "Buat Produk"}
+            </Button>
+          )}
+        </div>
+
+        {/* Submit Button on Desktop */}
         <Button
           type="submit"
-          className="w-full bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-brand-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all h-12 font-bold text-lg uppercase tracking-widest mt-6"
+          className="hidden md:flex w-full bg-brand-black text-brand-white hover:bg-brand-orange hover:text-brand-black border-2 border-brand-black rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none transition-all h-12 font-bold text-lg uppercase tracking-widest mt-6 justify-center items-center"
           disabled={isSubmitting || (!isEditing && productLimitReached)}
         >
           {isSubmitting ? (

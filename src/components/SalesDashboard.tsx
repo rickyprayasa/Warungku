@@ -138,7 +138,7 @@ export function SalesDashboard({ isActive }: { isActive?: boolean }) {
               <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
                 <DialogTitle className="font-display text-2xl font-bold">Catat Penjualan Baru</DialogTitle>
               </DialogHeader>
-              <div className="p-6 flex-1 overflow-hidden h-full">
+              <div className="p-3 md:p-6 flex-1 overflow-hidden h-full">
                 <POSSaleForm onSuccess={() => {
                   setCreateDialogOpen(false);
                   fetchSales();

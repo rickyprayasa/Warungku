@@ -1,0 +1,24 @@
+# Ignore docs and non-build files to speed up Vercel deployments and save build time
+.git
+.github
+.vscode
+.claude
+.orchids
+docs/
+screenshot/
+screenshots/
+scripts/
+tests/
+*.md
+!README.md
+*.py
+*.sh
+*.cjs
+test-*
+output*.json
+Landing page/
+qris/
+setup*
+fix_*
+restructure_*
+apply-schema.sh

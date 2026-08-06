@@ -404,7 +404,7 @@ export function ProductDataTable({ stockMethod = 'FIFO' }: ProductDataTableProps
           <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-gray-50 flex-shrink-0">
             <DialogTitle className="font-display text-2xl font-bold">Edit Produk</DialogTitle>
           </DialogHeader>
-          <div className="p-6 flex-1 overflow-y-auto">
+          <div className="p-3 md:p-6 flex-1 overflow-y-auto">
             <ProductForm product={selectedProduct} onSuccess={() => setEditDialogOpen(false)} />
           </div>
         </DialogContent>
