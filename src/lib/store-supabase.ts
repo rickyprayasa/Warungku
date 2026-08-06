@@ -28,6 +28,32 @@ function isNetworkError(error: any): boolean {
   );
 }
 
+// Helper to upload image to Supabase Storage
+const uploadProductImage = async (base64Url: string, storeId: string): Promise<string> => {
+  if (!base64Url || !base64Url.startsWith('data:image')) {
+    return base64Url || ''; // Already a URL or empty
+  }
+  try {
+    const res = await fetch(base64Url);
+    const blob = await res.blob();
+    const fileName = `products/${storeId}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('public-assets')
+      .upload(fileName, blob, {
+        contentType: 'image/jpeg',
+        upsert: true
+      });
+    if (uploadError) throw uploadError;
+    const { data: { publicUrl } } = supabase.storage
+      .from('public-assets')
+      .getPublicUrl(fileName);
+    return publicUrl;
+  } catch (error) {
+    console.error('Failed to upload product image:', error);
+    throw new Error('Gagal mengupload gambar produk. Silakan coba lagi.');
+  }
+};
+
 interface WarungState {
   products: Product[];
   sales: Sale[];
@@ -1227,22 +1253,15 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           let lastError;
           for (let i = 0; i < maxRetries; i++) {
             try {
-              // Wrap the operation in a 15s timeout to catch LockManager deadlocks
+              // Wrap the operation in a 45s timeout to prevent hanging on slow connections
               const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('TIMEOUT_DEADLOCK')), 15000);
+                setTimeout(() => reject(new Error('TIMEOUT')), 45000);
               });
               return await Promise.race([operation(), timeoutPromise]);
             } catch (error: any) {
-              if (error?.message === 'TIMEOUT_DEADLOCK') {
-                console.error('[addProduct] DEADLOCK DETECTED! Clearing corrupt cache and returning to refresh...');
-                try {
-                  for (let j = 0; j < localStorage.length; j++) {
-                    const key = localStorage.key(j);
-                    if (key && key.includes('-auth-token')) localStorage.removeItem(key);
-                  }
-                  window.location.reload();
-                } catch (e) { }
-                throw new Error('Sesi cache penuh menyebabkan nyangkut. Silakan refresh halaman.');
+              if (error?.message === 'TIMEOUT') {
+                console.error('[addProduct] Timeout waiting for database operation.');
+                throw new Error('Koneksi lambat. Gagal menambahkan produk (Timeout).');
               }
               console.warn(`[addProduct] Attempt ${i + 1}/${maxRetries} failed:`, error?.message || error);
               lastError = error;
@@ -1258,12 +1277,17 @@ export const useWarungStore = create<WarungState & WarungActions>()(
         };
 
         try {
+          let imageUrl = productData.imageUrl || '';
+          if (imageUrl.startsWith('data:image')) {
+            imageUrl = await uploadProductImage(imageUrl, storeId);
+          }
+
           const newProductData = {
             store_id: storeId,
             name: productData.name,
             price: productData.price,
             cost: productData.cost || 0,
-            image_url: productData.imageUrl || '',
+            image_url: imageUrl,
             category: productData.category || '',
             description: productData.description || '',
             is_promo: productData.isPromo || false,
@@ -1362,6 +1386,11 @@ export const useWarungStore = create<WarungState & WarungActions>()(
           throw lastError;
         };
 
+        let imageUrl = productData.imageUrl;
+        if (imageUrl && imageUrl.startsWith('data:image')) {
+          imageUrl = await uploadProductImage(imageUrl, get().currentStoreId || '');
+        }
+
         const response = await retryOperation(() =>
           productController.updateProduct({
             id: productId,
@@ -1370,7 +1399,7 @@ export const useWarungStore = create<WarungState & WarungActions>()(
               name: productData.name,
               price: productData.price,
               cost: productData.cost,
-              image_url: productData.imageUrl,
+              image_url: imageUrl,
               category: productData.category,
               description: productData.description,
               is_promo: productData.isPromo,
