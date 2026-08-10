@@ -188,7 +188,7 @@ export function MultiProductPickerDialog({ open, onOpenChange, onSelectProducts 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 rounded-none border-4 border-brand-black bg-brand-white">
+            <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl h-[90vh] md:h-[85vh] flex flex-col p-0 rounded-none border-4 border-brand-black bg-brand-white">
                 <DialogHeader className="px-6 py-4 border-b-2 border-brand-black bg-brand-light-orange/20 flex-shrink-0">
                     <DialogTitle className="flex items-center gap-2 text-xl font-bold font-display">
                         <Package className="w-6 h-6" />
